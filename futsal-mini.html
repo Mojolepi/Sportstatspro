@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Futsal Táctico Interactivo</title>
+    
+    <style>
+        :root {
+            --color-background: #1a1a1a; --color-surface: #2c2c2c; --color-primary: #007bff;
+            --color-secondary: #6c757d; --color-success: #28a745; --color-danger: #d0021b;
+            --color-warning: #f5a623; --color-text: #f0f0f0; 
+            --color-pitch: #c49247; /* Color parquet */
+            --color-pitch-lines: rgba(255, 255, 255, 0.9);
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: var(--color-background); color: var(--color-text);
+            overscroll-behavior: none;
+            scroll-behavior: smooth;
+        }
+        main { padding: 10px; max-width: 900px; margin: 0 auto; }
+        section {
+            background-color: var(--color-surface); padding: 15px; border-radius: 10px; margin-bottom: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        h2 { font-size: 1.4em; border-bottom: 2px solid var(--color-primary); padding-bottom: 10px; margin-bottom: 15px; }
+        #app-header { display: none; text-align: center; }
+        #marcador {
+            font-size: 2em; font-weight: bold; display: flex; align-items: center; justify-content: space-between;
+            gap: 15px; background: rgba(0,0,0,0.2); padding: 10px 20px; border-radius: 8px;
+        }
+        .team-info { flex: 1; display: flex; align-items: center; gap: 10px; }
+        .team-info.local { justify-content: flex-end; } .team-info.rival { justify-content: flex-start; }
+        .foul-counter {
+             font-size: 0.7em; background-color: #333; color: var(--color-text);
+             width: 28px; height: 28px; border-radius: 50%;
+             display: inline-flex; align-items: center; justify-content: center;
+             border: 2px solid #555; font-weight: bold;
+        }
+        .foul-warning { background-color: var(--color-danger); border-color: white; }
+
+        #tiempo { display: flex; align-items: center; justify-content: center; margin-top: 15px; gap: 10px; }
+        #minuto-actual { 
+            font-size: 1.3em; font-weight: bold; background: #111; border: 1px solid #555; 
+            padding: 8px 12px; border-radius: 6px; width: 90px; text-align: center;
+        }
+        button {
+            padding: 12px 18px; border: none; border-radius: 8px; font-size: 1em; cursor: pointer;
+            font-weight: bold; transition: all 0.2s ease; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+        button:active:not(:disabled) { transform: translateY(0); }
+        button:disabled { background-color: #444 !important; color: #888 !important; cursor: not-allowed; opacity: 0.7; border-color: #444 !important; }
+        .btn-primary { background: linear-gradient(145deg, var(--color-primary), #0056b3); color: white; }
+        .btn-secondary { background: var(--color-secondary); color: white; }
+        .btn-danger { background: linear-gradient(145deg, var(--color-danger), #a71d2a); color: white; }
+        .btn-event { background-color: transparent; color: var(--color-warning); border: 2px solid var(--color-warning); }
+        .control-group, .event-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-top: 15px; }
+        label { display: block; margin-top: 15px; margin-bottom: 5px; font-weight: bold; }
+        input, textarea, select { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #555; background-color: #333; color: var(--color-text); border-radius: 6px; font-size: 1em; }
+        #pitch-section { position: relative; }
+        #event-flow-message { position: absolute; top: 10px; left: 50%; width: 90%; max-width: 400px; transform: translateX(-50%); background-color: rgba(0,0,0,0.9); color: white; padding: 12px 22px; border-radius: 25px; z-index: 1001; font-size: 1em; border: 1px solid var(--color-primary); box-shadow: 0 4px 8px rgba(0,0,0,0.5); text-align: center; cursor: pointer; }
+        .selecting-mode { cursor: crosshair !important; }
+        #futsal-pitch { position: relative; width: 100%; aspect-ratio: 40 / 20; }
+        #futsal-pitch-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        #bench-container { display: flex; margin-top: 10px; gap: 10px; }
+        .bench {
+            width: 50%; min-height: 90px; border: 2px dashed #444;
+            border-radius: 5px; padding: 8px; display: flex; flex-wrap: wrap;
+            gap: 8px; align-content: flex-start; justify-content: center;
+        }
+
+        .player-chip {
+            width: 40px; height: 40px; font-size: 14px;
+            border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center;
+            font-weight: bold; cursor: grab; user-select: none; border: 2px solid white;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.5);
+            position: relative; 
+            touch-action: none;
+        }
+        .chip-local { background-color: var(--color-primary); }
+        .chip-rival { background-color: var(--color-danger); }
+        .chip-on-bench { position: static; }
+        .chip-on-pitch { 
+            position: absolute; 
+            z-index: 10; 
+            transform: translate(-50%,-50%); 
+        }
+        
+        .dragging {
+            cursor: grabbing; 
+            opacity: 0.7; 
+            z-index: 1000 !important;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.6) !important;
+            transition: none !important;
+            position: fixed !important; 
+        }
+
+        .expulsado { filter: grayscale(100%); cursor: not-allowed !important; opacity: 0.6; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; table-layout: fixed; }
+        th, td { padding: 8px; text-align: center; border-bottom: 1px solid #444; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .player-on-pitch { background-color: rgba(74, 144, 226, 0.2); font-weight: bold; }
+        
+        .modal { z-index: 2000; display: none; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); }
+        .modal.visible { display: flex; }
+        .modal-content { background: var(--color-surface); box-shadow: 0 5px 15px rgba(0,0,0,0.5); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 20px; width: 90%; max-width: 400px; }
+        #modal-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+        
+        .hidden { display: none !important; }
+
+        @media (max-width: 768px) {
+            main { padding: 5px; }
+            section { padding: 10px; }
+            .bench { width: 100%; }
+            #bench-container { flex-direction: column; }
+            .player-chip { width: 38px; height: 38px; font-size: 11px; }
+            #marcador { font-size: 1.4em; }
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <section id="config-section">
+            <h2>Configuración del Partido de Futsal</h2>
+            <label for="local-name-input">Nombre Equipo Local:</label>
+            <input type="text" id="local-name-input" value="Equipo Local">
+            <label for="rival-name">Nombre Rival:</label>
+            <input type="text" id="rival-name" value="Equipo Rival">
+            <label for="local-players">Jugadores Locales (nombres/dorsales separados por coma):</label>
+            <textarea id="local-players" rows="3">1,2,3,4,5,6,7,8,9,10,11,12</textarea>
+            <label for="rival-dorsals">Dorsales Rivales (separados por coma):</label>
+            <textarea id="rival-dorsals" rows="3">1,2,3,4,5,6,7,8,9,10,11,12</textarea>
+            <button id="start-config" class="btn-primary">Guardar y Preparar Pizarra</button>
+        </section>
+
+        <header id="app-header">
+            <div id="marcador">
+                <div class="team-info local">
+                    <span id="local-name">Local</span>
+                    <div id="local-foul-counter" class="foul-counter">0</div>
+                </div>
+                <div class="score-display">
+                    <span id="local-score">0</span> - <span id="rival-score">0</span>
+                </div>
+                <div class="team-info rival">
+                    <div id="rival-foul-counter" class="foul-counter">0</div>
+                    <span id="rival-name-display">Rival</span>
+                </div>
+            </div>
+            <div id="tiempo">
+                <button id="btn-toggle-timer" class="btn-primary" disabled>Coloca los jugadores</button>
+                <input type="text" id="minuto-actual" value="25:00" readonly>
+            </div>
+        </header>
+
+        <section id="pitch-section" class="hidden">
+            <h2>Pizarra Táctica</h2>
+            <div id="event-flow-message" class="hidden"></div>
+            <div id="futsal-pitch">
+                <svg id="futsal-pitch-svg" viewBox="0 0 800 400" preserveAspectRatio="xMidYMid meet">
+                    <rect width="800" height="400" fill="var(--color-pitch)" stroke="var(--color-pitch-lines)" stroke-width="3"/>
+                    <line x1="400" y1="0" x2="400" y2="400" stroke="var(--color-pitch-lines)" stroke-width="3"/>
+                    <circle cx="400" cy="200" r="60" stroke="var(--color-pitch-lines)" stroke-width="3" fill="none"/>
+                    <path d="M 0 100 A 120 120 0 0 1 0 300" stroke="var(--color-pitch-lines)" stroke-width="3" fill="none"/>
+                    <path d="M 800 100 A 120 120 0 0 0 800 300" stroke="var(--color-pitch-lines)" stroke-width="3" fill="none"/>
+                </svg>
+            </div>
+            <div id="bench-container">
+                <div id="local-bench" class="bench"></div>
+                <div id="rival-bench" class="bench"></div>
+            </div>
+        </section>
+
+        <section id="game-controls" class="hidden">
+            <div class="control-group">
+                <button id="btn-half-time" class="btn-secondary" disabled>Descanso</button>
+                <button id="btn-start-second" class="btn-secondary" disabled>Inicio 2ª</button>
+                <button id="btn-finish-game" class="btn-danger" disabled>Finalizar</button>
+                <button id="btn-reset-match" class="btn-secondary">Reiniciar</button>
+                <button id="btn-new-match" class="btn-secondary">Nuevo Partido</button>
+            </div>
+            <div class="event-group">
+                <button class="btn-event" data-event="goal">GOL ⚽</button>
+                <button class="btn-event" data-event="corner">CÓRNER ⛳</button>
+                <button class="btn-event" data-event="yellow-card">AMARILLA 🟨</button>
+                <button class="btn-event" data-event="red-card">ROJA 🟥</button>
+                <button class="btn-event" data-event="foul">FALTA ✋</button>
+            </div>
+        </section>
+        
+        <section id="timeline-section" class="hidden">
+            <h2>Cronología del Partido</h2>
+            <div id="event-timeline"></div>
+        </section>
+        
+        <section id="stats-section" class="hidden">
+            <h2>Estadísticas</h2>
+            <h3 id="local-stats-title">Equipo Local</h3>
+            <table id="local-stats-table">
+                <thead>
+                    <tr><th>Jugador</th><th>G</th><th>A</th><th>🟨</th><th>🟥</th><th>F</th><th>MIN</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <h3 id="rival-stats-title" style="margin-top: 20px;">Rival</h3>
+            <table id="rival-stats-table">
+                <thead>
+                    <tr><th>Dorsal</th><th>G</th><th>A</th><th>🟨</th><th>🟥</th><th>F</th><th>MIN</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <button id="btn-export-excel" class="btn-primary hidden" style="margin-top: 20px;">Exportar a Excel</button>
+        </section>
+        
+        <div id="generic-modal" class="modal">
+            <div class="modal-content">
+                <h3 id="modal-title"></h3>
+                <div id="modal-buttons"></div>
+            </div>
+        </div>
+    </main>
+
+<script>
+    'use strict';
+    
+    // --- 1. CONFIGURACIÓN Y CONSTANTES GLOBALES ---
+    const AppConfig = {
+        HALF_TIME_SECONDS: 25 * 60,
+        MAX_PLAYERS_ON_PITCH: 5,
+        MAX_FOULS: 5,
+        APP_STATE_KEY: 'futsalTacticoState_v12_stable'
+    };
+
+    // --- 2. GESTIÓN DEL ESTADO DE LA APLICACIÓN ---
+    const AppState = {
+        _state: {},
+        getInitial() {
+            return {
+                localTeamName: 'Local', rivalTeamName: 'Rival', localPlayers: [], rivalDorsals: [],
+                playerStats: { local: {}, rival: {} },
+                matchStats: { local: { corners: 0 }, rival: { corners: 0 } },
+                faltas: { local: 0, rival: 0 },
+                matchTimer: 0, currentHalf: 1, isMatchRunning: false, timerWorker: null, 
+                matchEvents: [], eventFlow: { active: false }
+            };
+        },
+        init() { this._state = this.getInitial(); },
+        load() {
+            const savedStateJSON = localStorage.getItem(AppConfig.APP_STATE_KEY);
+            if (!savedStateJSON) return false;
+            try {
+                const loadedState = JSON.parse(savedStateJSON);
+                delete loadedState.timerWorker;
+                this._state = { ...this.getInitial(), ...loadedState };
+                return true;
+            } catch (e) {
+                console.error("Error al cargar estado, reseteando.", e);
+                localStorage.removeItem(AppConfig.APP_STATE_KEY);
+                return false;
+            }
+        },
+        save() { 
+            const stateToSave = {...this._state};
+            delete stateToSave.timerWorker;
+            localStorage.setItem(AppConfig.APP_STATE_KEY, JSON.stringify(stateToSave)); 
+        },
+        get() { return this._state; },
+    };
+
+    // --- 3. MANIPULACIÓN DEL DOM Y ACTUALIZACIONES DE UI ---
+    const DOM = {
+        elements: {},
+        cacheElements() {
+            const ids = [
+                'config-section', 'app-header', 'pitch-section', 'game-controls', 'timeline-section',
+                'stats-section', 'local-name-input', 'rival-name',
+                'local-players', 'rival-dorsals', 'start-config', 'btn-toggle-timer', 'minuto-actual',
+                'futsal-pitch', 'local-bench', 'rival-bench', 'event-timeline', 
+                'event-flow-message', 'btn-half-time', 'btn-start-second', 'btn-finish-game', 
+                'btn-reset-match', 'btn-new-match', 'btn-export-excel', 
+                'local-name', 'rival-name-display', 'local-score', 'rival-score',
+                'local-foul-counter', 'rival-foul-counter',
+                'local-stats-title', 'rival-stats-title', 'local-stats-table', 'rival-stats-table',
+                'generic-modal', 'modal-title', 'modal-buttons'
+            ];
+            ids.forEach(id => this.elements[id] = document.getElementById(id));
+            this.elements.main = document.querySelector('main');
+            this.elements.eventButtons = document.querySelectorAll('.btn-event');
+        },
+        showMatchUI() {
+            this.elements['config-section'].classList.add('hidden');
+            this.elements['app-header'].style.display = 'block';
+            ['pitch-section', 'game-controls', 'timeline-section', 'stats-section']
+                .forEach(id => this.elements[id].classList.remove('hidden'));
+        },
+        updateAll() {
+            const state = AppState.get();
+            this.elements['local-name'].textContent = state.localTeamName;
+            this.elements['rival-name-display'].textContent = state.rivalTeamName;
+            this.elements['local-stats-title'].textContent = state.localTeamName;
+            this.elements['rival-stats-title'].textContent = state.rivalTeamName;
+            this.elements['minuto-actual'].value = MatchLogic.formatTimeCountdown(state.matchTimer);
+            this.updateButtonStates();
+            this.updateScoreboard();
+            this.updatePlayerChips();
+            this.updateStatsTables();
+            this.updateFoulCounters();
+            this.renderTimeline();
+            this.updateDocumentTitle();
+        },
+        // CORREGIDO: Función que crea los chips y los pone en su sitio correcto desde el principio.
+        setupBenchesAndPitch() {
+            const state = AppState.get();
+            this.elements['local-bench'].innerHTML = ''; 
+            this.elements['rival-bench'].innerHTML = '';
+            this.elements['futsal-pitch'].querySelectorAll('.player-chip').forEach(chip => chip.remove());
+
+            const placeChips = (players, team) => {
+                players.forEach(name => {
+                    const chip = this.createChip(name, team);
+                    const stats = state.playerStats[team][name];
+                    if (stats.onPitch) {
+                        this.elements['futsal-pitch'].appendChild(chip);
+                    } else {
+                        this.elements[`${team}-bench`].appendChild(chip);
+                    }
+                });
+            };
+
+            placeChips(state.localPlayers, 'local');
+            placeChips(state.rivalDorsals, 'rival');
+        },
+        createChip(name, team) {
+            const chip = document.createElement('div');
+            chip.className = `player-chip chip-${team}`;
+            chip.textContent = name;
+            chip.dataset.name = name;
+            chip.dataset.team = team;
+            chip.addEventListener('pointerdown', DragAndDrop.start);
+            chip.addEventListener('click', () => {
+                if (AppState.get().eventFlow.active) EventHandler.processEventSelection(chip);
+            });
+            return chip;
+        },
+        updatePlayerChips() {
+            const state = AppState.get();
+            Object.keys(state.playerStats).forEach(team => {
+                Object.keys(state.playerStats[team]).forEach(playerName => {
+                    const stats = state.playerStats[team][playerName];
+                    const chip = document.querySelector(`.player-chip[data-name="${playerName}"][data-team="${team}"]`);
+                    if (!chip) return;
+                    chip.classList.toggle('expulsado', stats.expulsado);
+                    const targetParent = stats.onPitch ? this.elements['futsal-pitch'] : this.elements[`${team}-bench`];
+                    
+                    if (chip.parentElement !== targetParent) {
+                        targetParent.appendChild(chip);
+                    }
+
+                    chip.className = `player-chip chip-${team}`; // Reset classes
+                    if (stats.onPitch) {
+                        chip.classList.add('chip-on-pitch');
+                        chip.style.left = stats.position.left;
+                        chip.style.top = stats.position.top;
+                        chip.style.transform = 'translate(-50%, -50%)';
+                    } else {
+                        chip.classList.add('chip-on-bench');
+                        chip.style.left = '';
+                        chip.style.top = '';
+                        chip.style.transform = '';
+                    }
+                    if (stats.expulsado) chip.classList.add('expulsado');
+                });
+            });
+        },
+        updateScoreboard() {
+            const state = AppState.get();
+            let localScore = 0, rivalScore = 0;
+            Object.values(state.playerStats.local).forEach(s => localScore += s.goles);
+            Object.values(state.playerStats.rival).forEach(s => rivalScore += s.goles);
+            this.elements['local-score'].textContent = localScore;
+            this.elements['rival-score'].textContent = rivalScore;
+        },
+        updateFoulCounters() {
+            const { local, rival } = AppState.get().faltas;
+            const localCounter = this.elements['local-foul-counter'];
+            const rivalCounter = this.elements['rival-foul-counter'];
+            localCounter.textContent = local;
+            rivalCounter.textContent = rival;
+            localCounter.classList.toggle('foul-warning', local >= AppConfig.MAX_FOULS);
+            rivalCounter.classList.toggle('foul-warning', rival >= AppConfig.MAX_FOULS);
+        },
+        updateButtonStates() {
+            const state = AppState.get();
+            const hasStarted = state.matchEvents.some(e => e.type === 'init_match');
+            const isFinished = state.matchEvents.some(e => e.text.includes('Final'));
+            
+            if (hasStarted) {
+                this.elements['btn-toggle-timer'].disabled = true;
+                this.elements['btn-toggle-timer'].textContent = isFinished ? "Finalizado" : "En Juego";
+            } else {
+                const localOnPitch = Object.values(state.playerStats.local).filter(p => p.onPitch).length;
+                const rivalOnPitch = Object.values(state.playerStats.rival).filter(p => p.onPitch).length;
+                if (localOnPitch === AppConfig.MAX_PLAYERS_ON_PITCH && rivalOnPitch === AppConfig.MAX_PLAYERS_ON_PITCH) {
+                    this.elements['btn-toggle-timer'].disabled = false;
+                    this.elements['btn-toggle-timer'].textContent = "INICIAR PARTIDO";
+                } else {
+                    this.elements['btn-toggle-timer'].disabled = true;
+                    this.elements['btn-toggle-timer'].textContent = `Coloca ${AppConfig.MAX_PLAYERS_ON_PITCH} jugadores`;
+                }
+            }
+
+            this.elements['btn-half-time'].disabled = !hasStarted || isFinished || state.currentHalf !== 1 || !state.isMatchRunning;
+            this.elements['btn-start-second'].disabled = !hasStarted || isFinished || state.currentHalf !== 2 || state.isMatchRunning;
+            this.elements['btn-finish-game'].disabled = !hasStarted || isFinished;
+            this.elements.eventButtons.forEach(b => b.disabled = !state.isMatchRunning || isFinished);
+        },
+        renderTimeline() {
+            const state = AppState.get();
+            this.elements['timeline-section'].classList.toggle('hidden', state.matchEvents.length === 0);
+            this.elements['event-timeline'].innerHTML = '';
+            state.matchEvents.slice().reverse().forEach(event => {
+                let icon = '';
+                switch(event.type) {
+                    case 'init_match': case 'control': icon = '▶️'; break;
+                    case 'goal': icon = '⚽'; break;
+                    case 'substitution': icon = '🔄'; break;
+                    case 'yellow-card': icon = '🟨'; break;
+                    case 'red-card': icon = '🟥'; break;
+                    case 'foul': icon = '✋'; break;
+                    case 'corner': icon = '⛳'; break;
+                }
+                const eventEl = document.createElement('div');
+                eventEl.classList.add('timeline-event');
+                eventEl.innerHTML = `<div class="timeline-event-main"><span class="event-icon">${icon}</span> <div><strong>Min ${event.minute}':</strong> ${event.text}</div></div>`;
+                this.elements['event-timeline'].appendChild(eventEl);
+            });
+        },
+        updateStatsTables() {
+            const state = AppState.get();
+            const createRow = (name, stats) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td>${name}</td><td>${stats.goles}</td><td>${stats.asistencias}</td><td>${stats.amarillas}</td><td>${stats.rojas}</td><td>${stats.faltas}</td><td>${MatchLogic.formatTime(stats.minutosJugados)}</td>`;
+                if (stats.onPitch) row.classList.add('player-on-pitch');
+                return row;
+            };
+            const localTbody = this.elements['local-stats-table'].querySelector('tbody');
+            const rivalTbody = this.elements['rival-stats-table'].querySelector('tbody');
+            localTbody.innerHTML = '';
+            rivalTbody.innerHTML = '';
+            state.localPlayers.forEach(name => localTbody.appendChild(createRow(name, state.playerStats.local[name] || {})));
+            state.rivalDorsals.forEach(name => rivalTbody.appendChild(createRow(name, state.playerStats.rival[name] || {})));
+        },
+        updateDocumentTitle() {
+            const state = AppState.get();
+            const time = MatchLogic.formatTimeCountdown(state.matchTimer);
+            const score = `${this.elements['local-score'].textContent}-${this.elements['rival-score'].textContent}`;
+            let prefix = 'Futsal Táctico';
+            if (state.matchEvents.some(e => e.text.includes('Final'))) {
+                prefix = 'FINAL';
+            } else if (state.currentHalf === 2 && !state.isMatchRunning && state.matchEvents.some(e => e.text.includes('Descanso'))) {
+                prefix = 'DESCANSO';
+            } else if (state.isMatchRunning) {
+                prefix = time;
+            }
+            document.title = `${prefix} | ${state.localTeamName} ${score} ${state.rivalTeamName}`;
+        },
+    };
+
+    // --- 4. LÓGICA DEL PARTIDO ---
+    const MatchLogic = {
+        formatTime: (s) => `${Math.floor(s/60).toString().padStart(2,"0")}:${(s%60).toString().padStart(2,"0")}`,
+        formatTimeCountdown(totalSeconds) { 
+            const state = AppState.get();
+            const halfProgress = state.currentHalf === 1 ? totalSeconds : totalSeconds - AppConfig.HALF_TIME_SECONDS;
+            const remainingSeconds = AppConfig.HALF_TIME_SECONDS - halfProgress;
+            const displaySeconds = Math.max(0, remainingSeconds);
+            return this.formatTime(displaySeconds);
+        },
+        initializeNewMatch() {
+            const state = AppState.get();
+            state.localTeamName = DOM.elements['local-name-input'].value.trim() || 'Local';
+            state.rivalTeamName = DOM.elements['rival-name'].value.trim() || 'Rival';
+            state.localPlayers = DOM.elements['local-players'].value.split(',').map(s => s.trim()).filter(Boolean);
+            state.rivalDorsals = DOM.elements['rival-dorsals'].value.split(',').map(s => s.trim()).filter(Boolean);
+            if (state.localPlayers.length < AppConfig.MAX_PLAYERS_ON_PITCH || state.rivalDorsals.length < AppConfig.MAX_PLAYERS_ON_PITCH) {
+                alert(`Se necesitan al menos ${AppConfig.MAX_PLAYERS_ON_PITCH} jugadores por equipo.`);
+                return false;
+            }
+            this.initializeStats();
+            return true;
+        },
+        initializeStats() {
+            const state = AppState.get();
+            state.playerStats = { local: {}, rival: {} };
+            const initialStats = { onPitch: false, goles: 0, asistencias: 0, amarillas: 0, rojas: 0, faltas: 0, minutosJugados: 0, expulsado: false, position: null };
+            state.localPlayers.forEach(p => state.playerStats.local[p] = { ...initialStats });
+            state.rivalDorsals.forEach(d => state.playerStats.rival[d] = { ...initialStats });
+        },
+        setInitialFormation() {
+            const state = AppState.get();
+            const localFormation = [{left:'10%',top:'50%'}, {left:'25%',top:'30%'}, {left:'25%',top:'70%'}, {left:'40%',top:'30%'}, {left:'40%',top:'70%'}];
+            const rivalFormation = [{left:'90%',top:'50%'}, {left:'75%',top:'30%'}, {left:'75%',top:'70%'}, {left:'60%',top:'30%'}, {left:'60%',top:'70%'}];
+
+            state.localPlayers.slice(0, AppConfig.MAX_PLAYERS_ON_PITCH).forEach((name, i) => {
+                if(state.playerStats.local[name]) {
+                    state.playerStats.local[name].onPitch = true;
+                    state.playerStats.local[name].position = localFormation[i];
+                }
+            });
+            state.rivalDorsals.slice(0, AppConfig.MAX_PLAYERS_ON_PITCH).forEach((name, i) => {
+                if(state.playerStats.rival[name]) {
+                    state.playerStats.rival[name].onPitch = true;
+                    state.playerStats.rival[name].position = rivalFormation[i];
+                }
+            });
+        },
+        startTimer() {
+            const state = AppState.get();
+            if (state.isMatchRunning) return;
+            state.isMatchRunning = true;
+
+            const workerScript = `let interval = null; self.onmessage = e => { if (e.data === 'start') { if (!interval) interval = setInterval(() => self.postMessage('tick'), 1000); } else if (e.data === 'stop') { clearInterval(interval); interval = null; } };`;
+            const workerBlob = new Blob([workerScript], { type: 'application/javascript' });
+            state.timerWorker = new Worker(URL.createObjectURL(workerBlob));
+
+            state.timerWorker.onmessage = () => {
+                state.matchTimer++;
+                this.adjustPlayerMinutes(1);
+                DOM.updateAll();
+                const limit = state.currentHalf === 1 ? AppConfig.HALF_TIME_SECONDS : 2 * AppConfig.HALF_TIME_SECONDS;
+                if (state.matchTimer >= limit) {
+                    if(state.currentHalf === 1) EventHandler.handleHalfTime(true);
+                    else EventHandler.handleFinishGame(true);
+                }
+            };
+            state.timerWorker.postMessage('start');
+            DOM.updateButtonStates();
+        },
+        stopTimer() {
+            const state = AppState.get();
+            if (!state.isMatchRunning) return;
+            state.isMatchRunning = false;
+            if (state.timerWorker) {
+                state.timerWorker.postMessage('stop');
+                state.timerWorker.terminate();
+                state.timerWorker = null;
+            }
+            DOM.updateButtonStates();
+            AppState.save();
+        },
+        adjustPlayerMinutes(seconds) {
+            if (seconds <= 0) return;
+            Object.values(AppState.get().playerStats).forEach(team => {
+                Object.values(team).forEach(player => {
+                    if (player.onPitch) player.minutosJugados += seconds;
+                });
+            });
+        },
+        addMatchEvent(eventData) {
+            const state = AppState.get();
+            const event = { id: Date.now(), minute: Math.floor(state.matchTimer / 60), ...eventData }; 
+            state.matchEvents.push(event); 
+        },
+        recalculateMatchStateFromEvents() {
+            const state = AppState.get();
+            const playerInitialStats = { goles: 0, asistencias: 0, amarillas: 0, rojas: 0, faltas: 0, expulsado: false };
+            Object.values(state.playerStats).forEach(team => Object.values(team).forEach(player => {
+                Object.assign(player, playerInitialStats);
+            }));
+            state.faltas = { local: 0, rival: 0 };
+            state.matchStats = { local: { corners: 0 }, rival: { corners: 0 } };
+
+            state.matchEvents.forEach(e => {
+                const teamPStats = state.playerStats[e.team];
+                const pStats = teamPStats?.[e.player];
+                switch(e.type) {
+                    case 'goal': 
+                        if (teamPStats?.[e.goleador]) teamPStats[e.goleador].goles++; 
+                        if (e.asistente && teamPStats?.[e.asistente]) teamPStats[e.asistente].asistencias++; 
+                        break;
+                    case 'foul': if(pStats) { pStats.faltas++; state.faltas[e.team]++; } break;
+                    case 'yellow-card': if(pStats) pStats.amarillas++; break;
+                    case 'red-card': if(pStats) pStats.rojas++; break;
+                    case 'corner': if(state.matchStats[e.team]) state.matchStats[e.team].corners++; break;
+                }
+            });
+
+            Object.keys(state.playerStats).forEach(t => Object.keys(state.playerStats[t]).forEach(pName => {
+                const p = state.playerStats[t][pName];
+                if (p.rojas > 0 || p.amarillas >= 2) {
+                    p.expulsado = true;
+                }
+            }));
+            DOM.updateAll();
+        }
+    };
+
+    // --- 5. GESTIÓN DE EVENTOS DEL USUARIO (Lógica del ejemplo funcional) ---
+    const EventHandler = {
+        addEventListeners() {
+            DOM.cacheElements();
+            DOM.elements['start-config'].addEventListener('click', this.handleStartConfig);
+            DOM.elements.eventButtons.forEach(b => b.addEventListener('click', this.handleEventButtonClick));
+            DOM.elements['btn-half-time'].addEventListener('click', () => this.handleHalfTime(false));
+            DOM.elements['btn-start-second'].addEventListener('click', this.handleStartSecondHalf);
+            DOM.elements['btn-finish-game'].addEventListener('click', () => this.handleFinishGame(false));
+            DOM.elements['btn-reset-match'].addEventListener('click', this.handleResetMatch);
+            DOM.elements['btn-new-match'].addEventListener('click', this.handleNewMatch);
+            DOM.elements['btn-export-excel'].addEventListener('click', this.exportToCsv);
+            DOM.elements['btn-toggle-timer'].addEventListener('click', this.handleToggleTimer);
+            DOM.elements['event-flow-message'].addEventListener('click', () => this.endEventFlow(true));
+        },
+        // CORREGIDO: Flujo de inicio simplificado y robusto
+        handleStartConfig() {
+            AppState.init();
+            if (MatchLogic.initializeNewMatch()) {
+                MatchLogic.setInitialFormation();
+                DOM.showMatchUI();
+                DOM.setupBenchesAndPitch();
+                DOM.updateAll();
+                AppState.save();
+            }
+        },
+        handleToggleTimer() {
+            const state = AppState.get();
+            if (!state.matchEvents.some(e => e.type === 'init_match')) {
+                MatchLogic.addMatchEvent({ type: 'init_match', text: 'Inicio del partido.' });
+                MatchLogic.startTimer();
+            }
+        },
+        handleHalfTime(isAuto = false) {
+            MatchLogic.stopTimer();
+            const state = AppState.get();
+            if (!isAuto) {
+                const timeToAdd = AppConfig.HALF_TIME_SECONDS - state.matchTimer;
+                if (timeToAdd > 0) MatchLogic.adjustPlayerMinutes(timeToAdd);
+            }
+            state.matchTimer = AppConfig.HALF_TIME_SECONDS;
+            MatchLogic.addMatchEvent({ type: 'control', text: 'Descanso.' });
+            state.currentHalf = 2;
+            state.faltas = { local: 0, rival: 0 };
+            DOM.updateAll();
+        },
+        handleStartSecondHalf() {
+            MatchLogic.addMatchEvent({ type: 'control', text: 'Inicio de la segunda parte.' });
+            MatchLogic.startTimer();
+        },
+        handleFinishGame(isAuto = false) {
+            MatchLogic.stopTimer();
+            const state = AppState.get();
+            const fullTime = 2 * AppConfig.HALF_TIME_SECONDS;
+            if (!isAuto) {
+                const timeToAdd = fullTime - state.matchTimer;
+                if (timeToAdd > 0) MatchLogic.adjustPlayerMinutes(timeToAdd);
+            }
+            state.matchTimer = fullTime;
+            MatchLogic.addMatchEvent({ type: 'control', text: 'Final del partido.' });
+            DOM.updateAll();
+            DOM.elements['btn-export-excel'].classList.remove('hidden');
+        },
+        handleResetMatch() {
+            if (!confirm("¿Seguro que quieres reiniciar? Se perderán las estadísticas del partido actual.")) return;
+            MatchLogic.stopTimer();
+            const state = AppState.get();
+            const config = { localTeamName: state.localTeamName, rivalTeamName: state.rivalTeamName, localPlayers: state.localPlayers, rivalDorsals: state.rivalDorsals };
+            AppState.init();
+            Object.assign(AppState.get(), config);
+            MatchLogic.initializeStats();
+            MatchLogic.setInitialFormation();
+            DOM.setupBenchesAndPitch();
+            DOM.updateAll();
+            AppState.save();
+        },
+        handleNewMatch() {
+            if (confirm("¿Empezar un partido nuevo? Se perderá toda la configuración actual.")) {
+                localStorage.removeItem(AppConfig.APP_STATE_KEY);
+                location.reload();
+            }
+        },
+        handleEventButtonClick(e) {
+            const type = e.currentTarget.dataset.event;
+            if (type === 'corner') {
+                this.startTeamEventFlow(type);
+            } else {
+                this.startPlayerEventFlow(type);
+            }
+        },
+        startPlayerEventFlow(type) {
+            const state = AppState.get();
+            state.eventFlow = { active: true, type, step: 1 };
+            DOM.elements.main.classList.add('selecting-mode');
+            DOM.elements['pitch-section'].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            let prompt = `Selecciona el jugador`;
+            if (type === 'goal') prompt = "Selecciona al <strong>goleador</strong>";
+            if (type === 'foul') prompt = "Selecciona al <strong>infractor</strong>";
+            DOM.elements['event-flow-message'].innerHTML = `${prompt} <small>(clic aquí para cancelar)</small>`;
+            DOM.elements['event-flow-message'].classList.remove('hidden');
+        },
+        startTeamEventFlow(type) {
+            const state = AppState.get();
+            const typeText = { 'corner': 'Córner' }[type];
+            DOM.elements['modal-title'].innerHTML = `¿Para qué equipo es el ${typeText}?`;
+            const buttonsContainer = DOM.elements['modal-buttons'];
+            buttonsContainer.innerHTML = '';
+            
+            const btnLocal = document.createElement('button');
+            btnLocal.textContent = state.localTeamName;
+            btnLocal.className = 'btn-primary';
+            btnLocal.onclick = () => {
+                MatchLogic.addMatchEvent({ type, text: `${typeText} para <strong>${state.localTeamName}</strong>.`, team: 'local' });
+                this.endEventFlow();
+            };
+            
+            const btnRival = document.createElement('button');
+            btnRival.textContent = state.rivalTeamName;
+            btnRival.className = 'btn-danger';
+            btnRival.onclick = () => {
+                MatchLogic.addMatchEvent({ type, text: `${typeText} para <strong>${state.rivalTeamName}</strong>.`, team: 'rival' });
+                this.endEventFlow();
+            };
+
+            buttonsContainer.appendChild(btnLocal);
+            buttonsContainer.appendChild(btnRival);
+            DOM.elements['generic-modal'].classList.add('visible');
+        },
+        processEventSelection(chip) {
+            const state = AppState.get();
+            if (!state.eventFlow.active || chip.classList.contains('expulsado')) return;
+            const isCardEvent = state.eventFlow.type === 'yellow-card' || state.eventFlow.type === 'red-card';
+            if (!isCardEvent && !chip.classList.contains('chip-on-pitch')) return;
+
+            const { type, step } = state.eventFlow;
+            const { name, team } = chip.dataset;
+
+            if (type === 'goal' && step === 1) {
+                state.eventFlow = { ...state.eventFlow, step: 2, goleador: name, team };
+                DOM.elements['event-flow-message'].innerHTML = `GOL de <strong>${name}</strong>. Selecciona al <strong>asistente</strong> (o clic en el goleador si no hay).`;
+            } else if (type === 'goal' && step === 2) {
+                const { goleador, team: goalTeam } = state.eventFlow;
+                const asistente = (name !== goleador && team === goalTeam) ? name : null;
+                MatchLogic.addMatchEvent({ type, text: `GOL de <strong>${goleador}</strong>` + (asistente ? `. Asistencia de <strong>${asistente}</strong>` : '.'), team: goalTeam, goleador, asistente });
+                this.endEventFlow();
+            } else {
+                const eventMap = {'foul':'Falta','yellow-card':'Tarjeta Amarilla','red-card':'Tarjeta ROJA'};
+                MatchLogic.addMatchEvent({ type, text: `${eventMap[type]} de <strong>${name}</strong>.`, team, player: name });
+                this.endEventFlow();
+            }
+        },
+        endEventFlow(cancelled = false) {
+            DOM.elements.main.classList.remove('selecting-mode');
+            DOM.elements['event-flow-message'].classList.add('hidden');
+            DOM.elements['generic-modal'].classList.remove('visible');
+            AppState.get().eventFlow.active = false;
+            if (!cancelled) {
+                MatchLogic.recalculateMatchStateFromEvents();
+            }
+            AppState.save();
+        },
+        exportToCsv() {
+            const state = AppState.get();
+            let csv = `${state.localTeamName}\nJugador,G,A,Y,R,F,MIN\n`;
+            state.localPlayers.forEach(p => { const s = state.playerStats.local[p]; csv += [p, s.goles, s.asistencias, s.amarillas, s.rojas, s.faltas, MatchLogic.formatTime(s.minutosJugados)].join(",") + "\n"; });
+            csv += `\n${state.rivalTeamName}\nDorsal,G,A,Y,R,F,MIN\n`;
+            state.rivalDorsals.forEach(d => { const s = state.playerStats.rival[d]; csv += [d, s.goles, s.asistencias, s.amarillas, s.rojas, s.faltas, MatchLogic.formatTime(s.minutosJugados)].join(",") + "\n"; });
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(new Blob(["\uFEFF"+csv], {type:'text/csv;charset=utf-8;'}));
+            a.download = `estadisticas_futsal_${state.localTeamName}_vs_${state.rivalTeamName}.csv`; a.click();
+        },
+    };
+
+    // --- 6. LÓGICA DE DRAG & DROP (Estable y simplificada) ---
+    const DragAndDrop = {
+        draggedElement: null, isDragging: false, startX: 0, startY: 0,
+
+        start(e) {
+            const el = e.currentTarget;
+            if (AppState.get().eventFlow.active || el.classList.contains('expulsado')) return;
+            e.preventDefault();
+            this.draggedElement = el;
+            this.isDragging = false;
+            const pointer = e.touches ? e.touches[0] : e;
+            this.startX = pointer.clientX;
+            this.startY = pointer.clientY;
+            document.addEventListener(e.touches ? 'touchmove' : 'pointermove', this.move);
+            document.addEventListener(e.touches ? 'touchend' : 'pointerup', this.end);
+        },
+        move(e) {
+            if (!DragAndDrop.draggedElement) return;
+            e.preventDefault();
+            const pointer = e.touches ? e.touches[0] : e;
+            const dx = pointer.clientX - DragAndDrop.startX;
+            const dy = pointer.clientY - DragAndDrop.startY;
+            if (!DragAndDrop.isDragging && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
+                DragAndDrop.isDragging = true;
+                const rect = DragAndDrop.draggedElement.getBoundingClientRect();
+                document.body.appendChild(DragAndDrop.draggedElement);
+                DragAndDrop.draggedElement.classList.add('dragging');
+                DragAndDrop.draggedElement.style.left = `${rect.left}px`;
+                DragAndDrop.draggedElement.style.top = `${rect.top}px`;
+            }
+            if (DragAndDrop.isDragging) {
+                DragAndDrop.draggedElement.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
+            }
+        },
+        end(e) {
+            const wasDragging = DragAndDrop.isDragging;
+            document.removeEventListener(e.touches ? 'touchmove' : 'pointermove', DragAndDrop.move);
+            document.removeEventListener(e.touches ? 'touchend' : 'pointerup', DragAndDrop.end);
+            if (!DragAndDrop.draggedElement) return;
+            
+            if (wasDragging) {
+                const pointer = e.changedTouches ? e.changedTouches[0] : e;
+                DragAndDrop.draggedElement.style.display = 'none';
+                const dropTarget = document.elementFromPoint(pointer.clientX, pointer.clientY);
+                DragAndDrop.draggedElement.style.display = ''; 
+                DragAndDrop.executeDrop(dropTarget, pointer.clientX, pointer.clientY);
+            }
+            DragAndDrop.draggedElement.classList.remove('dragging');
+            DragAndDrop.draggedElement.style.transform = '';
+            DragAndDrop.draggedElement.style.left = '';
+            DragAndDrop.draggedElement.style.top = '';
+            DragAndDrop.draggedElement = null;
+            DragAndDrop.isDragging = false;
+            DOM.updateAll();
+            AppState.save();
+        },
+        executeDrop(target, clientX, clientY) {
+            const dragged = this.draggedElement;
+            const targetChip = target?.closest('.player-chip');
+            const targetZone = target?.closest('#futsal-pitch, .bench');
+            
+            if (targetChip && targetChip !== dragged && dragged.dataset.team === targetChip.dataset.team) {
+                this.handlePlayerSwap(dragged, targetChip);
+            } else if (targetZone?.id === 'futsal-pitch') {
+                this.placePlayerOnPitch(dragged, clientX, clientY);
+            } else if (targetZone?.id === `${dragged.dataset.team}-bench`) {
+                this.placePlayerOnBench(dragged);
+            }
+        },
+        placePlayerOnPitch(chip, clientX, clientY) {
+            const state = AppState.get();
+            const { name, team } = chip.dataset;
+            const stats = state.playerStats[team][name];
+            const teamPlayersOnPitch = Object.values(state.playerStats[team]).filter(p => p.onPitch).length;
+            
+            if (teamPlayersOnPitch >= AppConfig.MAX_PLAYERS_ON_PITCH && !stats.onPitch) {
+                alert(`Este equipo ya tiene ${AppConfig.MAX_PLAYERS_ON_PITCH} jugadores en el campo.`);
+                return;
+            }
+            const rect = DOM.elements['futsal-pitch'].getBoundingClientRect();
+            stats.position = { left: `${100 * (clientX - rect.left) / rect.width}%`, top: `${100 * (clientY - rect.top) / rect.height}%` };
+            stats.onPitch = true;
+        },
+        placePlayerOnBench(chip) {
+            const state = AppState.get();
+            const { name, team } = chip.dataset;
+            state.playerStats[team][name].onPitch = false;
+            state.playerStats[team][name].position = null;
+        },
+        handlePlayerSwap(chip1, chip2) {
+            const state = AppState.get();
+            const stats1 = state.playerStats[chip1.dataset.team][chip1.dataset.name];
+            const stats2 = state.playerStats[chip2.dataset.team][chip2.dataset.name];
+
+            if (stats1.onPitch && stats2.onPitch) {
+                const pos1 = stats1.position;
+                stats1.position = stats2.position;
+                stats2.position = pos1;
+            } else if (stats1.onPitch !== stats2.onPitch) {
+                const onPitchStats = stats1.onPitch ? stats1 : stats2;
+                const onBenchStats = stats1.onPitch ? stats2 : stats1;
+                const position = onPitchStats.position;
+
+                onPitchStats.onPitch = false;
+                onPitchStats.position = null;
+                onBenchStats.onPitch = true;
+                onBenchStats.position = position;
+
+                if (state.matchEvents.some(e => e.type === 'init_match')) {
+                    const nameIn = stats1.onPitch ? chip2.dataset.name : chip1.dataset.name;
+                    const nameOut = stats1.onPitch ? chip1.dataset.name : chip2.dataset.name;
+                    MatchLogic.addMatchEvent({ type: 'substitution', text: `Sustitución: Entra <strong>${nameIn}</strong>, sale <strong>${nameOut}</strong>.`, team: chip1.dataset.team });
+                }
+            }
+        }
+    };
+
+    // --- 7. INICIALIZACIÓN DE LA APLICACIÓN ---
+    document.addEventListener('DOMContentLoaded', () => {
+        DragAndDrop.move = DragAndDrop.move.bind(DragAndDrop);
+        DragAndDrop.end = DragAndDrop.end.bind(DragAndDrop);
+        EventHandler.addEventListeners();
+
+        if (AppState.load()) {
+            DOM.showMatchUI();
+            DOM.setupBenchesAndPitch();
+            DOM.updateAll();
+        } else {
+            AppState.init();
+        }
+    });
+</script>
+</body>
+</html>
