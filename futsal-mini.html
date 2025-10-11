@@ -62,6 +62,7 @@
         .btn-primary { background-color: var(--color-highlight); color: var(--color-monochrome); }
         .btn-secondary { background-color: var(--color-background-secondary); color: var(--color-text); border: 1px solid var(--color-text); }
         .btn-danger { background-color: var(--color-danger); color: var(--color-text); }
+        .btn-warning { background-color: var(--color-warning); color: var(--color-monochrome); }
         .btn-event { background-color: var(--color-background-secondary); color: var(--color-highlight); border: 2px solid var(--color-highlight); font-weight: bold; }
 
         #game-controls { padding-top: 5px; }
@@ -217,8 +218,8 @@
                 </div>
             </div>
             <div id="tiempo">
-                <button id="btn-toggle-timer" class="btn-primary">INICIAR PARTIDO</button>
-                <input type="text" id="minuto-actual" value="25:00" readonly>
+                <button id="btn-play-pause" class="btn-primary">INICIAR PARTIDO</button>
+                <input type="text" id="minuto-actual" value="25:00" readonly title="Haz clic para ajustar el tiempo (solo cuando está pausado)">
             </div>
         </header>
 
@@ -381,7 +382,6 @@
     const rivalNameInput = document.getElementById('rival-name');
     const localPlayersInput = document.getElementById('local-players');
     const rivalDorsalsInput = document.getElementById('rival-dorsals');
-    const btnToggleTimer = document.getElementById('btn-toggle-timer');
     const minutoActualInput = document.getElementById('minuto-actual');
     const pitch = document.getElementById('futsal-pitch');
     const localBench = document.getElementById('local-bench');
@@ -421,7 +421,11 @@
         document.getElementById('save-time-btn').addEventListener('click', handleSaveTimeEdit);
         
         eventFlowMessage.addEventListener('click', () => endEventFlow(true));
-        btnToggleTimer.addEventListener('click', handleToggleTimer);
+        
+        // MODIFICADO: Apuntamos al nuevo ID del botón y a la nueva función
+        document.getElementById('btn-play-pause').addEventListener('click', handlePlayPause); 
+        // NUEVO: Permite abrir el modal de edición de tiempo al hacer clic en el crono
+        minutoActualInput.addEventListener('click', openEditTimeModal); 
 
         window.addEventListener('beforeunload', () => {
             if (!isPrimaryTab || isNavigatingIntentionally) return;
@@ -483,14 +487,12 @@
         if (gameState.localPlayers.length < 5 || gameState.rivalDorsals.length < 5) return alert("Se necesitan al menos 5 jugadores/dorsales por equipo.");
         
         initializeStats();
-        // --- AJUSTE 1: Colocar la alineación inicial automáticamente ---
         placeInitialLineup();
 
         rebuildUIFromState();
         saveState();
     }
     
-    // --- AJUSTE 1: Nueva función para colocar 5 jugadores por equipo ---
     function placeInitialLineup() {
         const localPositions = [
             { left: '15%', top: '50%' }, // Cierre
@@ -599,6 +601,12 @@
         }
 
         gameState.isMatchRunning = true;
+        
+        const playPauseBtn = document.getElementById('btn-play-pause');
+        playPauseBtn.textContent = 'PAUSAR ⏸️';
+        playPauseBtn.classList.remove('btn-primary');
+        playPauseBtn.classList.add('btn-warning');
+
         updateButtonStates();
         
         gameState.timerInterval = setInterval(() => {
@@ -640,22 +648,31 @@
         clearInterval(gameState.timerInterval);
         gameState.timerInterval = null;
         gameState.timerLastUpdated = Date.now();
+
+        const playPauseBtn = document.getElementById('btn-play-pause');
+        playPauseBtn.textContent = 'REANUDAR ▶️';
+        playPauseBtn.classList.add('btn-primary');
+        playPauseBtn.classList.remove('btn-warning');
+
         updateButtonStates();
         updateStatsTables();
         saveState();
     }
     
-    function handleToggleTimer() {
-        if (gameState.isMatchRunning) return;
+    function handlePlayPause() {
+        const isFinished = gameState.matchEvents.some(e => e.text.includes('Final del partido'));
+        if (isFinished) return;
 
-        if (gameState.matchEvents.length === 0) {
-            addMatchEvent({ type: 'init_match', text: 'Inicio del partido.' });
-            document.getElementById('timeline-section').classList.remove('hidden');
-            // --- AJUSTE 2: Ocultar el botón de inicio después de pulsarlo ---
-            btnToggleTimer.classList.add('hidden');
+        if (gameState.isMatchRunning) {
+            pauseTimer();
+        } else {
+            if (gameState.matchEvents.length === 0) {
+                addMatchEvent({ type: 'init_match', text: 'Inicio del partido.' });
+                document.getElementById('timeline-section').classList.remove('hidden');
+            }
+            startTimer();
         }
-        startTimer();
-    };
+    }
     
     function handleVisibilityChange() {
         if (!isPrimaryTab) return;
@@ -720,7 +737,15 @@
     }
     
     function openEditTimeModal() {
-        if (gameState.isMatchRunning) return;
+        if (gameState.isMatchRunning) {
+            minutoActualInput.style.borderColor = 'var(--color-danger)';
+            minutoActualInput.style.transform = 'scale(1.05)';
+            setTimeout(() => {
+                minutoActualInput.style.borderColor = '';
+                minutoActualInput.style.transform = '';
+            }, 500);
+            return;
+        }
         const remainingSeconds = getRemainingSecondsInCurrentHalf(gameState.matchTimer);
         const mins = Math.floor(remainingSeconds / 60);
         const secs = remainingSeconds % 60;
@@ -805,10 +830,8 @@
         gameState = getInitialGameState();
         Object.assign(gameState, originalConfig);
         initializeStats();
-        placeInitialLineup(); // Volver a colocar jugadores
+        placeInitialLineup();
         rebuildUIFromState();
-        // --- AJUSTE 2: Asegurarse de que el botón de inicio reaparezca ---
-        btnToggleTimer.classList.remove('hidden');
         saveState();
     }
     
@@ -877,7 +900,6 @@
         Object.keys(gameState.playerStats).forEach(team => {
             Object.keys(gameState.playerStats[team]).forEach(playerName => {
                 const stats = gameState.playerStats[team][playerName];
-                // --- AJUSTE 1: Buscar la ficha tanto en el banquillo como en la cancha para reposicionar ---
                 const chip = document.querySelector(`.player-chip[data-name="${playerName}"][data-team="${team}"]`);
                 if (!chip) return;
                 
@@ -889,7 +911,6 @@
                     Object.assign(chip.style, { left: stats.position.left, top: stats.position.top, transform: 'translate(-50%, -50%)' });
                     pitch.appendChild(chip);
                 } else {
-                    // Si no está en la cancha, asegurarse de que esté en el banquillo correcto
                     const bench = team === 'local' ? localBench : rivalBench;
                     chip.className = `player-chip chip-${team} chip-on-bench`;
                     chip.style.cssText = '';
@@ -1032,7 +1053,30 @@
 
     // --- FIN DRAG AND DROP ---
     
-    function updateButtonStates() { const hasStarted = gameState.matchEvents.some(e => e.type === 'init_match'); const isFinished = gameState.matchEvents.some(e => e.text.includes('Final del partido')); btnToggleTimer.disabled = isFinished || gameState.isMatchRunning; document.getElementById('btn-half-time').disabled = !hasStarted || isFinished || gameState.currentHalf !== 1; document.getElementById('btn-start-second').disabled = !hasStarted || isFinished || gameState.currentHalf !== 2 || gameState.isMatchRunning; document.getElementById('btn-finish-game').disabled = !hasStarted || isFinished; document.querySelectorAll('.btn-event').forEach(b => b.disabled = !hasStarted || isFinished); }
+    function updateButtonStates() {
+        const hasStarted = gameState.matchEvents.some(e => e.type === 'init_match');
+        const isFinished = gameState.matchEvents.some(e => e.text.includes('Final del partido'));
+        const playPauseBtn = document.getElementById('btn-play-pause');
+
+        if (isFinished) {
+            playPauseBtn.textContent = 'FINALIZADO';
+            playPauseBtn.disabled = true;
+        } else if (!hasStarted) {
+            playPauseBtn.textContent = 'INICIAR PARTIDO';
+            playPauseBtn.disabled = false;
+        } else if (gameState.isMatchRunning) {
+            playPauseBtn.textContent = 'PAUSAR ⏸️';
+            playPauseBtn.disabled = false;
+        } else {
+            playPauseBtn.textContent = 'REANUDAR ▶️';
+            playPauseBtn.disabled = false;
+        }
+
+        document.getElementById('btn-half-time').disabled = !hasStarted || isFinished || gameState.currentHalf !== 1;
+        document.getElementById('btn-start-second').disabled = !hasStarted || isFinished || gameState.currentHalf !== 2 || gameState.isMatchRunning;
+        document.getElementById('btn-finish-game').disabled = !hasStarted || isFinished;
+        document.querySelectorAll('.btn-event').forEach(b => b.disabled = !hasStarted || isFinished);
+    }
     function checkPenalties() { let stateChanged = false; gameState.penalties.forEach(penalty => { if (penalty.active && gameState.matchTimer >= penalty.endTime) { penalty.active = false; showEventMessage(`El equipo ${penalty.team === 'local' ? gameState.localTeamName : gameState.rivalTeamName} ya puede alinear 5 jugadores.`); setTimeout(hideEventMessage, 4000); stateChanged = true; } }); if (stateChanged) saveState(); }
     function handleEventButtonClick(e) { if (gameState.matchEvents.length === 0 && !gameState.isMatchRunning) return alert("El partido debe estar en juego para registrar eventos."); const eventType = e.currentTarget.dataset.event; startEventFlow(eventType); }
     function startEventFlow(type) { gameState.eventFlowState = { active: true, type, step: 1, payload: {} }; mainContainer.classList.add('selecting-mode'); let message = "Haz clic en el jugador implicado"; if(type === 'goal') message = "Selecciona al <strong>goleador</strong>"; if(type === 'foul') message = "Selecciona al <strong>infractor</strong>"; showEventMessage(message + "<br><small>(Haz clic aquí para cancelar)</small>"); }
