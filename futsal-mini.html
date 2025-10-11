@@ -2,69 +2,89 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Futsal Táctico Interactivo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Futsal Táctico Interactivo (Versión Final)</title>
     
     <style>
         :root {
-            --color-background: #1a1a1a; --color-surface: #2c2c2c; --color-primary: #007bff;
-            --color-secondary: #6c757d; --color-success: #28a745; --color-danger: #d0021b;
-            --color-warning: #f5a623; --color-text: #f0f0f0; 
-            --color-pitch: #c49247; /* Color parquet */
-            --color-pitch-lines: rgba(255, 255, 255, 0.9);
+            --color-monochrome: #1c1c1c; 
+            --color-text: #f0f0f0; 
+            --color-highlight: #4a90e2; 
+            --color-success: #7ed321; 
+            --color-warning: #f5a623;
+            --color-danger: #d0021b; 
+            --color-background-secondary: #2c2c2c;
+            --color-pitch: #DEB887; 
         }
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         html, body {
-            width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-            background-color: var(--color-background); color: var(--color-text);
+            width: 100%; height: 100%; margin: 0; padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: var(--color-monochrome); color: var(--color-text);
             overscroll-behavior: none;
-            scroll-behavior: smooth;
         }
         main { padding: 10px; max-width: 900px; margin: 0 auto; }
-        section {
-            background-color: var(--color-surface); padding: 15px; border-radius: 10px; margin-bottom: 15px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        h2 { font-size: 1.4em; border-bottom: 2px solid var(--color-primary); padding-bottom: 10px; margin-bottom: 15px; }
-        #app-header { display: none; text-align: center; }
+        section { background-color: var(--color-background-secondary); padding: 15px; border-radius: 10px; margin-bottom: 15px; }
+        
+        #app-header { display: none; text-align: center; margin-bottom: 15px; }
+        
         #marcador {
-            font-size: 2em; font-weight: bold; display: flex; align-items: center; justify-content: space-between;
-            gap: 15px; background: rgba(0,0,0,0.2); padding: 10px 20px; border-radius: 8px;
+            font-size: 1.8em; font-weight: bold; color: var(--color-success);
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 10px; flex-wrap: nowrap;
         }
         .team-info { flex: 1; display: flex; align-items: center; gap: 10px; }
-        .team-info.local { justify-content: flex-end; } .team-info.rival { justify-content: flex-start; }
+        .team-info.local { justify-content: flex-end; }
+        .team-info.rival { justify-content: flex-start; }
+        .score-display { flex-shrink: 0; }
         .foul-counter {
-             font-size: 0.7em; background-color: #333; color: var(--color-text);
-             width: 28px; height: 28px; border-radius: 50%;
-             display: inline-flex; align-items: center; justify-content: center;
-             border: 2px solid #555; font-weight: bold;
+            font-size: 0.7em; background-color: #333; color: var(--color-text);
+            width: 28px; height: 28px; border-radius: 50%;
+            display: inline-flex; align-items: center; justify-content: center;
+            border: 2px solid #555; font-weight: bold;
         }
         .foul-warning { background-color: var(--color-danger); border-color: white; }
+        .btn-add-foul {
+            background: none; border: 1px solid var(--color-text);
+            color: var(--color-text); border-radius: 50%; width: 28px; height: 28px;
+            padding: 0; font-size: 1.4em; min-width: 28px;
+            display: inline-flex; align-items: center; justify-content: center; line-height: 1;
+        }
 
         #tiempo { display: flex; align-items: center; justify-content: center; margin-top: 15px; gap: 10px; }
         #minuto-actual { 
-            font-size: 1.3em; font-weight: bold; background: #111; border: 1px solid #555; 
-            padding: 8px 12px; border-radius: 6px; width: 90px; text-align: center;
+            font-size: 1.2em; font-weight: bold; background: #333; border: 1px solid #555; 
+            padding: 5px 10px; border-radius: 4px; width: 80px; text-align: center;
+            transition: all 0.2s;
         }
-        button {
-            padding: 12px 18px; border: none; border-radius: 8px; font-size: 1em; cursor: pointer;
-            font-weight: bold; transition: all 0.2s ease; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        }
-        button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
-        button:active:not(:disabled) { transform: translateY(0); }
-        button:disabled { background-color: #444 !important; color: #888 !important; cursor: not-allowed; opacity: 0.7; border-color: #444 !important; }
-        .btn-primary { background: linear-gradient(145deg, var(--color-primary), #0056b3); color: white; }
-        .btn-secondary { background: var(--color-secondary); color: white; }
-        .btn-danger { background: linear-gradient(145deg, var(--color-danger), #a71d2a); color: white; }
-        .btn-event { background-color: transparent; color: var(--color-warning); border: 2px solid var(--color-warning); }
-        .control-group, .event-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-top: 15px; }
-        label { display: block; margin-top: 15px; margin-bottom: 5px; font-weight: bold; }
-        input, textarea, select { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #555; background-color: #333; color: var(--color-text); border-radius: 6px; font-size: 1em; }
+
+        button { padding: 12px; border: none; border-radius: 8px; font-size: 1em; cursor: pointer; transition: background-color 0.2s; }
+        button:disabled { background-color: #555 !important; color: #999; cursor: not-allowed; }
+        .btn-primary { background-color: var(--color-highlight); color: var(--color-monochrome); }
+        .btn-secondary { background-color: var(--color-background-secondary); color: var(--color-text); border: 1px solid var(--color-text); }
+        .btn-danger { background-color: var(--color-danger); color: var(--color-text); }
+        .btn-event { background-color: var(--color-background-secondary); color: var(--color-highlight); border: 2px solid var(--color-highlight); font-weight: bold; }
+
+        #game-controls { padding-top: 5px; }
+        .control-group, .event-group { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; }
+        .event-group button { flex: 1 1 calc(25% - 10px); }
+        .control-group button { flex: 1 1 auto; }
+
+        label { display: block; margin-top: 10px; margin-bottom: 5px; font-weight: bold; }
+        input[type="text"], input[type="number"], textarea, select { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #444; background-color: #333; color: var(--color-text); border-radius: 5px; box-sizing: border-box; }
+
         #pitch-section { position: relative; }
-        #event-flow-message { position: absolute; top: 10px; left: 50%; width: 90%; max-width: 400px; transform: translateX(-50%); background-color: rgba(0,0,0,0.9); color: white; padding: 12px 22px; border-radius: 25px; z-index: 1001; font-size: 1em; border: 1px solid var(--color-primary); box-shadow: 0 4px 8px rgba(0,0,0,0.5); text-align: center; cursor: pointer; }
+        #event-flow-message {
+            position: absolute; top: 10px; left: 50%; width: 90%; max-width: 350px;
+            transform: translateX(-50%); background-color: rgba(0, 0, 0, 0.9);
+            color: white; padding: 12px 22px; border-radius: 25px; z-index: 1001;
+            font-size: 1em; border: 1px solid var(--color-highlight);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5); text-align: center;
+            cursor: pointer;
+        }
         .selecting-mode { cursor: crosshair !important; }
-        #futsal-pitch { position: relative; width: 100%; aspect-ratio: 40 / 20; }
-        #futsal-pitch-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+        #futsal-pitch { position: relative; width: 100%; aspect-ratio: 2 / 1; }
+        #futsal-pitch-svg { width: 100%; height: 100%; }
         #bench-container { display: flex; margin-top: 10px; gap: 10px; }
         .bench {
             width: 50%; min-height: 90px; border: 2px dashed #444;
@@ -73,73 +93,118 @@
         }
 
         .player-chip {
-            width: 40px; height: 40px; font-size: 14px;
-            border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center;
-            font-weight: bold; cursor: grab; user-select: none; border: 2px solid white;
-            box-shadow: 0 3px 6px rgba(0,0,0,0.5);
-            position: relative; 
-            touch-action: none;
+            width: 45px; height: 45px; border-radius: 50%; color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 14px; cursor: grab; user-select: none;
+            border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            transition: opacity 0.2s, transform 0.2s, border 0.2s, filter 0.3s;
         }
-        .chip-local { background-color: var(--color-primary); }
+        .chip-local { background-color: var(--color-highlight); }
         .chip-rival { background-color: var(--color-danger); }
         .chip-on-bench { position: static; }
-        .chip-on-pitch { 
-            position: absolute; 
-            z-index: 10; 
-            transform: translate(-50%,-50%); 
-        }
-        
-        .dragging {
-            cursor: grabbing; 
-            opacity: 0.7; 
-            z-index: 1000 !important;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.6) !important;
-            transition: none !important;
-            position: fixed !important; 
-        }
-
+        .chip-on-pitch { position: absolute; z-index: 10; }
+        .dragging { opacity: 0.7; cursor: grabbing; box-shadow: 0 5px 15px rgba(0,0,0,0.8); transform: scale(1.1); z-index: 1000; }
+        .drop-target { border: 3px dashed var(--color-success); transform: scale(1.1); }
         .expulsado { filter: grayscale(100%); cursor: not-allowed !important; opacity: 0.6; }
-        
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; table-layout: fixed; }
-        th, td { padding: 8px; text-align: center; border-bottom: 1px solid #444; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        table { 
+            width: 100%; border-collapse: collapse; margin-top: 10px; 
+            font-size: 0.9em; table-layout: fixed;
+        }
+        th, td { 
+            padding: 8px; text-align: center; border-bottom: 1px solid #444; 
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        th:first-child, td:first-child { 
+            width: 35%; text-align: left;
+        }
         .player-on-pitch { background-color: rgba(74, 144, 226, 0.2); font-weight: bold; }
         
-        .modal { z-index: 2000; display: none; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); }
-        .modal.visible { display: flex; }
-        .modal-content { background: var(--color-surface); box-shadow: 0 5px 15px rgba(0,0,0,0.5); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 20px; width: 90%; max-width: 400px; }
-        #modal-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+        #timeline-section { border-left: 3px solid var(--color-highlight); }
+        #event-timeline { max-height: 300px; overflow-y: auto; padding-left: 15px;}
+        .timeline-event { margin-bottom: 10px; font-size: 0.9em; display: flex; align-items: center; justify-content: space-between; }
+        .timeline-event-main { display: flex; align-items: center; }
+        .timeline-event .event-icon { margin-right: 10px; font-size: 1.2em; }
+        .timeline-event strong { color: var(--color-success); }
+        .timeline-event-actions button { background: none; border: none; cursor: pointer; padding: 2px 5px; font-size: 1.2em; color: var(--color-text); }
         
-        .hidden { display: none !important; }
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 100;
+            background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background: var(--color-background-secondary); padding: 20px;
+            border-radius: 10px; width: 90%; max-width: 400px;
+        }
+        .modal-content .close-btn { float: right; font-size: 1.5em; cursor: pointer; }
+        .time-edit-container { display: flex; gap: 10px; align-items: center; justify-content: center; margin: 20px 0; }
+        .time-edit-container input { text-align: center; font-size: 1.5em; width: 80px; }
+        .time-edit-container span { font-size: 1.5em; }
 
+        .hidden { display: none !important; }
+        
+        #tab-blocker {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            z-index: 2000;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            text-align: center; padding: 20px; box-sizing: border-box;
+        }
+        #tab-blocker h2 { color: var(--color-warning); }
+        
         @media (max-width: 768px) {
             main { padding: 5px; }
             section { padding: 10px; }
-            .bench { width: 100%; }
+            h2 { font-size: 1.2em; }
             #bench-container { flex-direction: column; }
+            .bench { width: auto; min-height: 60px; }
             .player-chip { width: 38px; height: 38px; font-size: 11px; }
+            .control-group button, .event-group button { padding: 10px; font-size: 0.9em; }
+            table { font-size: 0.8em; }
+            th, td { padding: 5px 3px; }
             #marcador { font-size: 1.4em; }
+            .foul-counter, .btn-add-foul { width: 24px; height: 24px; min-width: 24px; }
+            
+            th:first-child, td:first-child { 
+                width: 30% !important;
+                text-align: left;
+            }
+            th:last-child, td:last-child {
+                width: 15%;
+                min-width: 48px;
+                max-width: 55px; 
+            }
         }
     </style>
 </head>
 <body>
+    <div id="tab-blocker" class="hidden">
+        <h2>Pestaña Bloqueada</h2>
+        <p>La aplicación ya está abierta en otra pestaña.</p>
+        <p>Para evitar conflictos de datos, solo puedes tener una sesión activa. Por favor, cierra esta pestaña o la otra.</p>
+    </div>
+
     <main>
         <section id="config-section">
-            <h2>Configuración del Partido de Futsal</h2>
+            <h2>Configuración del Partido</h2>
             <label for="local-name-input">Nombre Equipo Local:</label>
-            <input type="text" id="local-name-input" value="Equipo Local">
+            <input type="text" id="local-name-input" value="Athletic Club Móstoles">
             <label for="rival-name">Nombre Rival:</label>
-            <input type="text" id="rival-name" value="Equipo Rival">
-            <label for="local-players">Jugadores Locales (nombres/dorsales separados por coma):</label>
-            <textarea id="local-players" rows="3">1,2,3,4,5,6,7,8,9,10,11,12</textarea>
+            <input type="text" id="rival-name">
+            <label for="local-players">Jugadores Locales (separados por coma):</label>
+            <textarea id="local-players" rows="3"></textarea>
             <label for="rival-dorsals">Dorsales Rivales (separados por coma):</label>
-            <textarea id="rival-dorsals" rows="3">1,2,3,4,5,6,7,8,9,10,11,12</textarea>
+            <input type="text" id="rival-dorsals">
             <button id="start-config" class="btn-primary">Guardar y Preparar Pizarra</button>
         </section>
 
         <header id="app-header">
+            <h1>Gestión de Partido</h1>
             <div id="marcador">
                 <div class="team-info local">
                     <span id="local-name">Local</span>
+                    <button id="local-add-foul" class="btn-add-foul">+</button>
                     <div id="local-foul-counter" class="foul-counter">0</div>
                 </div>
                 <div class="score-display">
@@ -147,11 +212,12 @@
                 </div>
                 <div class="team-info rival">
                     <div id="rival-foul-counter" class="foul-counter">0</div>
+                    <button id="rival-add-foul" class="btn-add-foul">+</button>
                     <span id="rival-name-display">Rival</span>
                 </div>
             </div>
             <div id="tiempo">
-                <button id="btn-toggle-timer" class="btn-primary" disabled>Coloca los jugadores</button>
+                <button id="btn-toggle-timer" class="btn-primary">INICIAR PARTIDO</button>
                 <input type="text" id="minuto-actual" value="25:00" readonly>
             </div>
         </header>
@@ -161,11 +227,11 @@
             <div id="event-flow-message" class="hidden"></div>
             <div id="futsal-pitch">
                 <svg id="futsal-pitch-svg" viewBox="0 0 800 400" preserveAspectRatio="xMidYMid meet">
-                    <rect width="800" height="400" fill="var(--color-pitch)" stroke="var(--color-pitch-lines)" stroke-width="3"/>
-                    <line x1="400" y1="0" x2="400" y2="400" stroke="var(--color-pitch-lines)" stroke-width="3"/>
-                    <circle cx="400" cy="200" r="60" stroke="var(--color-pitch-lines)" stroke-width="3" fill="none"/>
-                    <path d="M 0 100 A 120 120 0 0 1 0 300" stroke="var(--color-pitch-lines)" stroke-width="3" fill="none"/>
-                    <path d="M 800 100 A 120 120 0 0 0 800 300" stroke="var(--color-pitch-lines)" stroke-width="3" fill="none"/>
+                    <rect width="800" height="400" fill="var(--color-pitch)" stroke="white" stroke-width="3"/>
+                    <line x1="400" y1="0" x2="400" y2="400" stroke="white" stroke-width="3"/>
+                    <circle cx="400" cy="200" r="60" stroke="white" stroke-width="3" fill="none"/>
+                    <path d="M 0 100 A 120 120 0 0 1 0 300" stroke="white" stroke-width="3" fill="none"/>
+                    <path d="M 800 100 A 120 120 0 0 0 800 300" stroke="white" stroke-width="3" fill="none"/>
                 </svg>
             </div>
             <div id="bench-container">
@@ -179,12 +245,11 @@
                 <button id="btn-half-time" class="btn-secondary" disabled>Descanso</button>
                 <button id="btn-start-second" class="btn-secondary" disabled>Inicio 2ª</button>
                 <button id="btn-finish-game" class="btn-danger" disabled>Finalizar</button>
-                <button id="btn-reset-match" class="btn-secondary">Reiniciar</button>
+                <button id="btn-reset-match" class="btn-secondary">Reiniciar</button> 
                 <button id="btn-new-match" class="btn-secondary">Nuevo Partido</button>
             </div>
             <div class="event-group">
                 <button class="btn-event" data-event="goal">GOL ⚽</button>
-                <button class="btn-event" data-event="corner">CÓRNER ⛳</button>
                 <button class="btn-event" data-event="yellow-card">AMARILLA 🟨</button>
                 <button class="btn-event" data-event="red-card">ROJA 🟥</button>
                 <button class="btn-event" data-event="foul">FALTA ✋</button>
@@ -205,7 +270,7 @@
                 </thead>
                 <tbody></tbody>
             </table>
-            <h3 id="rival-stats-title" style="margin-top: 20px;">Rival</h3>
+            <h3 id="rival-stats-title">Rival</h3>
             <table id="rival-stats-table">
                 <thead>
                     <tr><th>Dorsal</th><th>G</th><th>A</th><th>🟨</th><th>🟥</th><th>F</th><th>MIN</th></tr>
@@ -215,693 +280,823 @@
             <button id="btn-export-excel" class="btn-primary hidden" style="margin-top: 20px;">Exportar a Excel</button>
         </section>
         
-        <div id="generic-modal" class="modal">
+        <div id="edit-event-modal" class="modal hidden">
             <div class="modal-content">
-                <h3 id="modal-title"></h3>
-                <div id="modal-buttons"></div>
+                <span class="close-btn">&times;</span>
+                <h3 id="edit-modal-title">Editar Evento</h3>
+                <form id="edit-event-form">
+                    <label for="edit-event-minute">Minuto:</label>
+                    <input type="number" id="edit-event-minute" min="0" max="50" required>
+                    <div id="edit-event-players"></div>
+                    <button type="submit" class="btn-primary">Guardar Cambios</button>
+                </form>
+            </div>
+        </div>
+
+        <div id="edit-time-modal" class="modal hidden">
+            <div class="modal-content">
+                <span class="close-btn">&times;</span>
+                <h3>Ajustar Tiempo (Cuenta atrás de la mitad actual)</h3>
+                <div class="time-edit-container">
+                    <input type="number" id="edit-time-minutes" min="0" max="50">
+                    <span>:</span>
+                    <input type="number" id="edit-time-seconds" min="0" max="59">
+                </div>
+                <button id="save-time-btn" class="btn-primary" style="width: 100%;">Guardar</button>
             </div>
         </div>
     </main>
 
 <script>
-    'use strict';
+    // --- BLOQUE DE CADUCIDAD ---
+    const fechaDeCaducidad = new Date('2026-10-07'); 
+    if (new Date() > fechaDeCaducidad) {
+        document.body.innerHTML = `<div style="text-align: center; padding: 50px; font-family: sans-serif; color: #f0f0f0;"><h1>Versión de prueba expirada</h1><p>Por favor, contacta con el creador para más información.</p></div>`;
+        throw new Error("La versión de prueba ha expirado.");
+    }
     
-    // --- 1. CONFIGURACIÓN Y CONSTANTES GLOBALES ---
-    const AppConfig = {
-        HALF_TIME_SECONDS: 25 * 60,
-        MAX_PLAYERS_ON_PITCH: 5,
-        MAX_FOULS: 5,
-        APP_STATE_KEY: 'futsalTacticoState_v12_stable'
-    };
+    // --- GESTOR DE PESTAÑAS ---
+    const TAB_ID = Date.now().toString();
+    const PRIMARY_TAB_KEY = 'futsal_primary_tab';
+    const HEARTBEAT_KEY = 'futsal_heartbeat';
+    let isPrimaryTab = false;
+    let heartbeatInterval = null;
 
-    // --- 2. GESTIÓN DEL ESTADO DE LA APLICACIÓN ---
-    const AppState = {
-        _state: {},
-        getInitial() {
-            return {
-                localTeamName: 'Local', rivalTeamName: 'Rival', localPlayers: [], rivalDorsals: [],
-                playerStats: { local: {}, rival: {} },
-                matchStats: { local: { corners: 0 }, rival: { corners: 0 } },
-                faltas: { local: 0, rival: 0 },
-                matchTimer: 0, currentHalf: 1, isMatchRunning: false, timerWorker: null, 
-                matchEvents: [], eventFlow: { active: false }
-            };
-        },
-        init() { this._state = this.getInitial(); },
-        load() {
-            const savedStateJSON = localStorage.getItem(AppConfig.APP_STATE_KEY);
-            if (!savedStateJSON) return false;
-            try {
-                const loadedState = JSON.parse(savedStateJSON);
-                delete loadedState.timerWorker;
-                this._state = { ...this.getInitial(), ...loadedState };
-                return true;
-            } catch (e) {
-                console.error("Error al cargar estado, reseteando.", e);
-                localStorage.removeItem(AppConfig.APP_STATE_KEY);
-                return false;
-            }
-        },
-        save() { 
-            const stateToSave = {...this._state};
-            delete stateToSave.timerWorker;
-            localStorage.setItem(AppConfig.APP_STATE_KEY, JSON.stringify(stateToSave)); 
-        },
-        get() { return this._state; },
-    };
-
-    // --- 3. MANIPULACIÓN DEL DOM Y ACTUALIZACIONES DE UI ---
-    const DOM = {
-        elements: {},
-        cacheElements() {
-            const ids = [
-                'config-section', 'app-header', 'pitch-section', 'game-controls', 'timeline-section',
-                'stats-section', 'local-name-input', 'rival-name',
-                'local-players', 'rival-dorsals', 'start-config', 'btn-toggle-timer', 'minuto-actual',
-                'futsal-pitch', 'local-bench', 'rival-bench', 'event-timeline', 
-                'event-flow-message', 'btn-half-time', 'btn-start-second', 'btn-finish-game', 
-                'btn-reset-match', 'btn-new-match', 'btn-export-excel', 
-                'local-name', 'rival-name-display', 'local-score', 'rival-score',
-                'local-foul-counter', 'rival-foul-counter',
-                'local-stats-title', 'rival-stats-title', 'local-stats-table', 'rival-stats-table',
-                'generic-modal', 'modal-title', 'modal-buttons'
-            ];
-            ids.forEach(id => this.elements[id] = document.getElementById(id));
-            this.elements.main = document.querySelector('main');
-            this.elements.eventButtons = document.querySelectorAll('.btn-event');
-        },
-        showMatchUI() {
-            this.elements['config-section'].classList.add('hidden');
-            this.elements['app-header'].style.display = 'block';
-            ['pitch-section', 'game-controls', 'timeline-section', 'stats-section']
-                .forEach(id => this.elements[id].classList.remove('hidden'));
-        },
-        updateAll() {
-            const state = AppState.get();
-            this.elements['local-name'].textContent = state.localTeamName;
-            this.elements['rival-name-display'].textContent = state.rivalTeamName;
-            this.elements['local-stats-title'].textContent = state.localTeamName;
-            this.elements['rival-stats-title'].textContent = state.rivalTeamName;
-            this.elements['minuto-actual'].value = MatchLogic.formatTimeCountdown(state.matchTimer);
-            this.updateButtonStates();
-            this.updateScoreboard();
-            this.updatePlayerChips();
-            this.updateStatsTables();
-            this.updateFoulCounters();
-            this.renderTimeline();
-            this.updateDocumentTitle();
-        },
-        // CORREGIDO: Función que crea los chips y los pone en su sitio correcto desde el principio.
-        setupBenchesAndPitch() {
-            const state = AppState.get();
-            this.elements['local-bench'].innerHTML = ''; 
-            this.elements['rival-bench'].innerHTML = '';
-            this.elements['futsal-pitch'].querySelectorAll('.player-chip').forEach(chip => chip.remove());
-
-            const placeChips = (players, team) => {
-                players.forEach(name => {
-                    const chip = this.createChip(name, team);
-                    const stats = state.playerStats[team][name];
-                    if (stats.onPitch) {
-                        this.elements['futsal-pitch'].appendChild(chip);
-                    } else {
-                        this.elements[`${team}-bench`].appendChild(chip);
-                    }
-                });
-            };
-
-            placeChips(state.localPlayers, 'local');
-            placeChips(state.rivalDorsals, 'rival');
-        },
-        createChip(name, team) {
-            const chip = document.createElement('div');
-            chip.className = `player-chip chip-${team}`;
-            chip.textContent = name;
-            chip.dataset.name = name;
-            chip.dataset.team = team;
-            chip.addEventListener('pointerdown', DragAndDrop.start);
-            chip.addEventListener('click', () => {
-                if (AppState.get().eventFlow.active) EventHandler.processEventSelection(chip);
-            });
-            return chip;
-        },
-        updatePlayerChips() {
-            const state = AppState.get();
-            Object.keys(state.playerStats).forEach(team => {
-                Object.keys(state.playerStats[team]).forEach(playerName => {
-                    const stats = state.playerStats[team][playerName];
-                    const chip = document.querySelector(`.player-chip[data-name="${playerName}"][data-team="${team}"]`);
-                    if (!chip) return;
-                    chip.classList.toggle('expulsado', stats.expulsado);
-                    const targetParent = stats.onPitch ? this.elements['futsal-pitch'] : this.elements[`${team}-bench`];
-                    
-                    if (chip.parentElement !== targetParent) {
-                        targetParent.appendChild(chip);
-                    }
-
-                    chip.className = `player-chip chip-${team}`; // Reset classes
-                    if (stats.onPitch) {
-                        chip.classList.add('chip-on-pitch');
-                        chip.style.left = stats.position.left;
-                        chip.style.top = stats.position.top;
-                        chip.style.transform = 'translate(-50%, -50%)';
-                    } else {
-                        chip.classList.add('chip-on-bench');
-                        chip.style.left = '';
-                        chip.style.top = '';
-                        chip.style.transform = '';
-                    }
-                    if (stats.expulsado) chip.classList.add('expulsado');
-                });
-            });
-        },
-        updateScoreboard() {
-            const state = AppState.get();
-            let localScore = 0, rivalScore = 0;
-            Object.values(state.playerStats.local).forEach(s => localScore += s.goles);
-            Object.values(state.playerStats.rival).forEach(s => rivalScore += s.goles);
-            this.elements['local-score'].textContent = localScore;
-            this.elements['rival-score'].textContent = rivalScore;
-        },
-        updateFoulCounters() {
-            const { local, rival } = AppState.get().faltas;
-            const localCounter = this.elements['local-foul-counter'];
-            const rivalCounter = this.elements['rival-foul-counter'];
-            localCounter.textContent = local;
-            rivalCounter.textContent = rival;
-            localCounter.classList.toggle('foul-warning', local >= AppConfig.MAX_FOULS);
-            rivalCounter.classList.toggle('foul-warning', rival >= AppConfig.MAX_FOULS);
-        },
-        updateButtonStates() {
-            const state = AppState.get();
-            const hasStarted = state.matchEvents.some(e => e.type === 'init_match');
-            const isFinished = state.matchEvents.some(e => e.text.includes('Final'));
-            
-            if (hasStarted) {
-                this.elements['btn-toggle-timer'].disabled = true;
-                this.elements['btn-toggle-timer'].textContent = isFinished ? "Finalizado" : "En Juego";
-            } else {
-                const localOnPitch = Object.values(state.playerStats.local).filter(p => p.onPitch).length;
-                const rivalOnPitch = Object.values(state.playerStats.rival).filter(p => p.onPitch).length;
-                if (localOnPitch === AppConfig.MAX_PLAYERS_ON_PITCH && rivalOnPitch === AppConfig.MAX_PLAYERS_ON_PITCH) {
-                    this.elements['btn-toggle-timer'].disabled = false;
-                    this.elements['btn-toggle-timer'].textContent = "INICIAR PARTIDO";
-                } else {
-                    this.elements['btn-toggle-timer'].disabled = true;
-                    this.elements['btn-toggle-timer'].textContent = `Coloca ${AppConfig.MAX_PLAYERS_ON_PITCH} jugadores`;
-                }
-            }
-
-            this.elements['btn-half-time'].disabled = !hasStarted || isFinished || state.currentHalf !== 1 || !state.isMatchRunning;
-            this.elements['btn-start-second'].disabled = !hasStarted || isFinished || state.currentHalf !== 2 || state.isMatchRunning;
-            this.elements['btn-finish-game'].disabled = !hasStarted || isFinished;
-            this.elements.eventButtons.forEach(b => b.disabled = !state.isMatchRunning || isFinished);
-        },
-        renderTimeline() {
-            const state = AppState.get();
-            this.elements['timeline-section'].classList.toggle('hidden', state.matchEvents.length === 0);
-            this.elements['event-timeline'].innerHTML = '';
-            state.matchEvents.slice().reverse().forEach(event => {
-                let icon = '';
-                switch(event.type) {
-                    case 'init_match': case 'control': icon = '▶️'; break;
-                    case 'goal': icon = '⚽'; break;
-                    case 'substitution': icon = '🔄'; break;
-                    case 'yellow-card': icon = '🟨'; break;
-                    case 'red-card': icon = '🟥'; break;
-                    case 'foul': icon = '✋'; break;
-                    case 'corner': icon = '⛳'; break;
-                }
-                const eventEl = document.createElement('div');
-                eventEl.classList.add('timeline-event');
-                eventEl.innerHTML = `<div class="timeline-event-main"><span class="event-icon">${icon}</span> <div><strong>Min ${event.minute}':</strong> ${event.text}</div></div>`;
-                this.elements['event-timeline'].appendChild(eventEl);
-            });
-        },
-        updateStatsTables() {
-            const state = AppState.get();
-            const createRow = (name, stats) => {
-                const row = document.createElement('tr');
-                row.innerHTML = `<td>${name}</td><td>${stats.goles}</td><td>${stats.asistencias}</td><td>${stats.amarillas}</td><td>${stats.rojas}</td><td>${stats.faltas}</td><td>${MatchLogic.formatTime(stats.minutosJugados)}</td>`;
-                if (stats.onPitch) row.classList.add('player-on-pitch');
-                return row;
-            };
-            const localTbody = this.elements['local-stats-table'].querySelector('tbody');
-            const rivalTbody = this.elements['rival-stats-table'].querySelector('tbody');
-            localTbody.innerHTML = '';
-            rivalTbody.innerHTML = '';
-            state.localPlayers.forEach(name => localTbody.appendChild(createRow(name, state.playerStats.local[name] || {})));
-            state.rivalDorsals.forEach(name => rivalTbody.appendChild(createRow(name, state.playerStats.rival[name] || {})));
-        },
-        updateDocumentTitle() {
-            const state = AppState.get();
-            const time = MatchLogic.formatTimeCountdown(state.matchTimer);
-            const score = `${this.elements['local-score'].textContent}-${this.elements['rival-score'].textContent}`;
-            let prefix = 'Futsal Táctico';
-            if (state.matchEvents.some(e => e.text.includes('Final'))) {
-                prefix = 'FINAL';
-            } else if (state.currentHalf === 2 && !state.isMatchRunning && state.matchEvents.some(e => e.text.includes('Descanso'))) {
-                prefix = 'DESCANSO';
-            } else if (state.isMatchRunning) {
-                prefix = time;
-            }
-            document.title = `${prefix} | ${state.localTeamName} ${score} ${state.rivalTeamName}`;
-        },
-    };
-
-    // --- 4. LÓGICA DEL PARTIDO ---
-    const MatchLogic = {
-        formatTime: (s) => `${Math.floor(s/60).toString().padStart(2,"0")}:${(s%60).toString().padStart(2,"0")}`,
-        formatTimeCountdown(totalSeconds) { 
-            const state = AppState.get();
-            const halfProgress = state.currentHalf === 1 ? totalSeconds : totalSeconds - AppConfig.HALF_TIME_SECONDS;
-            const remainingSeconds = AppConfig.HALF_TIME_SECONDS - halfProgress;
-            const displaySeconds = Math.max(0, remainingSeconds);
-            return this.formatTime(displaySeconds);
-        },
-        initializeNewMatch() {
-            const state = AppState.get();
-            state.localTeamName = DOM.elements['local-name-input'].value.trim() || 'Local';
-            state.rivalTeamName = DOM.elements['rival-name'].value.trim() || 'Rival';
-            state.localPlayers = DOM.elements['local-players'].value.split(',').map(s => s.trim()).filter(Boolean);
-            state.rivalDorsals = DOM.elements['rival-dorsals'].value.split(',').map(s => s.trim()).filter(Boolean);
-            if (state.localPlayers.length < AppConfig.MAX_PLAYERS_ON_PITCH || state.rivalDorsals.length < AppConfig.MAX_PLAYERS_ON_PITCH) {
-                alert(`Se necesitan al menos ${AppConfig.MAX_PLAYERS_ON_PITCH} jugadores por equipo.`);
-                return false;
-            }
-            this.initializeStats();
-            return true;
-        },
-        initializeStats() {
-            const state = AppState.get();
-            state.playerStats = { local: {}, rival: {} };
-            const initialStats = { onPitch: false, goles: 0, asistencias: 0, amarillas: 0, rojas: 0, faltas: 0, minutosJugados: 0, expulsado: false, position: null };
-            state.localPlayers.forEach(p => state.playerStats.local[p] = { ...initialStats });
-            state.rivalDorsals.forEach(d => state.playerStats.rival[d] = { ...initialStats });
-        },
-        setInitialFormation() {
-            const state = AppState.get();
-            const localFormation = [{left:'10%',top:'50%'}, {left:'25%',top:'30%'}, {left:'25%',top:'70%'}, {left:'40%',top:'30%'}, {left:'40%',top:'70%'}];
-            const rivalFormation = [{left:'90%',top:'50%'}, {left:'75%',top:'30%'}, {left:'75%',top:'70%'}, {left:'60%',top:'30%'}, {left:'60%',top:'70%'}];
-
-            state.localPlayers.slice(0, AppConfig.MAX_PLAYERS_ON_PITCH).forEach((name, i) => {
-                if(state.playerStats.local[name]) {
-                    state.playerStats.local[name].onPitch = true;
-                    state.playerStats.local[name].position = localFormation[i];
-                }
-            });
-            state.rivalDorsals.slice(0, AppConfig.MAX_PLAYERS_ON_PITCH).forEach((name, i) => {
-                if(state.playerStats.rival[name]) {
-                    state.playerStats.rival[name].onPitch = true;
-                    state.playerStats.rival[name].position = rivalFormation[i];
-                }
-            });
-        },
-        startTimer() {
-            const state = AppState.get();
-            if (state.isMatchRunning) return;
-            state.isMatchRunning = true;
-
-            const workerScript = `let interval = null; self.onmessage = e => { if (e.data === 'start') { if (!interval) interval = setInterval(() => self.postMessage('tick'), 1000); } else if (e.data === 'stop') { clearInterval(interval); interval = null; } };`;
-            const workerBlob = new Blob([workerScript], { type: 'application/javascript' });
-            state.timerWorker = new Worker(URL.createObjectURL(workerBlob));
-
-            state.timerWorker.onmessage = () => {
-                state.matchTimer++;
-                this.adjustPlayerMinutes(1);
-                DOM.updateAll();
-                const limit = state.currentHalf === 1 ? AppConfig.HALF_TIME_SECONDS : 2 * AppConfig.HALF_TIME_SECONDS;
-                if (state.matchTimer >= limit) {
-                    if(state.currentHalf === 1) EventHandler.handleHalfTime(true);
-                    else EventHandler.handleFinishGame(true);
-                }
-            };
-            state.timerWorker.postMessage('start');
-            DOM.updateButtonStates();
-        },
-        stopTimer() {
-            const state = AppState.get();
-            if (!state.isMatchRunning) return;
-            state.isMatchRunning = false;
-            if (state.timerWorker) {
-                state.timerWorker.postMessage('stop');
-                state.timerWorker.terminate();
-                state.timerWorker = null;
-            }
-            DOM.updateButtonStates();
-            AppState.save();
-        },
-        adjustPlayerMinutes(seconds) {
-            if (seconds <= 0) return;
-            Object.values(AppState.get().playerStats).forEach(team => {
-                Object.values(team).forEach(player => {
-                    if (player.onPitch) player.minutosJugados += seconds;
-                });
-            });
-        },
-        addMatchEvent(eventData) {
-            const state = AppState.get();
-            const event = { id: Date.now(), minute: Math.floor(state.matchTimer / 60), ...eventData }; 
-            state.matchEvents.push(event); 
-        },
-        recalculateMatchStateFromEvents() {
-            const state = AppState.get();
-            const playerInitialStats = { goles: 0, asistencias: 0, amarillas: 0, rojas: 0, faltas: 0, expulsado: false };
-            Object.values(state.playerStats).forEach(team => Object.values(team).forEach(player => {
-                Object.assign(player, playerInitialStats);
-            }));
-            state.faltas = { local: 0, rival: 0 };
-            state.matchStats = { local: { corners: 0 }, rival: { corners: 0 } };
-
-            state.matchEvents.forEach(e => {
-                const teamPStats = state.playerStats[e.team];
-                const pStats = teamPStats?.[e.player];
-                switch(e.type) {
-                    case 'goal': 
-                        if (teamPStats?.[e.goleador]) teamPStats[e.goleador].goles++; 
-                        if (e.asistente && teamPStats?.[e.asistente]) teamPStats[e.asistente].asistencias++; 
-                        break;
-                    case 'foul': if(pStats) { pStats.faltas++; state.faltas[e.team]++; } break;
-                    case 'yellow-card': if(pStats) pStats.amarillas++; break;
-                    case 'red-card': if(pStats) pStats.rojas++; break;
-                    case 'corner': if(state.matchStats[e.team]) state.matchStats[e.team].corners++; break;
-                }
-            });
-
-            Object.keys(state.playerStats).forEach(t => Object.keys(state.playerStats[t]).forEach(pName => {
-                const p = state.playerStats[t][pName];
-                if (p.rojas > 0 || p.amarillas >= 2) {
-                    p.expulsado = true;
-                }
-            }));
-            DOM.updateAll();
+    function manageTabs() {
+        const lastHeartbeat = parseInt(localStorage.getItem(HEARTBEAT_KEY) || '0', 10);
+        
+        if (isNaN(lastHeartbeat) || Date.now() - lastHeartbeat > 5000) {
+            becomePrimaryTab();
+        } else {
+            document.getElementById('tab-blocker').classList.remove('hidden');
         }
-    };
 
-    // --- 5. GESTIÓN DE EVENTOS DEL USUARIO (Lógica del ejemplo funcional) ---
-    const EventHandler = {
-        addEventListeners() {
-            DOM.cacheElements();
-            DOM.elements['start-config'].addEventListener('click', this.handleStartConfig);
-            DOM.elements.eventButtons.forEach(b => b.addEventListener('click', this.handleEventButtonClick));
-            DOM.elements['btn-half-time'].addEventListener('click', () => this.handleHalfTime(false));
-            DOM.elements['btn-start-second'].addEventListener('click', this.handleStartSecondHalf);
-            DOM.elements['btn-finish-game'].addEventListener('click', () => this.handleFinishGame(false));
-            DOM.elements['btn-reset-match'].addEventListener('click', this.handleResetMatch);
-            DOM.elements['btn-new-match'].addEventListener('click', this.handleNewMatch);
-            DOM.elements['btn-export-excel'].addEventListener('click', this.exportToCsv);
-            DOM.elements['btn-toggle-timer'].addEventListener('click', this.handleToggleTimer);
-            DOM.elements['event-flow-message'].addEventListener('click', () => this.endEventFlow(true));
-        },
-        // CORREGIDO: Flujo de inicio simplificado y robusto
-        handleStartConfig() {
-            AppState.init();
-            if (MatchLogic.initializeNewMatch()) {
-                MatchLogic.setInitialFormation();
-                DOM.showMatchUI();
-                DOM.setupBenchesAndPitch();
-                DOM.updateAll();
-                AppState.save();
+        window.addEventListener('storage', (e) => {
+            if (e.key === PRIMARY_TAB_KEY && e.newValue === null) {
+                alert('La pestaña principal se ha cerrado. Recarga para tomar el control.');
+                document.getElementById('tab-blocker').classList.add('hidden');
             }
-        },
-        handleToggleTimer() {
-            const state = AppState.get();
-            if (!state.matchEvents.some(e => e.type === 'init_match')) {
-                MatchLogic.addMatchEvent({ type: 'init_match', text: 'Inicio del partido.' });
-                MatchLogic.startTimer();
+        });
+    }
+    
+    function becomePrimaryTab() {
+        isPrimaryTab = true;
+        localStorage.setItem(PRIMARY_TAB_KEY, TAB_ID);
+        
+        heartbeatInterval = setInterval(() => {
+            localStorage.setItem(HEARTBEAT_KEY, Date.now().toString());
+        }, 3000);
+
+        window.addEventListener('beforeunload', () => {
+            if (isPrimaryTab) {
+                clearInterval(heartbeatInterval);
+                localStorage.removeItem(PRIMARY_TAB_KEY);
+                localStorage.removeItem(HEARTBEAT_KEY);
             }
-        },
-        handleHalfTime(isAuto = false) {
-            MatchLogic.stopTimer();
-            const state = AppState.get();
-            if (!isAuto) {
-                const timeToAdd = AppConfig.HALF_TIME_SECONDS - state.matchTimer;
-                if (timeToAdd > 0) MatchLogic.adjustPlayerMinutes(timeToAdd);
+        });
+
+        initializeApp();
+    }
+
+    // --- ESTADO GLOBAL DE LA APLICACIÓN ---
+    let gameState = {};
+    let isNavigatingIntentionally = false;
+    
+    let backgroundTimerInterval = null;
+
+    function getInitialGameState() {
+        return {
+            localTeamName: 'Local', rivalTeamName: 'Rival', localPlayers: [], rivalDorsals: [],
+            playerStats: { local: {}, rival: {} },
+            faltas: { local: 0, rival: 0 },
+            matchTimer: 0, currentHalf: 1, isMatchRunning: false, timerInterval: null,
+            timerLastUpdated: null, matchEvents: [], penalties: [],
+            eventFlowState: { active: false, type: null, step: 0, payload: {} },
+            draggedElement: null
+        };
+    }
+
+    // --- REFERENCIAS AL DOM ---
+    const localNameInput = document.getElementById('local-name-input');
+    const rivalNameInput = document.getElementById('rival-name');
+    const localPlayersInput = document.getElementById('local-players');
+    const rivalDorsalsInput = document.getElementById('rival-dorsals');
+    const btnToggleTimer = document.getElementById('btn-toggle-timer');
+    const minutoActualInput = document.getElementById('minuto-actual');
+    const pitch = document.getElementById('futsal-pitch');
+    const localBench = document.getElementById('local-bench');
+    const rivalBench = document.getElementById('rival-bench');
+    const timelineContainer = document.getElementById('event-timeline');
+    const eventFlowMessage = document.getElementById('event-flow-message');
+    const mainContainer = document.querySelector('main');
+    const editEventModal = document.getElementById('edit-event-modal');
+    const editTimeModal = document.getElementById('edit-time-modal');
+    
+    // --- LÓGICA DE INICIALIZACIÓN ---
+    document.addEventListener('DOMContentLoaded', manageTabs);
+    
+    function initializeApp() {
+        assignAllEventListeners();
+        if (!loadState()) {
+            gameState = getInitialGameState();
+            setupInitialConfig();
+        }
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+    }
+
+    function assignAllEventListeners() {
+        document.getElementById('start-config').addEventListener('click', handleStartConfig);
+        document.querySelectorAll('.btn-event').forEach(b => b.addEventListener('click', handleEventButtonClick));
+        document.getElementById('btn-half-time').addEventListener('click', handleHalfTime);
+        document.getElementById('btn-start-second').addEventListener('click', handleStartSecondHalf);
+        document.getElementById('btn-finish-game').addEventListener('click', handleFinishGame);
+        document.getElementById('btn-reset-match').addEventListener('click', handleResetMatch);
+        document.getElementById('btn-new-match').addEventListener('click', handleNewMatch);
+        document.getElementById('btn-export-excel').addEventListener('click', exportToCsv);
+        document.getElementById('local-add-foul').addEventListener('click', () => handleQuickFoul('local'));
+        document.getElementById('rival-add-foul').addEventListener('click', () => handleQuickFoul('rival'));
+        
+        editEventModal.querySelector('.close-btn').addEventListener('click', () => editEventModal.classList.add('hidden'));
+        editTimeModal.querySelector('.close-btn').addEventListener('click', () => editTimeModal.classList.add('hidden'));
+        document.getElementById('save-time-btn').addEventListener('click', handleSaveTimeEdit);
+        
+        eventFlowMessage.addEventListener('click', () => endEventFlow(true));
+        btnToggleTimer.addEventListener('click', handleToggleTimer);
+
+        window.addEventListener('beforeunload', () => {
+            if (!isPrimaryTab || isNavigatingIntentionally) return;
+            if (gameState.matchEvents && gameState.matchEvents.length > 0) {
+                const isFinished = gameState.matchEvents.some(e => e.text.includes('Final del partido'));
+                if (!isFinished) {
+                    if (gameState.isMatchRunning) {
+                        gameState.timerLastUpdated = Date.now();
+                        gameState.isMatchRunning = false;
+                    }
+                    saveState();
+                }
             }
-            state.matchTimer = AppConfig.HALF_TIME_SECONDS;
-            MatchLogic.addMatchEvent({ type: 'control', text: 'Descanso.' });
-            state.currentHalf = 2;
-            state.faltas = { local: 0, rival: 0 };
-            DOM.updateAll();
-        },
-        handleStartSecondHalf() {
-            MatchLogic.addMatchEvent({ type: 'control', text: 'Inicio de la segunda parte.' });
-            MatchLogic.startTimer();
-        },
-        handleFinishGame(isAuto = false) {
-            MatchLogic.stopTimer();
-            const state = AppState.get();
-            const fullTime = 2 * AppConfig.HALF_TIME_SECONDS;
-            if (!isAuto) {
-                const timeToAdd = fullTime - state.matchTimer;
-                if (timeToAdd > 0) MatchLogic.adjustPlayerMinutes(timeToAdd);
+        });
+    }
+
+    function setupInitialConfig() {
+        const RANDOM_NAMES = ["Adrián", "Borja", "Carlos", "David", "Emilio", "Fran", "Gabriel", "Hugo", "Iván", "Jaime"];
+        const dorsals = Array.from({length: 10}, () => Math.floor(Math.random() * 99) + 1);
+        localNameInput.value = "Athletic Club Móstoles";
+        rivalNameInput.value = "Rival";
+        localPlayersInput.value = RANDOM_NAMES.join(', ');
+        rivalDorsalsInput.value = [...new Set(dorsals)].join(', ');
+    }
+    
+    // --- LÓGICA DEL CRONÓMETRO ---
+    const HALF_TIME_SECONDS = 25 * 60;
+    
+    function formatTime(totalSeconds) {
+        let halfProgress = totalSeconds;
+        if (totalSeconds >= HALF_TIME_SECONDS) halfProgress = totalSeconds - HALF_TIME_SECONDS;
+        const remainingSecondsInHalf = HALF_TIME_SECONDS - halfProgress;
+        const displaySeconds = Math.max(0, remainingSecondsInHalf);
+        const mins = Math.floor(displaySeconds / 60);
+        const secs = displaySeconds % 60;
+        return `${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
+    }
+    
+    function getRemainingSecondsInCurrentHalf(totalSeconds) {
+        const halfOffset = gameState.currentHalf === 2 ? HALF_TIME_SECONDS : 0;
+        const halfProgress = totalSeconds - halfOffset;
+        return Math.max(0, HALF_TIME_SECONDS - halfProgress);
+    }
+
+    function formatTimeAscending(seconds) { 
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
+    }
+
+    // --- FIN LÓGICA DEL CRONÓMETRO ---
+
+    function handleStartConfig() {
+        gameState = getInitialGameState();
+        gameState.localTeamName = localNameInput.value.trim() || 'Local';
+        gameState.rivalTeamName = rivalNameInput.value.trim() || 'Rival';
+        gameState.localPlayers = localPlayersInput.value.split(',').map(s => s.trim()).filter(Boolean);
+        gameState.rivalDorsals = rivalDorsalsInput.value.split(',').map(s => s.trim()).filter(Boolean);
+        if (gameState.localPlayers.length < 5 || gameState.rivalDorsals.length < 5) return alert("Se necesitan al menos 5 jugadores/dorsales por equipo.");
+        
+        initializeStats();
+        // --- AJUSTE 1: Colocar la alineación inicial automáticamente ---
+        placeInitialLineup();
+
+        rebuildUIFromState();
+        saveState();
+    }
+    
+    // --- AJUSTE 1: Nueva función para colocar 5 jugadores por equipo ---
+    function placeInitialLineup() {
+        const localPositions = [
+            { left: '15%', top: '50%' }, // Cierre
+            { left: '30%', top: '25%' }, // Ala
+            { left: '30%', top: '75%' }, // Ala
+            { left: '45%', top: '35%' }, // Pívot
+            { left: '45%', top: '65%' }  // Pívot
+        ];
+        const rivalPositions = [
+            { left: '85%', top: '50%' }, // Cierre
+            { left: '70%', top: '25%' }, // Ala
+            { left: '70%', top: '75%' }, // Ala
+            { left: '55%', top: '35%' }, // Pívot
+            { left: '55%', top: '65%' }  // Pívot
+        ];
+
+        gameState.localPlayers.slice(0, 5).forEach((player, index) => {
+            gameState.playerStats.local[player].onPitch = true;
+            gameState.playerStats.local[player].position = localPositions[index];
+        });
+
+        gameState.rivalDorsals.slice(0, 5).forEach((dorsal, index) => {
+            gameState.playerStats.rival[dorsal].onPitch = true;
+            gameState.playerStats.rival[dorsal].position = rivalPositions[index];
+        });
+    }
+
+    function rebuildUIFromState() {
+        document.getElementById('local-name').textContent = gameState.localTeamName;
+        document.getElementById('rival-name-display').textContent = gameState.rivalTeamName;
+        const displayTime = formatTime(gameState.matchTimer);
+        minutoActualInput.value = displayTime; 
+        updateDocumentTitle(displayTime); 
+        setupPitchAndBench();
+        repositionPlayersFromState();
+        updateScoreboard();
+        updateFoulCounters();
+        updateStatsTables();
+        updateButtonStates();
+        showMatchUI();
+        if (gameState.matchEvents.length > 0) { document.getElementById('timeline-section').classList.remove('hidden'); }
+        else { document.getElementById('timeline-section').classList.add('hidden'); }
+    }
+    
+    function showMatchUI() {
+        document.getElementById('config-section').classList.add('hidden');
+        document.getElementById('app-header').style.display = 'block';
+        document.getElementById('pitch-section').classList.remove('hidden');
+        document.getElementById('game-controls').classList.remove('hidden');
+        document.getElementById('stats-section').classList.remove('hidden');
+    }
+    
+    function initializeStats() {
+        gameState.playerStats = { local: {}, rival: {} };
+        const initialStats = { onPitch: false, goles: 0, asistencias: 0, amarillas: 0, rojas: 0, faltas: 0, minutosJugados: 0, expulsado: false, position: {left: '0%', top: '0%'} };
+        gameState.localPlayers.forEach(p => gameState.playerStats.local[p] = { ...initialStats });
+        gameState.rivalDorsals.forEach(d => gameState.playerStats.rival[d] = { ...initialStats });
+    }
+    
+    const APP_STATE_KEY = 'futsalTacticoState';
+    
+    function saveState() {
+        if (!isPrimaryTab) return;
+        localStorage.setItem(APP_STATE_KEY, JSON.stringify(gameState));
+    }
+    
+    function loadState() {
+        const savedStateJSON = localStorage.getItem(APP_STATE_KEY);
+        if (!savedStateJSON) return false;
+        gameState = { ...getInitialGameState(), ...JSON.parse(savedStateJSON) };
+        
+        const wasRunning = gameState.timerLastUpdated !== null && isPrimaryTab;
+        
+        if (wasRunning) {
+            const elapsedSeconds = Math.floor((Date.now() - gameState.timerLastUpdated) / 1000);
+            const maxTime = 2 * HALF_TIME_SECONDS;
+            const timeToAdd = Math.min(elapsedSeconds, maxTime - gameState.matchTimer);
+            gameState.matchTimer += timeToAdd;
+
+            Object.values(gameState.playerStats).forEach(team => {
+                Object.values(team).forEach(player => {
+                    if(player.onPitch) player.minutosJugados += timeToAdd;
+                });
+            });
+        }
+        
+        rebuildUIFromState();
+        
+        if (wasRunning) {
+            gameState.timerLastUpdated = null;
+            startTimer();
+        } else if (gameState.isMatchRunning && !isPrimaryTab) {
+            gameState.isMatchRunning = false;
+        }
+        
+        if (gameState.matchTimer >= 2 * HALF_TIME_SECONDS) handleFinishGame(true);
+        else if (gameState.currentHalf === 1 && gameState.matchTimer >= HALF_TIME_SECONDS) handleHalfTime(true);
+
+        return true;
+    }
+    
+    function startTimer() {
+        if (gameState.isMatchRunning || !isPrimaryTab) return;
+        if (gameState.matchTimer >= 2 * HALF_TIME_SECONDS || (gameState.currentHalf === 1 && gameState.matchTimer >= HALF_TIME_SECONDS)) {
+            return updateButtonStates();
+        }
+
+        gameState.isMatchRunning = true;
+        updateButtonStates();
+        
+        gameState.timerInterval = setInterval(() => {
+            if (!isPrimaryTab || !gameState.isMatchRunning) { 
+                clearInterval(gameState.timerInterval); 
+                gameState.timerInterval = null;
+                return; 
             }
-            state.matchTimer = fullTime;
-            MatchLogic.addMatchEvent({ type: 'control', text: 'Final del partido.' });
-            DOM.updateAll();
-            DOM.elements['btn-export-excel'].classList.remove('hidden');
-        },
-        handleResetMatch() {
-            if (!confirm("¿Seguro que quieres reiniciar? Se perderán las estadísticas del partido actual.")) return;
-            MatchLogic.stopTimer();
-            const state = AppState.get();
-            const config = { localTeamName: state.localTeamName, rivalTeamName: state.rivalTeamName, localPlayers: state.localPlayers, rivalDorsals: state.rivalDorsals };
-            AppState.init();
-            Object.assign(AppState.get(), config);
-            MatchLogic.initializeStats();
-            MatchLogic.setInitialFormation();
-            DOM.setupBenchesAndPitch();
-            DOM.updateAll();
-            AppState.save();
-        },
-        handleNewMatch() {
-            if (confirm("¿Empezar un partido nuevo? Se perderá toda la configuración actual.")) {
-                localStorage.removeItem(AppConfig.APP_STATE_KEY);
-                location.reload();
-            }
-        },
-        handleEventButtonClick(e) {
-            const type = e.currentTarget.dataset.event;
-            if (type === 'corner') {
-                this.startTeamEventFlow(type);
+            
+            const now = Date.now();
+            const timeSinceLastUpdate = Math.floor((now - (gameState.timerLastUpdated || now)) / 1000);
+            
+            if (timeSinceLastUpdate >= 2) {
+                const timeToAdd = Math.min(timeSinceLastUpdate, (2 * HALF_TIME_SECONDS) - gameState.matchTimer);
+                gameState.matchTimer += timeToAdd;
+                adjustPlayerMinutes(timeToAdd); 
             } else {
-                this.startPlayerEventFlow(type);
+                gameState.matchTimer++; 
+                Object.values(gameState.playerStats.local).forEach(p => { if(p.onPitch) p.minutosJugados++; });
+                Object.values(gameState.playerStats.rival).forEach(d => { if(d.onPitch) d.minutosJugados++; });
             }
-        },
-        startPlayerEventFlow(type) {
-            const state = AppState.get();
-            state.eventFlow = { active: true, type, step: 1 };
-            DOM.elements.main.classList.add('selecting-mode');
-            DOM.elements['pitch-section'].scrollIntoView({ behavior: 'smooth', block: 'center' });
-            let prompt = `Selecciona el jugador`;
-            if (type === 'goal') prompt = "Selecciona al <strong>goleador</strong>";
-            if (type === 'foul') prompt = "Selecciona al <strong>infractor</strong>";
-            DOM.elements['event-flow-message'].innerHTML = `${prompt} <small>(clic aquí para cancelar)</small>`;
-            DOM.elements['event-flow-message'].classList.remove('hidden');
-        },
-        startTeamEventFlow(type) {
-            const state = AppState.get();
-            const typeText = { 'corner': 'Córner' }[type];
-            DOM.elements['modal-title'].innerHTML = `¿Para qué equipo es el ${typeText}?`;
-            const buttonsContainer = DOM.elements['modal-buttons'];
-            buttonsContainer.innerHTML = '';
+
+            gameState.timerLastUpdated = now;
+            const displayTime = formatTime(gameState.matchTimer);
+            minutoActualInput.value = displayTime;
+            updateDocumentTitle(displayTime);
+            updateStatsTables();
+            checkPenalties();
             
-            const btnLocal = document.createElement('button');
-            btnLocal.textContent = state.localTeamName;
-            btnLocal.className = 'btn-primary';
-            btnLocal.onclick = () => {
-                MatchLogic.addMatchEvent({ type, text: `${typeText} para <strong>${state.localTeamName}</strong>.`, team: 'local' });
-                this.endEventFlow();
-            };
-            
-            const btnRival = document.createElement('button');
-            btnRival.textContent = state.rivalTeamName;
-            btnRival.className = 'btn-danger';
-            btnRival.onclick = () => {
-                MatchLogic.addMatchEvent({ type, text: `${typeText} para <strong>${state.rivalTeamName}</strong>.`, team: 'rival' });
-                this.endEventFlow();
-            };
+            if (gameState.currentHalf === 1 && gameState.matchTimer >= HALF_TIME_SECONDS) handleHalfTime();
+            else if (gameState.currentHalf === 2 && gameState.matchTimer >= 2 * HALF_TIME_SECONDS) handleFinishGame();
 
-            buttonsContainer.appendChild(btnLocal);
-            buttonsContainer.appendChild(btnRival);
-            DOM.elements['generic-modal'].classList.add('visible');
-        },
-        processEventSelection(chip) {
-            const state = AppState.get();
-            if (!state.eventFlow.active || chip.classList.contains('expulsado')) return;
-            const isCardEvent = state.eventFlow.type === 'yellow-card' || state.eventFlow.type === 'red-card';
-            if (!isCardEvent && !chip.classList.contains('chip-on-pitch')) return;
+            saveState();
+        }, 1000);
+    }
+    
+    function pauseTimer() {
+        gameState.isMatchRunning = false;
+        clearInterval(gameState.timerInterval);
+        gameState.timerInterval = null;
+        gameState.timerLastUpdated = Date.now();
+        updateButtonStates();
+        updateStatsTables();
+        saveState();
+    }
+    
+    function handleToggleTimer() {
+        if (gameState.isMatchRunning) return;
 
-            const { type, step } = state.eventFlow;
-            const { name, team } = chip.dataset;
-
-            if (type === 'goal' && step === 1) {
-                state.eventFlow = { ...state.eventFlow, step: 2, goleador: name, team };
-                DOM.elements['event-flow-message'].innerHTML = `GOL de <strong>${name}</strong>. Selecciona al <strong>asistente</strong> (o clic en el goleador si no hay).`;
-            } else if (type === 'goal' && step === 2) {
-                const { goleador, team: goalTeam } = state.eventFlow;
-                const asistente = (name !== goleador && team === goalTeam) ? name : null;
-                MatchLogic.addMatchEvent({ type, text: `GOL de <strong>${goleador}</strong>` + (asistente ? `. Asistencia de <strong>${asistente}</strong>` : '.'), team: goalTeam, goleador, asistente });
-                this.endEventFlow();
-            } else {
-                const eventMap = {'foul':'Falta','yellow-card':'Tarjeta Amarilla','red-card':'Tarjeta ROJA'};
-                MatchLogic.addMatchEvent({ type, text: `${eventMap[type]} de <strong>${name}</strong>.`, team, player: name });
-                this.endEventFlow();
-            }
-        },
-        endEventFlow(cancelled = false) {
-            DOM.elements.main.classList.remove('selecting-mode');
-            DOM.elements['event-flow-message'].classList.add('hidden');
-            DOM.elements['generic-modal'].classList.remove('visible');
-            AppState.get().eventFlow.active = false;
-            if (!cancelled) {
-                MatchLogic.recalculateMatchStateFromEvents();
-            }
-            AppState.save();
-        },
-        exportToCsv() {
-            const state = AppState.get();
-            let csv = `${state.localTeamName}\nJugador,G,A,Y,R,F,MIN\n`;
-            state.localPlayers.forEach(p => { const s = state.playerStats.local[p]; csv += [p, s.goles, s.asistencias, s.amarillas, s.rojas, s.faltas, MatchLogic.formatTime(s.minutosJugados)].join(",") + "\n"; });
-            csv += `\n${state.rivalTeamName}\nDorsal,G,A,Y,R,F,MIN\n`;
-            state.rivalDorsals.forEach(d => { const s = state.playerStats.rival[d]; csv += [d, s.goles, s.asistencias, s.amarillas, s.rojas, s.faltas, MatchLogic.formatTime(s.minutosJugados)].join(",") + "\n"; });
-            const a = document.createElement("a");
-            a.href = URL.createObjectURL(new Blob(["\uFEFF"+csv], {type:'text/csv;charset=utf-8;'}));
-            a.download = `estadisticas_futsal_${state.localTeamName}_vs_${state.rivalTeamName}.csv`; a.click();
-        },
+        if (gameState.matchEvents.length === 0) {
+            addMatchEvent({ type: 'init_match', text: 'Inicio del partido.' });
+            document.getElementById('timeline-section').classList.remove('hidden');
+            // --- AJUSTE 2: Ocultar el botón de inicio después de pulsarlo ---
+            btnToggleTimer.classList.add('hidden');
+        }
+        startTimer();
     };
+    
+    function handleVisibilityChange() {
+        if (!isPrimaryTab) return;
 
-    // --- 6. LÓGICA DE DRAG & DROP (Estable y simplificada) ---
-    const DragAndDrop = {
-        draggedElement: null, isDragging: false, startX: 0, startY: 0,
+        if (document.hidden && gameState.isMatchRunning) {
+            pauseTimer(); 
+            gameState.timerLastUpdated = Date.now();
+            saveState();
 
-        start(e) {
-            const el = e.currentTarget;
-            if (AppState.get().eventFlow.active || el.classList.contains('expulsado')) return;
-            e.preventDefault();
-            this.draggedElement = el;
-            this.isDragging = false;
-            const pointer = e.touches ? e.touches[0] : e;
-            this.startX = pointer.clientX;
-            this.startY = pointer.clientY;
-            document.addEventListener(e.touches ? 'touchmove' : 'pointermove', this.move);
-            document.addEventListener(e.touches ? 'touchend' : 'pointerup', this.end);
-        },
-        move(e) {
-            if (!DragAndDrop.draggedElement) return;
-            e.preventDefault();
-            const pointer = e.touches ? e.touches[0] : e;
-            const dx = pointer.clientX - DragAndDrop.startX;
-            const dy = pointer.clientY - DragAndDrop.startY;
-            if (!DragAndDrop.isDragging && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
-                DragAndDrop.isDragging = true;
-                const rect = DragAndDrop.draggedElement.getBoundingClientRect();
-                document.body.appendChild(DragAndDrop.draggedElement);
-                DragAndDrop.draggedElement.classList.add('dragging');
-                DragAndDrop.draggedElement.style.left = `${rect.left}px`;
-                DragAndDrop.draggedElement.style.top = `${rect.top}px`;
-            }
-            if (DragAndDrop.isDragging) {
-                DragAndDrop.draggedElement.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
-            }
-        },
-        end(e) {
-            const wasDragging = DragAndDrop.isDragging;
-            document.removeEventListener(e.touches ? 'touchmove' : 'pointermove', DragAndDrop.move);
-            document.removeEventListener(e.touches ? 'touchend' : 'pointerup', DragAndDrop.end);
-            if (!DragAndDrop.draggedElement) return;
+            let currentSeconds = gameState.matchTimer;
+            const maxSeconds = 2 * HALF_TIME_SECONDS;
             
-            if (wasDragging) {
-                const pointer = e.changedTouches ? e.changedTouches[0] : e;
-                DragAndDrop.draggedElement.style.display = 'none';
-                const dropTarget = document.elementFromPoint(pointer.clientX, pointer.clientY);
-                DragAndDrop.draggedElement.style.display = ''; 
-                DragAndDrop.executeDrop(dropTarget, pointer.clientX, pointer.clientY);
+            backgroundTimerInterval = setInterval(() => {
+                if (document.hidden && currentSeconds < maxSeconds) {
+                    currentSeconds++;
+                    const displayTime = formatTime(currentSeconds);
+                    updateDocumentTitle(displayTime, true);
+                } else {
+                    clearInterval(backgroundTimerInterval);
+                    backgroundTimerInterval = null;
+                }
+            }, 1000);
+
+        } else if (!document.hidden && gameState.timerLastUpdated) {
+            if (backgroundTimerInterval) {
+                clearInterval(backgroundTimerInterval);
+                backgroundTimerInterval = null;
             }
-            DragAndDrop.draggedElement.classList.remove('dragging');
-            DragAndDrop.draggedElement.style.transform = '';
-            DragAndDrop.draggedElement.style.left = '';
-            DragAndDrop.draggedElement.style.top = '';
-            DragAndDrop.draggedElement = null;
-            DragAndDrop.isDragging = false;
-            DOM.updateAll();
-            AppState.save();
-        },
-        executeDrop(target, clientX, clientY) {
-            const dragged = this.draggedElement;
-            const targetChip = target?.closest('.player-chip');
-            const targetZone = target?.closest('#futsal-pitch, .bench');
-            
-            if (targetChip && targetChip !== dragged && dragged.dataset.team === targetChip.dataset.team) {
-                this.handlePlayerSwap(dragged, targetChip);
-            } else if (targetZone?.id === 'futsal-pitch') {
-                this.placePlayerOnPitch(dragged, clientX, clientY);
-            } else if (targetZone?.id === `${dragged.dataset.team}-bench`) {
-                this.placePlayerOnBench(dragged);
+
+            const elapsedSeconds = Math.floor((Date.now() - gameState.timerLastUpdated) / 1000);
+            const maxTime = 2 * HALF_TIME_SECONDS;
+            const timeToAdd = Math.min(elapsedSeconds, maxTime - gameState.matchTimer);
+
+            if (timeToAdd > 0) {
+                gameState.matchTimer += timeToAdd;
+                adjustPlayerMinutes(timeToAdd); 
+
+                if (gameState.currentHalf === 1 && gameState.matchTimer >= HALF_TIME_SECONDS) {
+                    handleHalfTime(true);
+                    return; 
+                } else if (gameState.currentHalf === 2 && gameState.matchTimer >= 2 * HALF_TIME_SECONDS) {
+                    handleFinishGame(true);
+                    return; 
+                }
+                const displayTime = formatTime(gameState.matchTimer);
+                minutoActualInput.value = displayTime;
             }
-        },
-        placePlayerOnPitch(chip, clientX, clientY) {
-            const state = AppState.get();
-            const { name, team } = chip.dataset;
-            const stats = state.playerStats[team][name];
-            const teamPlayersOnPitch = Object.values(state.playerStats[team]).filter(p => p.onPitch).length;
             
-            if (teamPlayersOnPitch >= AppConfig.MAX_PLAYERS_ON_PITCH && !stats.onPitch) {
-                alert(`Este equipo ya tiene ${AppConfig.MAX_PLAYERS_ON_PITCH} jugadores en el campo.`);
+            gameState.timerLastUpdated = null;
+            startTimer();
+        }
+    }
+    
+    function synchronizePlayerMinutes(targetTimeInSeconds) {
+        const timeJump = targetTimeInSeconds - gameState.matchTimer;
+        if (timeJump <= 0) return;
+        Object.values(gameState.playerStats).forEach(team => {
+            Object.values(team).forEach(player => {
+                if (player.onPitch) player.minutosJugados += timeJump;
+            });
+        });
+    }
+    
+    function openEditTimeModal() {
+        if (gameState.isMatchRunning) return;
+        const remainingSeconds = getRemainingSecondsInCurrentHalf(gameState.matchTimer);
+        const mins = Math.floor(remainingSeconds / 60);
+        const secs = remainingSeconds % 60;
+        document.getElementById('edit-time-minutes').value = mins;
+        document.getElementById('edit-time-seconds').value = secs;
+        editTimeModal.classList.remove('hidden');
+    }
+    
+    function handleSaveTimeEdit() {
+        const newMins = parseInt(document.getElementById('edit-time-minutes').value, 10) || 0;
+        const newSecs = parseInt(document.getElementById('edit-time-seconds').value, 10) || 0;
+        const newRemainingSecondsInHalf = (newMins * 60) + newSecs;
+        const halfOffset = gameState.currentHalf === 2 ? HALF_TIME_SECONDS : 0;
+        let newTimeInSeconds = halfOffset + (HALF_TIME_SECONDS - newRemainingSecondsInHalf);
+        
+        if (newRemainingSecondsInHalf > HALF_TIME_SECONDS || newRemainingSecondsInHalf < 0) {
+            alert("El tiempo introducido no es válido para una mitad de 25 minutos.");
+            return;
+        }
+
+        const timeDifference = newTimeInSeconds - gameState.matchTimer;
+        adjustPlayerMinutes(timeDifference);
+        gameState.matchTimer = newTimeInSeconds;
+        const displayTime = formatTime(newTimeInSeconds);
+        minutoActualInput.value = displayTime;
+        updateDocumentTitle(displayTime); 
+        editTimeModal.classList.add('hidden');
+        saveState();
+        
+        if (gameState.currentHalf === 1 && gameState.matchTimer >= HALF_TIME_SECONDS) handleHalfTime();
+        else if (gameState.currentHalf === 2 && gameState.matchTimer >= 2 * HALF_TIME_SECONDS) handleFinishGame();
+        updateButtonStates();
+    }
+    
+    function adjustPlayerMinutes(timeDifference) {
+        if (timeDifference === 0) return;
+        Object.values(gameState.playerStats).forEach(team => {
+            Object.values(team).forEach(player => {
+                if (player.onPitch) {
+                    player.minutosJugados += timeDifference;
+                    if (player.minutosJugados < 0) player.minutosJugados = 0;
+                }
+            });
+        });
+        updateStatsTables();
+    }
+    
+    function handleHalfTime(isPassive = false) {
+        if (gameState.timerInterval) clearInterval(gameState.timerInterval);
+        gameState.isMatchRunning = false;
+        synchronizePlayerMinutes(HALF_TIME_SECONDS);
+        gameState.matchTimer = HALF_TIME_SECONDS;
+        addMatchEvent({ type: 'control', text: 'Descanso.' });
+        gameState.currentHalf = 2;
+        gameState.faltas = { local: 0, rival: 0 };
+        rebuildUIFromState();
+        updateDocumentTitle(`DESCANSO`, false, true);
+        saveState();
+    }
+    
+    function handleStartSecondHalf() {
+        addMatchEvent({ type: 'control', text: 'Inicio de la segunda parte.' });
+        startTimer();
+    }
+    
+    function handleFinishGame(isPassive = false) {
+        if (gameState.timerInterval) clearInterval(gameState.timerInterval);
+        gameState.isMatchRunning = false;
+        synchronizePlayerMinutes(2 * HALF_TIME_SECONDS);
+        gameState.matchTimer = 2 * HALF_TIME_SECONDS;
+        addMatchEvent({ type: 'control', text: 'Final del partido.' });
+        rebuildUIFromState();
+        document.getElementById('btn-export-excel').classList.remove('hidden');
+        updateDocumentTitle(`FINAL`, false, true);
+        if(!isPassive) localStorage.removeItem(APP_STATE_KEY);
+    }
+    
+    function handleResetMatch() {
+        if (!confirm("¿Seguro que quieres reiniciar este partido? Se reseteará el marcador y el tiempo.")) return;
+        pauseTimer();
+        const originalConfig = { localTeamName: gameState.localTeamName, rivalTeamName: gameState.rivalTeamName, localPlayers: gameState.localPlayers, rivalDorsals: gameState.rivalDorsals };
+        gameState = getInitialGameState();
+        Object.assign(gameState, originalConfig);
+        initializeStats();
+        placeInitialLineup(); // Volver a colocar jugadores
+        rebuildUIFromState();
+        // --- AJUSTE 2: Asegurarse de que el botón de inicio reaparezca ---
+        btnToggleTimer.classList.remove('hidden');
+        saveState();
+    }
+    
+    function handleNewMatch() {
+        if (confirm("¿Estás seguro de empezar un partido nuevo de cero? Se perderá el partido actual y guardado.")) {
+            isNavigatingIntentionally = true;
+            localStorage.removeItem(APP_STATE_KEY);
+            location.reload();
+        }
+    }
+    
+    function handleQuickFoul(team) {
+        if (gameState.matchEvents.length === 0 && !gameState.isMatchRunning) return alert("El partido debe estar en juego para registrar eventos.");
+        gameState.faltas[team]++;
+        addMatchEvent({ type: 'foul', text: `Falta de <strong>${team === 'local' ? gameState.localTeamName : gameState.rivalTeamName}</strong>.`, team, player: null });
+        updateFoulCounters();
+        checkSixthFoul(team);
+    }
+    
+    function updateFoulCounters() {
+        const localFouls = gameState.faltas.local;
+        const rivalFouls = gameState.faltas.rival;
+        const localCounter = document.getElementById('local-foul-counter');
+        const rivalCounter = document.getElementById('rival-foul-counter');
+        localCounter.textContent = localFouls;
+        rivalCounter.textContent = rivalFouls;
+        localCounter.classList.toggle('foul-warning', localFouls >= 5);
+        rivalCounter.classList.toggle('foul-warning', rivalFouls >= 5);
+    }
+    
+    function checkSixthFoul(team) {
+        if (gameState.faltas[team] >= 6) {
+            const opponentTeamName = team === 'local' ? gameState.rivalTeamName : gameState.localTeamName;
+            showEventMessage(`<strong>¡DOBLE PENALTI</strong> a favor de ${opponentTeamName}!`);
+            setTimeout(hideEventMessage, 4000);
+        }
+    }
+    
+    function createChip(name, team) {
+        const chip = document.createElement('div');
+        chip.className = `player-chip chip-${team} chip-on-bench`;
+        chip.textContent = name;
+        chip.draggable = true;
+        chip.dataset.name = name;
+        chip.dataset.team = team;
+        chip.addEventListener('dragstart', handleDragStart);
+        chip.addEventListener('touchstart', handleTouchStart, {passive: false});
+        chip.addEventListener('click', () => processEventSelection(chip));
+        return chip;
+    }
+    
+    function setupPitchAndBench() {
+        localBench.innerHTML = ''; 
+        rivalBench.innerHTML = '';
+        pitch.querySelectorAll('.player-chip').forEach(chip => chip.remove());
+        gameState.localPlayers.forEach(p => localBench.appendChild(createChip(p, 'local')));
+        gameState.rivalDorsals.forEach(d => rivalBench.appendChild(createChip(d, 'rival')));
+        
+        [pitch, localBench, rivalBench].forEach(zone => {
+            zone.addEventListener('dragover', (e) => e.preventDefault());
+            zone.addEventListener('drop', handleDrop);
+        });
+    }
+    
+    function repositionPlayersFromState() {
+        Object.keys(gameState.playerStats).forEach(team => {
+            Object.keys(gameState.playerStats[team]).forEach(playerName => {
+                const stats = gameState.playerStats[team][playerName];
+                // --- AJUSTE 1: Buscar la ficha tanto en el banquillo como en la cancha para reposicionar ---
+                const chip = document.querySelector(`.player-chip[data-name="${playerName}"][data-team="${team}"]`);
+                if (!chip) return;
+                
+                chip.classList.toggle('expulsado', stats.expulsado);
+                chip.draggable = !stats.expulsado;
+                
+                if (stats.onPitch) {
+                    chip.className = `player-chip chip-${team} chip-on-pitch`;
+                    Object.assign(chip.style, { left: stats.position.left, top: stats.position.top, transform: 'translate(-50%, -50%)' });
+                    pitch.appendChild(chip);
+                } else {
+                    // Si no está en la cancha, asegurarse de que esté en el banquillo correcto
+                    const bench = team === 'local' ? localBench : rivalBench;
+                    chip.className = `player-chip chip-${team} chip-on-bench`;
+                    chip.style.cssText = '';
+                    bench.appendChild(chip);
+                }
+            });
+        });
+    }
+
+    // --- SECCIÓN DE DRAG AND DROP ---
+    const isGameRunning = () => gameState.matchEvents.length > 0;
+
+    function handleDragStart(e) { 
+        if(gameState.eventFlowState.active || e.target.classList.contains('expulsado')) return e.preventDefault(); 
+        gameState.draggedElement = e.target; 
+        setTimeout(() => e.target.classList.add('dragging'), 0); 
+    }
+    
+    function handleDrop(e) { 
+        e.preventDefault(); 
+        if (!gameState.draggedElement) return; 
+        handlePlayerDrop(gameState.draggedElement, e.clientX, e.clientY); 
+        gameState.draggedElement.classList.remove('dragging');
+        gameState.draggedElement = null;
+    }
+
+    function handleTouchStart(e) { 
+        if(gameState.eventFlowState.active || e.target.classList.contains('expulsado')) return; 
+        e.preventDefault(); 
+        gameState.draggedElement = e.target; 
+        gameState.draggedElement.classList.add('dragging'); 
+        const touch = e.touches[0]; 
+        Object.assign(gameState.draggedElement.style, { position: 'fixed', left: `${touch.clientX}px`, top: `${touch.clientY}px`, transform: `translate(-50%, -50%)`, zIndex: 1000 }); 
+        document.addEventListener('touchmove', handleTouchMove, {passive: false}); 
+        document.addEventListener('touchend', handleTouchEnd); 
+    }
+
+    function handleTouchMove(e) { 
+        e.preventDefault(); 
+        if(!gameState.draggedElement) return; 
+        const touch = e.touches[0]; 
+        Object.assign(gameState.draggedElement.style, { left: `${touch.clientX}px`, top: `${touch.clientY}px` }); 
+    }
+
+    function handleTouchEnd(e) { 
+        if(!gameState.draggedElement) return; 
+        const touch = e.changedTouches[0]; 
+        gameState.draggedElement.style.position = '';
+        gameState.draggedElement.style.zIndex = '';
+        handlePlayerDrop(gameState.draggedElement, touch.clientX, touch.clientY); 
+        gameState.draggedElement.classList.remove('dragging');
+        gameState.draggedElement = null; 
+        document.removeEventListener('touchmove', handleTouchMove); 
+        document.removeEventListener('touchend', handleTouchEnd); 
+    }
+
+    function handlePlayerDrop(draggedChip, clientX, clientY) {
+        draggedChip.style.display = 'none';
+        const dropTarget = document.elementFromPoint(clientX, clientY);
+        draggedChip.style.display = '';
+        const targetPlayer = dropTarget?.closest('.player-chip');
+        const targetZone = dropTarget?.closest('#futsal-pitch, .bench');
+        if (targetPlayer && targetPlayer !== draggedChip) return handleSubstitution(draggedChip, targetPlayer);
+        if (targetZone?.id === 'futsal-pitch') return movePlayerToPitch(draggedChip, clientX, clientY);
+        if (targetZone?.classList.contains('bench')) return movePlayerToBench(draggedChip, targetZone);
+    }
+    
+    function movePlayerToPitch(chip, clientX, clientY) {
+        const { name, team } = chip.dataset;
+        const isComingFromBench = chip.classList.contains('chip-on-bench');
+        if (isComingFromBench) {
+            const onPitchCount = Object.values(gameState.playerStats[team]).filter(p => p.onPitch).length;
+            const hasPenalty = gameState.penalties.some(p => p.team === team && p.active);
+            if (onPitchCount >= 5 || (hasPenalty && onPitchCount >= 4)) {
+                alert(`El equipo ${team === 'local' ? gameState.localTeamName : gameState.rivalTeamName} no puede alinear más jugadores.`);
                 return;
             }
-            const rect = DOM.elements['futsal-pitch'].getBoundingClientRect();
-            stats.position = { left: `${100 * (clientX - rect.left) / rect.width}%`, top: `${100 * (clientY - rect.top) / rect.height}%` };
-            stats.onPitch = true;
-        },
-        placePlayerOnBench(chip) {
-            const state = AppState.get();
-            const { name, team } = chip.dataset;
-            state.playerStats[team][name].onPitch = false;
-            state.playerStats[team][name].position = null;
-        },
-        handlePlayerSwap(chip1, chip2) {
-            const state = AppState.get();
-            const stats1 = state.playerStats[chip1.dataset.team][chip1.dataset.name];
-            const stats2 = state.playerStats[chip2.dataset.team][chip2.dataset.name];
-
-            if (stats1.onPitch && stats2.onPitch) {
-                const pos1 = stats1.position;
-                stats1.position = stats2.position;
-                stats2.position = pos1;
-            } else if (stats1.onPitch !== stats2.onPitch) {
-                const onPitchStats = stats1.onPitch ? stats1 : stats2;
-                const onBenchStats = stats1.onPitch ? stats2 : stats1;
-                const position = onPitchStats.position;
-
-                onPitchStats.onPitch = false;
-                onPitchStats.position = null;
-                onBenchStats.onPitch = true;
-                onBenchStats.position = position;
-
-                if (state.matchEvents.some(e => e.type === 'init_match')) {
-                    const nameIn = stats1.onPitch ? chip2.dataset.name : chip1.dataset.name;
-                    const nameOut = stats1.onPitch ? chip1.dataset.name : chip2.dataset.name;
-                    MatchLogic.addMatchEvent({ type: 'substitution', text: `Sustitución: Entra <strong>${nameIn}</strong>, sale <strong>${nameOut}</strong>.`, team: chip1.dataset.team });
-                }
-            }
         }
-    };
 
-    // --- 7. INICIALIZACIÓN DE LA APLICACIÓN ---
-    document.addEventListener('DOMContentLoaded', () => {
-        DragAndDrop.move = DragAndDrop.move.bind(DragAndDrop);
-        DragAndDrop.end = DragAndDrop.end.bind(DragAndDrop);
-        EventHandler.addEventListeners();
+        const rect = pitch.getBoundingClientRect();
+        const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+        const y = Math.max(0, Math.min(rect.height, clientY - rect.top));
+        const pos = { left: `${100 * x / rect.width}%`, top: `${100 * y / rect.height}%` };
 
-        if (AppState.load()) {
-            DOM.showMatchUI();
-            DOM.setupBenchesAndPitch();
-            DOM.updateAll();
-        } else {
-            AppState.init();
+        if (isGameRunning()) {
+            if (team === 'local' && parseFloat(pos.left) > 50) return alert(`${gameState.localTeamName} debe permanecer en su campo (mitad izquierda).`);
+            if (team === 'rival' && parseFloat(pos.left) < 50) return alert(`${gameState.rivalTeamName} debe permanecer en su campo (mitad derecha).`);
         }
-    });
+
+        chip.className = `player-chip chip-${team} chip-on-pitch`;
+        Object.assign(chip.style, { ...pos, transform: 'translate(-50%, -50%)' });
+        pitch.appendChild(chip);
+        gameState.playerStats[team][name].onPitch = true;
+        gameState.playerStats[team][name].position = pos;
+        updateStatsTables();
+        saveState();
+    }
+    
+    function movePlayerToBench(chip, targetBench) {
+        const { name, team } = chip.dataset;
+        const isOnPitch = chip.classList.contains('chip-on-pitch');
+
+        if (isGameRunning() && isOnPitch) {
+            alert("No se puede mover un jugador del campo al banquillo. Realiza una sustitución arrastrando un jugador del banquillo sobre él.");
+            return;
+        }
+        if (targetBench.id !== `${team}-bench`) return;
+        chip.className = `player-chip chip-${team} chip-on-bench`;
+        chip.style.cssText = '';
+        targetBench.appendChild(chip);
+        gameState.playerStats[team][name].onPitch = false;
+        updateStatsTables();
+        saveState();
+    }
+    
+    function handleSubstitution(playerInChip, playerOutChip) {
+        const isInOnBench = playerInChip.classList.contains('chip-on-bench');
+        const isOutOnPitch = playerOutChip.classList.contains('chip-on-pitch');
+        const sameTeam = playerInChip.dataset.team === playerOutChip.dataset.team;
+        if (!isInOnBench || !isOutOnPitch || !sameTeam) return;
+
+        const { name: nameIn, team } = playerInChip.dataset;
+        const { name: nameOut } = playerOutChip.dataset;
+        const outPosition = gameState.playerStats[team][nameOut].position;
+        const bench = team === 'local' ? localBench : rivalBench;
+        playerOutChip.className = `player-chip chip-${team} chip-on-bench`;
+        playerOutChip.style.cssText = '';
+        bench.appendChild(playerOutChip);
+        gameState.playerStats[team][nameOut].onPitch = false;
+        playerInChip.className = `player-chip chip-${team} chip-on-pitch`;
+        Object.assign(playerInChip.style, { ...outPosition, transform: 'translate(-50%, -50%)' });
+        pitch.appendChild(playerInChip);
+        gameState.playerStats[team][nameIn].onPitch = true;
+        gameState.playerStats[team][nameIn].position = outPosition;
+
+        if (isGameRunning()) addMatchEvent({ type: 'substitution', text: `Sustitución: Entra <strong>${nameIn}</strong>, sale <strong>${nameOut}</strong>.`, team: team, playerIn: nameIn, playerOut: nameOut });
+        updateStatsTables();
+        saveState();
+    }
+
+    // --- FIN DRAG AND DROP ---
+    
+    function updateButtonStates() { const hasStarted = gameState.matchEvents.some(e => e.type === 'init_match'); const isFinished = gameState.matchEvents.some(e => e.text.includes('Final del partido')); btnToggleTimer.disabled = isFinished || gameState.isMatchRunning; document.getElementById('btn-half-time').disabled = !hasStarted || isFinished || gameState.currentHalf !== 1; document.getElementById('btn-start-second').disabled = !hasStarted || isFinished || gameState.currentHalf !== 2 || gameState.isMatchRunning; document.getElementById('btn-finish-game').disabled = !hasStarted || isFinished; document.querySelectorAll('.btn-event').forEach(b => b.disabled = !hasStarted || isFinished); }
+    function checkPenalties() { let stateChanged = false; gameState.penalties.forEach(penalty => { if (penalty.active && gameState.matchTimer >= penalty.endTime) { penalty.active = false; showEventMessage(`El equipo ${penalty.team === 'local' ? gameState.localTeamName : gameState.rivalTeamName} ya puede alinear 5 jugadores.`); setTimeout(hideEventMessage, 4000); stateChanged = true; } }); if (stateChanged) saveState(); }
+    function handleEventButtonClick(e) { if (gameState.matchEvents.length === 0 && !gameState.isMatchRunning) return alert("El partido debe estar en juego para registrar eventos."); const eventType = e.currentTarget.dataset.event; startEventFlow(eventType); }
+    function startEventFlow(type) { gameState.eventFlowState = { active: true, type, step: 1, payload: {} }; mainContainer.classList.add('selecting-mode'); let message = "Haz clic en el jugador implicado"; if(type === 'goal') message = "Selecciona al <strong>goleador</strong>"; if(type === 'foul') message = "Selecciona al <strong>infractor</strong>"; showEventMessage(message + "<br><small>(Haz clic aquí para cancelar)</small>"); }
+    function processEventSelection(chip) { if (!gameState.eventFlowState.active || !chip.classList.contains('chip-on-pitch') || chip.classList.contains('expulsado')) return; const { type, step } = gameState.eventFlowState; const { name, team } = chip.dataset; if (type === 'goal') { const opposingTeam = team === 'local' ? 'rival' : 'local'; const penalty = gameState.penalties.find(p => p.team === opposingTeam && p.active); if(penalty) { penalty.active = false; showEventMessage(`El equipo ${opposingTeam === 'local' ? gameState.localTeamName : gameState.rivalTeamName} puede completar su alineación.`); setTimeout(hideEventMessage, 4000); } if (step === 1) { gameState.eventFlowState.payload = { goleador: name, team }; gameState.eventFlowState.step = 2; showEventMessage(`GOL de <strong>${name}</strong>. Ahora selecciona al <strong>asistente</strong> (o pulsa de nuevo en el goleador).<br><small>(Clic para cancelar)</small>`); } else if (step === 2) { const { goleador } = gameState.eventFlowState.payload; const asistente = (name !== goleador) ? name : null; addMatchEvent({ type: 'goal', text: `GOL de <strong>${goleador}</strong>.` + (asistente ? ` Asistencia de <strong>${asistente}</strong>.` : ''), team, goleador, asistente }); endEventFlow(); } } else if (type === 'yellow-card') { addMatchEvent({ type, text: `Tarjeta Amarilla para <strong>${name}</strong>.`, team, player: name }); const stats = gameState.playerStats[team][name]; if (stats && stats.amarillas === 1) { addMatchEvent({ type: 'red-card', text: `Segunda amarilla y ROJA para <strong>${name}</strong>.`, team, player: name }); handleRedCard(name, team); } endEventFlow(); } else if (type === 'red-card') { addMatchEvent({ type, text: `Tarjeta ROJA directa para <strong>${name}</strong>.`, team, player: name }); handleRedCard(name, team); endEventFlow(); } else if (type === 'foul') { gameState.faltas[team]++; gameState.playerStats[team][name].faltas++; addMatchEvent({ type, text: `Falta de <strong>${name}</strong>.`, team, player: name }); updateFoulCounters(); checkSixthFoul(team); endEventFlow(); } }
+    function handleRedCard(name, team) { const stats = gameState.playerStats[team][name]; if(!stats) return; stats.expulsado = true; const ejectedPlayerChip = findChipOnPitch(name, team); if (ejectedPlayerChip) ejectPlayer(ejectedPlayerChip); gameState.penalties.push({ team, endTime: gameState.matchTimer + 120, active: true }); showEventMessage(`El equipo ${team === 'local' ? gameState.localTeamName : gameState.rivalTeamName} jugará con uno menos 2 min.`); setTimeout(hideEventMessage, 4000); }
+    function ejectPlayer(chip) { const { name, team } = chip.dataset; const bench = team === 'local' ? localBench : rivalBench; chip.className = `player-chip chip-${team} chip-on-bench expulsado`; chip.style.cssText = ''; chip.draggable = false; bench.appendChild(chip); gameState.playerStats[team][name].onPitch = false; }
+    function findChipOnPitch(name, team) { return document.querySelector(`.chip-on-pitch[data-name="${name}"][data-team="${team}"]`); }
+    function endEventFlow(cancelled = false) { gameState.eventFlowState.active = false; mainContainer.classList.remove('selecting-mode'); hideEventMessage(); if(!cancelled) recalculateMatchState(); }
+    
+    function updateStatsTables() { 
+        const localTbody = document.querySelector('#local-stats-table tbody'); 
+        const rivalTbody = document.querySelector('#rival-stats-table tbody'); 
+        if (!localTbody || !rivalTbody) return; 
+        localTbody.innerHTML = ''; 
+        gameState.localPlayers.forEach(name => { 
+            const stats = gameState.playerStats.local[name] || {}; 
+            const row = localTbody.insertRow(); 
+            row.innerHTML = `<td>${name}</td><td>${stats.goles||0}</td><td>${stats.asistencias||0}</td><td>${stats.amarillas||0}</td><td>${stats.rojas||0}</td><td>${stats.faltas||0}</td><td>${formatTimeAscending(stats.minutosJugados||0)}</td>`; 
+            if (stats.onPitch) row.classList.add('player-on-pitch'); 
+        }); 
+        rivalTbody.innerHTML = ''; 
+        gameState.rivalDorsals.forEach(name => { 
+            const stats = gameState.playerStats.rival[name] || {}; 
+            const row = rivalTbody.insertRow(); 
+            row.innerHTML = `<td>${name}</td><td>${stats.goles||0}</td><td>${stats.asistencias||0}</td><td>${stats.amarillas||0}</td><td>${stats.rojas||0}</td><td>${stats.faltas||0}</td><td>${formatTimeAscending(stats.minutosJugados||0)}</td>`; 
+            if (stats.onPitch) row.classList.add('player-on-pitch'); 
+        }); 
+    }
+    
+    function updateScoreboard() { let localScore = 0, rivalScore = 0; Object.values(gameState.playerStats.local).forEach(s => localScore += s.goles); Object.values(gameState.playerStats.rival).forEach(s => rivalScore += s.goles); document.getElementById('local-score').textContent = localScore; document.getElementById('rival-score').textContent = rivalScore; }
+    
+    function addMatchEvent(eventData) { 
+        const minute = gameState.matchTimer > 0 ? Math.ceil(gameState.matchTimer / 60) : 0; 
+        const event = { id: Date.now(), minute, ...eventData }; 
+        gameState.matchEvents.push(event); 
+        renderTimeline(); 
+        saveState(); 
+    }
+    
+    function renderTimeline() { timelineContainer.innerHTML = ''; gameState.matchEvents.sort((a,b) => a.minute - b.minute || a.id - b.id).forEach(event => { let icon = ''; switch(event.type) { case 'init_match': case 'control': icon = '▶️'; break; case 'goal': icon = '⚽'; break; case 'substitution': icon = '🔄'; break; case 'yellow-card': icon = '🟨'; break; case 'red-card': icon = '🟥'; break; case 'foul': icon = '✋'; break; } const eventEl = document.createElement('div'); eventEl.classList.add('timeline-event'); const mainDiv = document.createElement('div'); mainDiv.classList.add('timeline-event-main'); mainDiv.innerHTML = `<span class="event-icon">${icon}</span> <div><strong>Min ${event.minute}':</strong> ${event.text}</div>`; eventEl.appendChild(mainDiv); if (event.type !== 'init_match' && event.type !== 'control') { const actionsDiv = document.createElement('div'); actionsDiv.className = 'timeline-event-actions'; const editBtn = document.createElement('button'); editBtn.innerHTML = '✏️'; editBtn.addEventListener('click', () => openEditModal(event.id)); const deleteBtn = document.createElement('button'); deleteBtn.innerHTML = '🗑️'; deleteBtn.addEventListener('click', () => deleteEvent(event.id)); actionsDiv.append(editBtn, deleteBtn); eventEl.appendChild(actionsDiv); } timelineContainer.appendChild(eventEl); }); timelineContainer.scrollTop = timelineContainer.scrollHeight; }
+    function recalculateMatchState() { const initialPlayerState = JSON.parse(JSON.stringify(gameState.playerStats)); initializeStats(); gameState.faltas = { local: 0, rival: 0 }; Object.keys(initialPlayerState).forEach(team => { Object.keys(initialPlayerState[team]).forEach(player => { if (gameState.playerStats[team][player]) { gameState.playerStats[team][player].onPitch = initialPlayerState[team][player].onPitch; gameState.playerStats[team][player].position = initialPlayerState[team][player].position; gameState.playerStats[team][player].minutosJugados = initialPlayerState[team][player].minutosJugados; } }); }); gameState.matchEvents.sort((a, b) => a.minute - b.minute).forEach(event => { if (!event.team || !event.type) return; const stats = gameState.playerStats[event.team]?.[event.player]; switch(event.type) { case 'goal': if(gameState.playerStats[event.team]?.[event.goleador]) gameState.playerStats[event.team][event.goleador].goles++; if (event.asistente && gameState.playerStats[event.team]?.[event.asistente]) gameState.playerStats[event.team][event.asistente].asistencias++; break; case 'yellow-card': if(stats) stats.amarillas++; break; case 'red-card': if(stats) stats.rojas++; break; case 'foul': gameState.faltas[event.team]++; if(stats) stats.faltas++; break; } }); updateScoreboard(); updateFoulCounters(); updateStatsTables(); }
+    function deleteEvent(eventId) { if (!confirm("¿Estás seguro de que quieres eliminar este evento?")) return; gameState.matchEvents = gameState.matchEvents.filter(e => e.id !== eventId); recalculateMatchState(); renderTimeline(); saveState(); }
+    function openEditModal(eventId) { const event = gameState.matchEvents.find(e => e.id === eventId); if (!event) return; const form = document.getElementById('edit-event-form'); const title = document.getElementById('edit-modal-title'); const minuteInput = document.getElementById('edit-event-minute'); const playersDiv = document.getElementById('edit-event-players'); title.textContent = `Editar Evento (Min ${event.minute}')`; minuteInput.value = event.minute; playersDiv.innerHTML = ''; const createSelect = (id, label, options, selectedValue) => `<label for="${id}">${label}</label><select id="${id}">${options.map(opt => `<option value="${opt}" ${opt === selectedValue ? 'selected' : ''}>${opt}</option>`).join('')}</select>`; const teamPlayers = event.team === 'local' ? gameState.localPlayers : gameState.rivalDorsals; switch(event.type) { case 'goal': playersDiv.innerHTML += createSelect('edit-goleador', 'Goleador:', teamPlayers, event.goleador); playersDiv.innerHTML += createSelect('edit-asistente', 'Asistente:', ['', ...teamPlayers], event.asistente); break; case 'yellow-card': case 'red-card': case 'foul': playersDiv.innerHTML += createSelect('edit-player', 'Jugador:', teamPlayers, event.player); break; case 'substitution': playersDiv.innerHTML += createSelect('edit-player-in', 'Entra:', teamPlayers, event.playerIn); playersDiv.innerHTML += createSelect('edit-player-out', 'Sale:', teamPlayers, event.playerOut); break; } form.onsubmit = (e) => { e.preventDefault(); saveEventEdit(eventId); }; editEventModal.classList.remove('hidden'); }
+    function saveEventEdit(eventId) { const event = gameState.matchEvents.find(e => e.id === eventId); event.minute = parseInt(document.getElementById('edit-event-minute').value, 10); switch(event.type) { case 'goal': event.goleador = document.getElementById('edit-goleador').value; event.asistente = document.getElementById('edit-asistente').value || null; break; case 'yellow-card': case 'red-card': case 'foul': event.player = document.getElementById('edit-player').value; break; case 'substitution': event.playerIn = document.getElementById('edit-player-in').value; event.playerOut = document.getElementById('edit-player-out').value; break; } editEventModal.classList.add('hidden'); recalculateMatchState(); renderTimeline(); saveState(); }
+    function showEventMessage(html) { eventFlowMessage.innerHTML = html; eventFlowMessage.classList.remove('hidden'); }
+    function hideEventMessage() { eventFlowMessage.classList.add('hidden'); }
+    
+    function updateDocumentTitle(timeValue, isRunningInBackground = false, isStatic = false) {
+        const currentTitleBase = "Futsal Táctico Interactivo (Versión Final)";
+        const localScore = document.getElementById('local-score').textContent;
+        const rivalScore = document.getElementById('rival-score').textContent;
+        const gameInfo = `${gameState.localTeamName} ${localScore}-${rivalScore} ${gameState.rivalTeamName}`;
+        let prefix;
+        if (isStatic) prefix = timeValue;
+        else if (isRunningInBackground) prefix = timeValue; 
+        else if (gameState.matchTimer >= 2 * HALF_TIME_SECONDS) prefix = 'FINAL';
+        else if (gameState.currentHalf === 2 && gameState.matchTimer >= HALF_TIME_SECONDS && !gameState.isMatchRunning) prefix = 'DESCANSO';
+        else if (gameState.isMatchRunning) prefix = timeValue; 
+        else prefix = currentTitleBase;
+        document.title = `${prefix} | ${gameInfo}`;
+        if (prefix === currentTitleBase) document.title = currentTitleBase;
+    }
+
+    function exportToCsv() { let csvContent = "\uFEFF"; csvContent += `${gameState.localTeamName}\n`; csvContent += "Jugador,Goles,Asistencias,Amarillas,Rojas,Faltas,Minutos Jugados\n"; gameState.localPlayers.forEach(p => { const stats = gameState.playerStats.local[p]; csvContent += [p, stats.goles, stats.asistencias, stats.amarillas, stats.rojas, stats.faltas, formatTimeAscending(stats.minutosJugados)].join(",") + "\n"; }); csvContent += `\n${gameState.rivalTeamName}\n`; csvContent += "Dorsal,Goles,Asistencias,Amarillas,Rojas,Faltas,Minutos Jugados\n"; gameState.rivalDorsals.forEach(d => { const stats = gameState.playerStats.rival[d]; csvContent += [d, stats.goles, stats.asistencias, stats.amarillas, stats.rojas, stats.faltas, formatTimeAscending(stats.minutosJugados)].join(",") + "\n"; }); const link = document.createElement("a"); link.href = URL.createObjectURL(new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })); link.download = `estadisticas_${gameState.localTeamName}_vs_${gameState.rivalTeamName}.csv`; document.body.appendChild(link); link.click(); document.body.removeChild(link); }
 </script>
 </body>
 </html>
