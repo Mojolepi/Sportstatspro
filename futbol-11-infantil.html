@@ -687,20 +687,16 @@
             state.timerStartTime = Date.now();
             state.timerBaseTime = state.matchTimer;
 
+            clearInterval(state.timerInterval);
             state.timerInterval = setInterval(() => {
                 if (!state.isMatchRunning) return;
                 const elapsedSeconds = Math.floor((Date.now() - state.timerStartTime) / 1000);
                 const newMatchTimer = state.timerBaseTime + elapsedSeconds;
-                const secondsToAdd = newMatchTimer - state.matchTimer;
-
-                if (secondsToAdd > 0) {
-                    this.adjustPlayerMinutes(secondsToAdd);
-                    state.matchTimer = newMatchTimer;
-                }
+                
+                state.matchTimer = newMatchTimer;
                 
                 DOM.updateTimerDisplay();
                 DOM.updateDocumentTitle();
-                DOM.updateStatsTables();
             }, 1000);
             DOM.updateButtonStates();
         },
@@ -714,7 +710,8 @@
 
             const elapsedSeconds = Math.floor((Date.now() - state.timerStartTime) / 1000);
             state.matchTimer = state.timerBaseTime + elapsedSeconds;
-
+            
+            MatchLogic.rebuildAndRecalculateAllState();
             DOM.updateButtonStates();
             AppState.save();
         },
@@ -789,7 +786,7 @@
                     case 'yellow-card': 
                         if (teamPStats?.[event.player]) { teamPStats[event.player].amarillas++; if (teamPStats[event.player].amarillas >= 2) { teamPStats[event.player].expulsado = true; this.setPlayerOnBench(event.player, event.team); } }
                         break;
-                    case 'goal': if(teamPStats?.[event.goleador]){teamPStats[event.goleador].goles++;teamPStats[event.goleador].disparos++;teamPStats[event.goleador].disparosAPuerta++;} if(event.asistente && teamPStats?.[event.asistente])teamPStats[event.asistente].asistencias++; break;
+                    case 'goal': if(teamPStats?.[event.goleador]){teamPStats[event.goleador].goles++;teamPStats[event.goleador].disparos++;teamPStats[event.goleador].disparosAPuerta++;} if(event.asistente && state.playerStats[event.team]?.[event.asistente])state.playerStats[event.team][event.asistente].asistencias++; break;
                     case 'shot-on-goal': if(teamPStats?.[event.player]){teamPStats[event.player].disparosAPuerta++; teamPStats[event.player].disparos++;} break;
                     case 'shot': if(teamPStats?.[event.player]) teamPStats[event.player].disparos++; break;
                     case 'foul': if(teamPStats?.[event.player]) teamPStats[event.player].faltas++; break;
@@ -835,6 +832,19 @@
             DOM.elements['minuto-actual'].addEventListener('click', () => this.handleTimeClick());
             this.addTimeEditorListeners();
             DOM.elements['cancel-edit-btn'].addEventListener('click', () => DOM.elements['edit-event-modal'].classList.remove('visible'));
+            document.addEventListener('visibilitychange', () => this.handleVisibilityChange());
+        },
+        handleVisibilityChange() {
+            if (document.hidden) return;
+            const state = AppState.get();
+            if (state.isMatchRunning) {
+                const elapsedSeconds = Math.floor((Date.now() - state.timerStartTime) / 1000);
+                const newMatchTimer = state.timerBaseTime + elapsedSeconds;
+                const secondsToAdd = newMatchTimer - state.matchTimer;
+                if(secondsToAdd > 0) MatchLogic.adjustPlayerMinutes(secondsToAdd);
+                state.matchTimer = newMatchTimer;
+                DOM.updateAll();
+            }
         },
         handleViewToggle(team) {
             const state = AppState.get();
@@ -1264,14 +1274,12 @@
             if (AppState.get().initialPlayerState) MatchLogic.rebuildAndRecalculateAllState();
             else DOM.updateAll();
             
-            // Reanudar el cronómetro si la página se recarga y el partido estaba en curso
             const state = AppState.get();
             if (state.isMatchRunning) {
                 const elapsedSinceSave = Math.floor((Date.now() - state.timerStartTime) / 1000);
-                const timePassedWhileAway = (state.timerBaseTime + elapsedSinceSave) - state.matchTimer;
-                if(timePassedWhileAway > 0) MatchLogic.adjustPlayerMinutes(timePassedWhileAway);
                 state.matchTimer = state.timerBaseTime + elapsedSinceSave;
                 MatchLogic.startTimer();
+                MatchLogic.rebuildAndRecalculateAllState(); // Recalculate minutes missed while away
             }
         } else {
             AppState.init();
