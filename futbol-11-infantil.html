@@ -110,9 +110,52 @@
         .modal.visible { display: flex; }
         .modal-content { background: var(--color-surface); box-shadow: 0 5px 15px rgba(0,0,0,0.5); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 20px; width: 90%; max-width: 500px; }
         
-        .time-input-group { display: flex; align-items: center; gap: 10px; }
-        .time-input-group input { width: 60px; text-align: center; font-size: 1.5em; }
-        .time-input-group button { font-size: 1.5em; width: 40px; height: 40px; padding: 0; }
+        /* --- NUEVOS ESTILOS PARA EL EDITOR DE TIEMPO --- */
+        .time-editor-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .time-editor-unit {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .time-editor-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .time-editor-buttons button {
+            font-size: 1.2em;
+            padding: 0;
+            width: 40px;
+            height: 35px;
+            line-height: 35px;
+            background-color: var(--color-secondary);
+        }
+        .time-editor-unit input {
+            width: 80px;
+            height: 75px;
+            font-size: 3em; /* Números mucho más grandes */
+            font-weight: bold;
+            text-align: center;
+            border: 2px solid #555;
+            -moz-appearance: textfield; /* Ocultar flechas en Firefox */
+        }
+        .time-editor-unit input::-webkit-outer-spin-button,
+        .time-editor-unit input::-webkit-inner-spin-button {
+            -webkit-appearance: none; /* Ocultar flechas en Chrome, Safari, etc. */
+            margin: 0;
+        }
+        .time-editor-separator {
+            font-size: 3em;
+            font-weight: bold;
+            padding-bottom: 5px;
+        }
+
 
         #formation-buttons { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin: 20px 0; }
         .hidden { display: none !important; }
@@ -250,14 +293,24 @@
             <div class="modal-content">
                 <h3>Ajustar Tiempo del Partido</h3>
                 <div id="time-editor-content">
-                    <div class="time-input-group">
-                        <button id="min-minus">-</button>
-                        <input type="number" id="time-editor-min" min="0" max="120">
-                        <span>:</span>
-                        <input type="number" id="time-editor-sec" min="0" max="59">
-                        <button id="sec-plus">+</button>
+                    <div class="time-editor-container">
+                        <div class="time-editor-unit">
+                            <div class="time-editor-buttons">
+                                <button id="time-editor-min-plus">+</button>
+                                <button id="time-editor-min-minus">-</button>
+                            </div>
+                            <input type="number" id="time-editor-min" min="0" max="120">
+                        </div>
+                        <span class="time-editor-separator">:</span>
+                        <div class="time-editor-unit">
+                            <input type="number" id="time-editor-sec" min="0" max="59">
+                            <div class="time-editor-buttons">
+                                <button id="time-editor-sec-plus">+</button>
+                                <button id="time-editor-sec-minus">-</button>
+                            </div>
+                        </div>
                     </div>
-                    <div>
+                    <div style="text-align: center; display:flex; gap: 10px; justify-content: center;">
                         <button id="save-time-btn" class="btn-primary">Guardar</button>
                         <button id="cancel-time-btn" class="btn-secondary">Cancelar</button>
                     </div>
@@ -307,8 +360,8 @@
                 localTeamName: 'Local', rivalTeamName: 'Rival', localPlayers: [], rivalDorsals: [],
                 playerStats: { local: {}, rival: {} }, initialPlayerState: null,
                 matchStats: { local: { corners: 0, offsides: 0 }, rival: { corners: 0, offsides: 0 } },
-                matchTimer: 0, timerStartTime: 0, timerBaseTime: 0,
-                currentHalf: 1, isMatchRunning: false, timerInterval: null, 
+                matchTimer: 0, timerStartTime: 0, timerBaseTime: 0, isMatchRunning: false,
+                currentHalf: 1, timerInterval: null, 
                 matchEvents: [], eventFlow: { active: false }, activeView: 'local',
                 substitutionWindows: { usedFirstHalf: 0, usedSecondHalf: 0 }
             };
@@ -352,7 +405,7 @@
                 'local-stats-title', 'rival-stats-title', 'local-stats-table', 'rival-stats-table',
                 'btn-view-local', 'btn-view-rival', 'substitution-windows-display',
                 'sub-windows-first-half', 'sub-windows-second-half', 'sub-windows-divider',
-                'time-editor-modal', 'time-editor-min', 'time-editor-sec', 'min-minus', 'sec-plus',
+                'time-editor-modal', 'time-editor-min', 'time-editor-sec',
                 'save-time-btn', 'cancel-time-btn', 'edit-event-modal', 'edit-event-title', 'edit-event-content',
                 'save-edit-btn', 'cancel-edit-btn'
             ];
@@ -680,38 +733,47 @@
             const rivalReady = Object.values(state.playerStats.rival).filter(p => p.onPitch).length === AppConfig.MAX_PLAYERS_ON_PITCH;
             return localReady && rivalReady;
         },
+        _createTimerInterval() {
+            const state = AppState.get();
+            clearInterval(state.timerInterval);
+            state.timerInterval = setInterval(() => {
+                if (!state.isMatchRunning) {
+                    clearInterval(state.timerInterval);
+                    state.timerInterval = null;
+                    return;
+                }
+                const elapsedSeconds = Math.floor((Date.now() - state.timerStartTime) / 1000);
+                state.matchTimer = state.timerBaseTime + elapsedSeconds;
+                
+                DOM.updateTimerDisplay();
+                DOM.updateDocumentTitle();
+            }, 1000);
+        },
         startTimer() {
             const state = AppState.get();
             if (state.isMatchRunning) return;
             state.isMatchRunning = true;
             state.timerStartTime = Date.now();
             state.timerBaseTime = state.matchTimer;
-
-            clearInterval(state.timerInterval);
-            state.timerInterval = setInterval(() => {
-                if (!state.isMatchRunning) return;
-                const elapsedSeconds = Math.floor((Date.now() - state.timerStartTime) / 1000);
-                const newMatchTimer = state.timerBaseTime + elapsedSeconds;
-                
-                state.matchTimer = newMatchTimer;
-                
-                DOM.updateTimerDisplay();
-                DOM.updateDocumentTitle();
-            }, 1000);
+            
+            this._createTimerInterval();
+            
             DOM.updateButtonStates();
+            AppState.save();
         },
         stopTimer() {
             const state = AppState.get();
             if (!state.isMatchRunning) return;
-            state.isMatchRunning = false;
-            
-            clearInterval(state.timerInterval);
-            state.timerInterval = null;
 
             const elapsedSeconds = Math.floor((Date.now() - state.timerStartTime) / 1000);
             state.matchTimer = state.timerBaseTime + elapsedSeconds;
             
-            MatchLogic.rebuildAndRecalculateAllState();
+            state.isMatchRunning = false;
+            
+            clearInterval(state.timerInterval);
+            state.timerInterval = null;
+            
+            this.rebuildAndRecalculateAllState();
             DOM.updateButtonStates();
             AppState.save();
         },
@@ -835,15 +897,15 @@
             document.addEventListener('visibilitychange', () => this.handleVisibilityChange());
         },
         handleVisibilityChange() {
-            if (document.hidden) return;
             const state = AppState.get();
+            if (document.hidden) {
+                if (state.isMatchRunning) AppState.save();
+                return;
+            }
             if (state.isMatchRunning) {
                 const elapsedSeconds = Math.floor((Date.now() - state.timerStartTime) / 1000);
-                const newMatchTimer = state.timerBaseTime + elapsedSeconds;
-                const secondsToAdd = newMatchTimer - state.matchTimer;
-                if(secondsToAdd > 0) MatchLogic.adjustPlayerMinutes(secondsToAdd);
-                state.matchTimer = newMatchTimer;
-                DOM.updateAll();
+                state.matchTimer = state.timerBaseTime + elapsedSeconds;
+                MatchLogic.rebuildAndRecalculateAllState();
             }
         },
         handleViewToggle(team) {
@@ -914,9 +976,9 @@
         handleFinishGame() {
             MatchLogic.stopTimer();
             const state = AppState.get();
-            const diff = AppConfig.FULL_TIME_SECONDS - state.matchTimer;
-            if (diff > 0) MatchLogic.adjustPlayerMinutes(diff);
-            state.matchTimer = AppConfig.FULL_TIME_SECONDS;
+            if (state.matchTimer < AppConfig.FULL_TIME_SECONDS) {
+                state.matchTimer = AppConfig.FULL_TIME_SECONDS;
+            }
             MatchLogic.addMatchEvent({ type: 'control', text: 'Final del partido.' });
             DOM.elements['btn-export-excel'].classList.remove('hidden');
             MatchLogic.rebuildAndRecalculateAllState();
@@ -963,7 +1025,7 @@
         startTeamEventFlow(type) {
             const state = AppState.get();
             state.eventFlow = { active: true, type, step: 1 };
-            DOM.elements['formation-modal-title'].innerHTML = `¿Para qué equipo es el ${MatchLogic.generateEventText({type})}?`;
+            DOM.elements['formation-modal-title'].innerHTML = `¿Para qué equipo es el ${type === 'corner' ? 'córner' : 'fuera de juego'}?`;
             const buttonsContainer = DOM.elements['formation-buttons'];
             buttonsContainer.innerHTML = '';
             ['local', 'rival'].forEach(team => {
@@ -1011,11 +1073,29 @@
             AppState.get().eventFlow = { active: false };
             if (!cancelled) MatchLogic.rebuildAndRecalculateAllState();
         },
+        // --- FUNCIÓN MODIFICADA PARA PROTEGER LAS VENTANAS DE CAMBIOS ---
         handleDeleteEvent(eventId) {
             if (confirm("¿Estás seguro de que quieres eliminar este evento?")) {
                 const state = AppState.get();
+                const eventToDelete = state.matchEvents.find(e => e.id == eventId);
+
+                if (!eventToDelete) return;
+
+                const shouldPreserveWindows = eventToDelete.type === 'substitution';
+                let preservedWindows = null;
+                if (shouldPreserveWindows) {
+                    preservedWindows = { ...state.substitutionWindows };
+                }
+
                 state.matchEvents = state.matchEvents.filter(e => e.id != eventId);
+                
                 MatchLogic.rebuildAndRecalculateAllState();
+
+                if (shouldPreserveWindows && preservedWindows) {
+                    state.substitutionWindows = preservedWindows;
+                    DOM.updateSubstitutionWindowsUI();
+                }
+
                 AppState.save();
             }
         },
@@ -1030,7 +1110,26 @@
             contentEl.innerHTML = '';
 
             const createSelect = (id, label, options, selected) => `<label for="${id}">${label}</label><select id="${id}">${options.map(o => `<option value="${o}" ${o === selected ? 'selected' : ''}>${o}</option>`).join('')}</select>`;
-            const createTimeInput = (id, label, timeInSeconds) => `<label>${label}</label><div class="time-input-group" style="justify-content: center;"><input type="number" id="${id}-min" value="${Math.floor(timeInSeconds / 60)}" min="0" max="120"> : <input type="number" id="${id}-sec" value="${timeInSeconds % 60}" min="0" max="59"></div>`;
+            // --- FUNCIÓN MODIFICADA PARA CREAR EL NUEVO EDITOR DE TIEMPO ---
+            const createTimeInput = (id, label, timeInSeconds) => `
+                <label>${label}</label>
+                <div class="time-editor-container">
+                    <div class="time-editor-unit">
+                        <div class="time-editor-buttons">
+                            <button type="button" id="${id}-min-plus">+</button>
+                            <button type="button" id="${id}-min-minus">-</button>
+                        </div>
+                        <input type="number" id="${id}-min" value="${Math.floor(timeInSeconds / 60)}" min="0" max="120">
+                    </div>
+                    <span class="time-editor-separator">:</span>
+                    <div class="time-editor-unit">
+                        <input type="number" id="${id}-sec" value="${timeInSeconds % 60}" min="0" max="59">
+                        <div class="time-editor-buttons">
+                            <button type="button" id="${id}-sec-plus">+</button>
+                            <button type="button" id="${id}-sec-minus">-</button>
+                        </div>
+                    </div>
+                </div>`;
 
             const eventTypeMap = {'goal':'Gol','shot':'Disparo','shot-on-goal':'Tiro a Puerta','foul':'Falta','yellow-card':'Tarjeta Amarilla','red-card':'Tarjeta Roja', 'substitution':'Sustitución'};
             titleEl.textContent = `Editar ${eventTypeMap[eventToEdit.type] || 'Evento'}`;
@@ -1056,6 +1155,38 @@
             }
             contentEl.innerHTML += createTimeInput('edit-time', 'Minuto del Evento:', eventToEdit.timeInSeconds);
             
+            // --- AÑADIMOS LISTENERS PARA LOS BOTONES DINÁMICOS DEL EDITOR DE TIEMPO ---
+            const setupDynamicTimeListeners = (id) => {
+                const minInput = document.getElementById(`${id}-min`);
+                const secInput = document.getElementById(`${id}-sec`);
+                if (!minInput || !secInput) return;
+
+                const updateValue = (input, delta) => {
+                    let value = parseInt(input.value) || 0;
+                    value += delta;
+                    if (input === minInput) {
+                        if (value < 0) value = 0;
+                        if (value > 120) value = 120;
+                    }
+                    if (input === secInput) {
+                        if (value < 0) {
+                            value = 59;
+                            updateValue(minInput, -1);
+                        } else if (value > 59) {
+                            value = 0;
+                            updateValue(minInput, 1);
+                        }
+                    }
+                    input.value = value.toString().padStart(2,'0');
+                };
+
+                document.getElementById(`${id}-min-plus`).addEventListener('click', () => updateValue(minInput, 1));
+                document.getElementById(`${id}-min-minus`).addEventListener('click', () => updateValue(minInput, -1));
+                document.getElementById(`${id}-sec-plus`).addEventListener('click', () => updateValue(secInput, 1));
+                document.getElementById(`${id}-sec-minus`).addEventListener('click', () => updateValue(secInput, -1));
+            };
+            setupDynamicTimeListeners('edit-time');
+
             DOM.elements['save-edit-btn'].onclick = () => {
                 let updatedData = {};
                 const newMin = parseInt(document.getElementById('edit-time-min').value) || 0;
@@ -1103,20 +1234,40 @@
             if (!state.isMatchRunning && state.matchEvents.some(e => e.type === 'init_match')) {
                 const mins = Math.floor(state.matchTimer / 60);
                 const secs = state.matchTimer % 60;
-                DOM.elements['time-editor-min'].value = mins;
-                DOM.elements['time-editor-sec'].value = secs;
+                DOM.elements['time-editor-min'].value = mins.toString().padStart(2,'0');
+                DOM.elements['time-editor-sec'].value = secs.toString().padStart(2,'0');
                 DOM.elements['time-editor-modal'].classList.add('visible');
             }
         },
+        // --- FUNCIÓN MODIFICADA PARA EL NUEVO EDITOR DE TIEMPO ---
         addTimeEditorListeners() {
             const minInput = DOM.elements['time-editor-min'];
             const secInput = DOM.elements['time-editor-sec'];
-            DOM.elements['min-minus'].addEventListener('click', () => minInput.value = Math.max(0, parseInt(minInput.value) - 1));
-            DOM.elements['sec-plus'].addEventListener('click', () => {
-                let secs = parseInt(secInput.value) + 1;
-                if (secs > 59) { secs = 0; minInput.value = parseInt(minInput.value) + 1; }
-                secInput.value = secs;
-            });
+
+            const updateValue = (input, delta) => {
+                let value = parseInt(input.value) || 0;
+                value += delta;
+                if (input === minInput) {
+                    if (value < 0) value = 0;
+                    if (value > 120) value = 120;
+                }
+                if (input === secInput) {
+                    if (value < 0) {
+                        value = 59;
+                        updateValue(minInput, -1);
+                    } else if (value > 59) {
+                        value = 0;
+                        updateValue(minInput, 1);
+                    }
+                }
+                input.value = value.toString().padStart(2, '0');
+            };
+
+            document.getElementById('time-editor-min-plus').addEventListener('click', () => updateValue(minInput, 1));
+            document.getElementById('time-editor-min-minus').addEventListener('click', () => updateValue(minInput, -1));
+            document.getElementById('time-editor-sec-plus').addEventListener('click', () => updateValue(secInput, 1));
+            document.getElementById('time-editor-sec-minus').addEventListener('click', () => updateValue(secInput, -1));
+
             DOM.elements['save-time-btn'].addEventListener('click', () => {
                 const newMins = parseInt(minInput.value) || 0;
                 const newSecs = parseInt(secInput.value) || 0;
@@ -1126,12 +1277,10 @@
                     alert("El tiempo no puede ser anterior al último evento registrado."); return;
                 }
                 const state = AppState.get();
-                const diff = newTotalSeconds - state.matchTimer;
-                MatchLogic.adjustPlayerMinutes(diff);
                 state.matchTimer = newTotalSeconds;
                 state.timerBaseTime = newTotalSeconds;
                 
-                DOM.updateAll();
+                MatchLogic.rebuildAndRecalculateAllState();
                 AppState.save();
                 DOM.elements['time-editor-modal'].classList.remove('visible');
             });
@@ -1265,21 +1414,23 @@
     document.addEventListener('DOMContentLoaded', () => {
         DragAndDrop.move = DragAndDrop.move.bind(DragAndDrop);
         DragAndDrop.end = DragAndDrop.end.bind(DragAndDrop);
-        DOM.cacheElements();
         EventHandler.addEventListeners();
 
         if (AppState.load()) {
             DOM.showMatchUI();
             DOM.setupBenchesAndPitch();
-            if (AppState.get().initialPlayerState) MatchLogic.rebuildAndRecalculateAllState();
-            else DOM.updateAll();
-            
             const state = AppState.get();
+            
             if (state.isMatchRunning) {
                 const elapsedSinceSave = Math.floor((Date.now() - state.timerStartTime) / 1000);
                 state.matchTimer = state.timerBaseTime + elapsedSinceSave;
-                MatchLogic.startTimer();
-                MatchLogic.rebuildAndRecalculateAllState(); // Recalculate minutes missed while away
+                MatchLogic._createTimerInterval();
+            }
+
+            if (state.initialPlayerState) {
+                MatchLogic.rebuildAndRecalculateAllState();
+            } else {
+                DOM.updateAll();
             }
         } else {
             AppState.init();
