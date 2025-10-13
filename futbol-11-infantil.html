@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF--8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fútbol 11 Táctico Interactivo</title>
     
@@ -99,9 +99,28 @@
         }
         
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9em; table-layout: fixed;}
-        th, td { padding: 10px; text-align: center; border-bottom: 1px solid #444; word-break: break-word;}
-        th:first-child, td:first-child { width: 28%; text-align: left; }
-        th:not(:first-child), td:not(:first-child) { width: 9%; }
+        th, td { padding: 10px; text-align: center; border-bottom: 1px solid #444; word-break: break-word; vertical-align: middle;}
+        /* Ajuste de columnas de la tabla de estadísticas */
+        th:first-child, td:first-child { width: 32%; text-align: left; }
+        th:not(:first-child), td:not(:first-child) { width: 9.7%; }
+
+        /* Estilos para resaltar estadísticas */
+        td .stat-value-circle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+            margin: 0 auto;
+            border-radius: 50%;
+            font-weight: bold;
+            color: var(--color-background);
+            font-size: 0.9em;
+        }
+        .stat-value-circle.goal { background-color: var(--color-success); }
+        .stat-value-circle.yellow { background-color: var(--color-warning); color: #111; }
+        .stat-value-circle.red { background-color: var(--color-danger); }
+        .stat-value-circle.generic { background-color: var(--color-primary); }
 
         thead { background-color: rgba(0,0,0,0.3); }
         tbody tr:hover { background-color: rgba(255, 255, 255, 0.05); }
@@ -110,7 +129,6 @@
         .modal.visible { display: flex; }
         .modal-content { background: var(--color-surface); box-shadow: 0 5px 15px rgba(0,0,0,0.5); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 20px; width: 90%; max-width: 500px; }
         
-        /* --- NUEVOS ESTILOS PARA EL EDITOR DE TIEMPO --- */
         .time-editor-container {
             display: flex;
             justify-content: center;
@@ -139,15 +157,15 @@
         .time-editor-unit input {
             width: 80px;
             height: 75px;
-            font-size: 3em; /* Números mucho más grandes */
+            font-size: 3em;
             font-weight: bold;
             text-align: center;
             border: 2px solid #555;
-            -moz-appearance: textfield; /* Ocultar flechas en Firefox */
+            -moz-appearance: textfield;
         }
         .time-editor-unit input::-webkit-outer-spin-button,
         .time-editor-unit input::-webkit-inner-spin-button {
-            -webkit-appearance: none; /* Ocultar flechas en Chrome, Safari, etc. */
+            -webkit-appearance: none;
             margin: 0;
         }
         .time-editor-separator {
@@ -155,7 +173,6 @@
             font-weight: bold;
             padding-bottom: 5px;
         }
-
 
         #formation-buttons { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin: 20px 0; }
         .hidden { display: none !important; }
@@ -246,11 +263,10 @@
                 </div>
             </div>
              <div class="event-group">
-                 <button class="btn-event" data-event="goal">GOL ⚽</button><button class="btn-event" data-event="shot-on-goal">TIRO A PUERTA 🎯</button>
-                 <button class="btn-event" data-event="shot">DISPARO 💥</button><button class="btn-event" data-event="corner">CÓRNER ⛳</button>
-                 <button class="btn-event" data-event="offside">FUERA DE JUEGO 🏳️</button>
-                 <button class="btn-event" data-event="foul">FALTA ✋</button><button class="btn-event" data-event="yellow-card">AMARILLA 🟨</button>
-                 <button class="btn-event" data-event="red-card">ROJA 🟥</button>
+                  <button class="btn-event" data-event="goal">GOL ⚽</button><button class="btn-event" data-event="shot">DISPARO 💥</button>
+                  <button class="btn-event" data-event="corner">CÓRNER ⛳</button><button class="btn-event" data-event="offside">FUERA DE JUEGO 🏳️</button>
+                  <button class="btn-event" data-event="foul">FALTA ✋</button><button class="btn-event" data-event="yellow-card">AMARILLA 🟨</button>
+                  <button class="btn-event" data-event="red-card">ROJA 🟥</button>
              </div>
             <div class="control-group">
                 <button id="btn-half-time" class="btn-secondary" disabled>Descanso</button><button id="btn-start-second" class="btn-secondary" disabled>Inicio 2ª</button>
@@ -279,9 +295,9 @@
         <section id="stats-section" class="hidden">
             <h2>Estadísticas de Jugadores</h2>
             <h3 id="local-stats-title"></h3>
-            <table id="local-stats-table"><thead><tr><th>Jugador</th><th>G</th><th>A</th><th>D</th><th>TP</th><th>F</th><th>🟨</th><th>🟥</th><th>MIN</th></tr></thead><tbody></tbody></table>
+            <table id="local-stats-table"><thead><tr><th>Jugador</th><th>G</th><th>A</th><th>D</th><th>F</th><th>🟨</th><th>🟥</th><th>MIN</th></tr></thead><tbody></tbody></table>
             <h3 id="rival-stats-title" style="margin-top: 20px;"></h3>
-            <table id="rival-stats-table"><thead><tr><th>Dorsal</th><th>G</th><th>A</th><th>D</th><th>TP</th><th>F</th><th>🟨</th><th>🟥</th><th>MIN</th></tr></thead><tbody></tbody></table>
+            <table id="rival-stats-table"><thead><tr><th>Dorsal</th><th>G</th><th>A</th><th>D</th><th>F</th><th>🟨</th><th>🟥</th><th>MIN</th></tr></thead><tbody></tbody></table>
             <button id="btn-export-excel" class="btn-primary hidden" style="margin-top: 20px; width: 100%;">Exportar a Excel</button>
         </section>
         
@@ -361,7 +377,7 @@
                 playerStats: { local: {}, rival: {} }, initialPlayerState: null,
                 matchStats: { local: { corners: 0, offsides: 0 }, rival: { corners: 0, offsides: 0 } },
                 matchTimer: 0, timerStartTime: 0, timerBaseTime: 0, isMatchRunning: false,
-                currentHalf: 1, timerInterval: null, 
+                currentHalf: 1, timerInterval: null, lastMinuteCheck: -1, // <-- Añadido para control de minutos en vivo
                 matchEvents: [], eventFlow: { active: false }, activeView: 'local',
                 substitutionWindows: { usedFirstHalf: 0, usedSecondHalf: 0 }
             };
@@ -555,7 +571,7 @@
             const state = AppState.get();
             this.elements['event-timeline'].innerHTML = '';
             state.matchEvents.slice().reverse().forEach(event => {
-                const iconMap = {'goal':'⚽', 'shot':'💥', 'shot-on-goal': '🎯', 'corner': '⛳', 'offside': '🏳️', 'foul':'✋', 'yellow-card':'🟨', 'red-card':'🟥', 'init_match':'▶️', 'control':'⏸️', 'substitution': '🔄'};
+                const iconMap = {'goal':'⚽', 'shot':'💥', 'corner': '⛳', 'offside': '🏳️', 'foul':'✋', 'yellow-card':'🟨', 'red-card':'🟥', 'init_match':'▶️', 'control':'⏸️', 'substitution': '🔄'};
                 const el = document.createElement('div');
                 el.className = 'timeline-event';
                 const eventText = `<span class="timeline-event-text"><span style="opacity: 0.7;">Min ${event.minute}'</span> - ${iconMap[event.type] || ''} ${event.text}</span>`;
@@ -568,6 +584,14 @@
         },
         updateStatsTables() {
             const state = AppState.get();
+            
+            const highlightStat = (value, type) => {
+                if (value > 0) {
+                    return `<div class="stat-value-circle ${type}">${value}</div>`;
+                }
+                return value;
+            };
+
             const buildTable = (team, players) => {
                 const tbody = this.elements[`${team}-stats-table`].querySelector('tbody');
                 tbody.innerHTML = '';
@@ -575,7 +599,16 @@
                     const stats = state.playerStats[team]?.[name];
                     if (!stats) return;
                     const row = tbody.insertRow();
-                    row.innerHTML = `<td>${name}</td><td>${stats.goles}</td><td>${stats.asistencias}</td><td>${stats.disparos}</td><td>${stats.disparosAPuerta}</td><td>${stats.faltas}</td><td>${stats.amarillas}</td><td>${stats.rojas}</td><td>${MatchLogic.formatMinutesRoundedUp(stats.minutosJugados)}'</td>`;
+                    row.innerHTML = `
+                        <td>${name}</td>
+                        <td>${highlightStat(stats.goles, 'goal')}</td>
+                        <td>${highlightStat(stats.asistencias, 'generic')}</td>
+                        <td>${highlightStat(stats.disparos, 'generic')}</td>
+                        <td>${highlightStat(stats.faltas, 'generic')}</td>
+                        <td>${highlightStat(stats.amarillas, 'yellow')}</td>
+                        <td>${highlightStat(stats.rojas, 'red')}</td>
+                        <td>${MatchLogic.formatMinutesRoundedUp(stats.minutosJugados)}'</td>
+                    `;
                     if (stats.onPitch) row.classList.add('player-on-pitch');
                 });
             };
@@ -588,8 +621,8 @@
                 local: { shots: 0, sot: 0, yellow: 0, red: 0, corners: state.matchStats.local.corners, offsides: state.matchStats.local.offsides }, 
                 rival: { shots: 0, sot: 0, yellow: 0, red: 0, corners: state.matchStats.rival.corners, offsides: state.matchStats.rival.offsides }
             };
-            for (const p of Object.values(state.playerStats.local)) { stats.local.shots += p.disparos; stats.local.sot += p.disparosAPuerta; stats.local.yellow += p.amarillas; stats.local.red += p.rojas; }
-            for (const p of Object.values(state.playerStats.rival)) { stats.rival.shots += p.disparos; stats.rival.sot += p.disparosAPuerta; stats.rival.yellow += p.amarillas; stats.rival.red += p.rojas; }
+            for (const p of Object.values(state.playerStats.local)) { stats.local.shots += p.disparos; stats.local.sot += p.disparos; stats.local.yellow += p.amarillas; stats.local.red += p.rojas; }
+            for (const p of Object.values(state.playerStats.rival)) { stats.rival.shots += p.disparos; stats.rival.sot += p.disparos; stats.rival.yellow += p.amarillas; stats.rival.red += p.rojas; }
             const updateRow = (t, l, r) => { document.getElementById(`stat-local-${t}`).textContent=l; document.getElementById(`stat-rival-${t}`).textContent=r; const total = l+r; document.getElementById(`stat-bar-${t}`).style.width = `${total > 0 ? (l/total)*100 : 50}%`; };
             updateRow('shots', stats.local.shots, stats.rival.shots); updateRow('sot', stats.local.sot, stats.rival.sot);
             updateRow('corners', stats.local.corners, stats.rival.corners); updateRow('offsides', stats.local.offsides, stats.rival.offsides);
@@ -697,7 +730,6 @@
                 case 'goal': return `GOL de <strong>${event.goleador}</strong>` + (event.asistente ? `. Asistencia de <strong>${event.asistente}</strong>` : '.');
                 case 'substitution': return `Sustitución (${getTeamName(event.team)}): Entra <strong>${event.playerIn}</strong>, sale <strong>${event.playerOut}</strong>.`;
                 case 'shot': return `Disparo de <strong>${event.player}</strong>.`;
-                case 'shot-on-goal': return `Tiro a Puerta de <strong>${event.player}</strong>.`;
                 case 'foul': return `Falta de <strong>${event.player}</strong>.`;
                 case 'yellow-card': return `Tarjeta Amarilla para <strong>${event.player}</strong>.`;
                 case 'red-card': return `Tarjeta ROJA para <strong>${event.player}</strong>.`;
@@ -722,7 +754,7 @@
         initializeStats() {
             const state = AppState.get();
             state.playerStats = { local: {}, rival: {} };
-            const initialStats = { onPitch: false, goles: 0, asistencias: 0, disparos: 0, disparosAPuerta: 0, faltas: 0, amarillas: 0, rojas: 0, minutosJugados: 0, expulsado: false, haSidoSustituido: false, position: null };
+            const initialStats = { onPitch: false, goles: 0, asistencias: 0, disparos: 0, faltas: 0, amarillas: 0, rojas: 0, minutosJugados: 0, expulsado: false, haSidoSustituido: false, position: null };
             state.localPlayers.forEach(p => state.playerStats.local[p] = { ...initialStats });
             state.rivalDorsals.forEach(d => state.playerStats.rival[d] = { ...initialStats });
         },
@@ -744,8 +776,19 @@
                 }
                 const elapsedSeconds = Math.floor((Date.now() - state.timerStartTime) / 1000);
                 state.matchTimer = state.timerBaseTime + elapsedSeconds;
+
+                // --- INICIO DE LA LÓGICA DE ACTUALIZACIÓN EN VIVO ---
+                const currentMinute = Math.floor(state.matchTimer / 60);
+                if (state.isMatchRunning && currentMinute > state.lastMinuteCheck) {
+                    state.lastMinuteCheck = currentMinute;
+                    // Recalcula todo el estado para actualizar los minutos en la tabla
+                    this.rebuildAndRecalculateAllState(); 
+                } else {
+                    // Si no hay un recálculo completo, solo actualiza el cronómetro principal
+                    DOM.updateTimerDisplay();
+                }
+                // --- FIN DE LA LÓGICA DE ACTUALIZACIÓN EN VIVO ---
                 
-                DOM.updateTimerDisplay();
                 DOM.updateDocumentTitle();
             }, 1000);
         },
@@ -814,7 +857,7 @@
             state.playerStats = JSON.parse(JSON.stringify(state.initialPlayerState));
             for (const team of Object.values(state.playerStats)) {
                 for (const player of Object.values(team)) {
-                    Object.assign(player, { goles: 0, asistencias: 0, disparos: 0, disparosAPuerta: 0, faltas: 0, amarillas: 0, rojas: 0, expulsado: false, minutosJugados: 0 });
+                    Object.assign(player, { goles: 0, asistencias: 0, disparos: 0, faltas: 0, amarillas: 0, rojas: 0, expulsado: false, minutosJugados: 0 });
                 }
             }
             state.matchStats = { local: { corners: 0, offsides: 0 }, rival: { corners: 0, offsides: 0 } };
@@ -848,8 +891,7 @@
                     case 'yellow-card': 
                         if (teamPStats?.[event.player]) { teamPStats[event.player].amarillas++; if (teamPStats[event.player].amarillas >= 2) { teamPStats[event.player].expulsado = true; this.setPlayerOnBench(event.player, event.team); } }
                         break;
-                    case 'goal': if(teamPStats?.[event.goleador]){teamPStats[event.goleador].goles++;teamPStats[event.goleador].disparos++;teamPStats[event.goleador].disparosAPuerta++;} if(event.asistente && state.playerStats[event.team]?.[event.asistente])state.playerStats[event.team][event.asistente].asistencias++; break;
-                    case 'shot-on-goal': if(teamPStats?.[event.player]){teamPStats[event.player].disparosAPuerta++; teamPStats[event.player].disparos++;} break;
+                    case 'goal': if(teamPStats?.[event.goleador]){teamPStats[event.goleador].goles++;teamPStats[event.goleador].disparos++;} if(event.asistente && state.playerStats[event.team]?.[event.asistente])state.playerStats[event.team][event.asistente].asistencias++; break;
                     case 'shot': if(teamPStats?.[event.player]) teamPStats[event.player].disparos++; break;
                     case 'foul': if(teamPStats?.[event.player]) teamPStats[event.player].faltas++; break;
                     case 'corner': if(state.matchStats[event.team]) state.matchStats[event.team].corners++; break;
@@ -861,6 +903,9 @@
             const finalTimeDelta = state.matchTimer - lastTime;
             if (finalTimeDelta > 0) this.adjustPlayerMinutes(finalTimeDelta);
             
+            // Actualiza la variable de control de minutos para evitar recálculos innecesarios en el mismo minuto
+            state.lastMinuteCheck = Math.floor(state.matchTimer / 60);
+
             DOM.updateAll();
         },
         setPlayerOnPitch(name, team, pos) {
@@ -1015,7 +1060,7 @@
             DOM.elements['pitch-section'].scrollIntoView({ behavior: 'smooth', block: 'center' });
             let prompt = `Selecciona el jugador`;
             if (type === 'goal') prompt = "Selecciona al <strong>goleador</strong>";
-            else if (type === 'shot' || type === 'shot-on-goal') prompt = "Selecciona al <strong>rematador</strong>";
+            else if (type === 'shot') prompt = "Selecciona al <strong>rematador</strong>";
             else if (type === 'foul') prompt = "Selecciona al <strong>infractor</strong>";
             else if (type === 'yellow-card' || type === 'red-card') prompt = "Selecciona al jugador (campo o banquillo)";
             DOM.elements['event-flow-message'].innerHTML = `${prompt} <small>(clic aquí para cancelar)</small>`;
@@ -1073,7 +1118,6 @@
             AppState.get().eventFlow = { active: false };
             if (!cancelled) MatchLogic.rebuildAndRecalculateAllState();
         },
-        // --- FUNCIÓN MODIFICADA PARA PROTEGER LAS VENTANAS DE CAMBIOS ---
         handleDeleteEvent(eventId) {
             if (confirm("¿Estás seguro de que quieres eliminar este evento?")) {
                 const state = AppState.get();
@@ -1110,7 +1154,6 @@
             contentEl.innerHTML = '';
 
             const createSelect = (id, label, options, selected) => `<label for="${id}">${label}</label><select id="${id}">${options.map(o => `<option value="${o}" ${o === selected ? 'selected' : ''}>${o}</option>`).join('')}</select>`;
-            // --- FUNCIÓN MODIFICADA PARA CREAR EL NUEVO EDITOR DE TIEMPO ---
             const createTimeInput = (id, label, timeInSeconds) => `
                 <label>${label}</label>
                 <div class="time-editor-container">
@@ -1131,7 +1174,7 @@
                     </div>
                 </div>`;
 
-            const eventTypeMap = {'goal':'Gol','shot':'Disparo','shot-on-goal':'Tiro a Puerta','foul':'Falta','yellow-card':'Tarjeta Amarilla','red-card':'Tarjeta Roja', 'substitution':'Sustitución'};
+            const eventTypeMap = {'goal':'Gol','shot':'Disparo','foul':'Falta','yellow-card':'Tarjeta Amarilla','red-card':'Tarjeta Roja', 'substitution':'Sustitución'};
             titleEl.textContent = `Editar ${eventTypeMap[eventToEdit.type] || 'Evento'}`;
             
             const localPlayers = state.localPlayers;
@@ -1155,7 +1198,6 @@
             }
             contentEl.innerHTML += createTimeInput('edit-time', 'Minuto del Evento:', eventToEdit.timeInSeconds);
             
-            // --- AÑADIMOS LISTENERS PARA LOS BOTONES DINÁMICOS DEL EDITOR DE TIEMPO ---
             const setupDynamicTimeListeners = (id) => {
                 const minInput = document.getElementById(`${id}-min`);
                 const secInput = document.getElementById(`${id}-sec`);
@@ -1239,7 +1281,6 @@
                 DOM.elements['time-editor-modal'].classList.add('visible');
             }
         },
-        // --- FUNCIÓN MODIFICADA PARA EL NUEVO EDITOR DE TIEMPO ---
         addTimeEditorListeners() {
             const minInput = DOM.elements['time-editor-min'];
             const secInput = DOM.elements['time-editor-sec'];
@@ -1288,10 +1329,32 @@
         },
         exportToCsv() {
             const state = AppState.get();
-            let csv = `${state.localTeamName}\nJugador,G,A,D,TP,F,Y,R,MIN\n`;
-            state.localPlayers.forEach(p => { const s = state.playerStats.local[p]; csv += [p, s.goles, s.asistencias, s.disparos, s.disparosAPuerta, s.faltas, s.amarillas, s.rojas, MatchLogic.formatMinutesRoundedUp(s.minutosJugados)].join(",") + "\n"; });
-            csv += `\n${state.rivalTeamName}\nDorsal,G,A,D,TP,F,Y,R,MIN\n`;
-            state.rivalDorsals.forEach(d => { const s = state.playerStats.rival[d]; csv += [d, s.goles, s.asistencias, s.disparos, s.disparosAPuerta, s.faltas, s.amarillas, s.rojas, MatchLogic.formatMinutesRoundedUp(s.minutosJugados)].join(",") + "\n"; });
+            // Cabecera sin 'TP'
+            let csv = `${state.localTeamName}\nJugador,G,A,D,F,Y,R,MIN\n`;
+            state.localPlayers.forEach(p => { 
+                const s = state.playerStats.local[p];
+                // Fila sin 'disparosAPuerta'
+                csv += [p, s.goles, s.asistencias, s.disparos, s.faltas, s.amarillas, s.rojas, MatchLogic.formatMinutesRoundedUp(s.minutosJugados)].join(",") + "\n"; 
+            });
+            // Cabecera sin 'TP'
+            csv += `\n${state.rivalTeamName}\nDorsal,G,A,D,F,Y,R,MIN\n`;
+            state.rivalDorsals.forEach(d => { 
+                const s = state.playerStats.rival[d];
+                // Fila sin 'disparosAPuerta'
+                csv += [d, s.goles, s.asistencias, s.disparos, s.faltas, s.amarillas, s.rojas, MatchLogic.formatMinutesRoundedUp(s.minutosJugados)].join(",") + "\n"; 
+            });
+
+            // --- INICIO DE LA LÓGICA PARA AÑADIR LA CRONOLOGÍA ---
+            csv += `\n\nCronología del Partido\n`;
+            csv += `Minuto,Evento\n`;
+            state.matchEvents.forEach(event => {
+                // Limpia las etiquetas HTML del texto del evento
+                const cleanedText = event.text.replace(/<[^>]*>?/gm, '');
+                // Envuelve el texto en comillas dobles para evitar problemas con comas
+                csv += `${event.minute},"${cleanedText}"\n`;
+            });
+            // --- FIN DE LA LÓGICA PARA AÑADIR LA CRONOLOGÍA ---
+
             const a = document.createElement("a");
             a.href = URL.createObjectURL(new Blob(["\uFEFF"+csv], {type:'text/csv;charset=utf-8;'}));
             a.download = `estadisticas_${state.localTeamName}_vs_${state.rivalTeamName}.csv`; a.click();
