@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF--8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fútbol 11 Táctico Interactivo</title>
     
@@ -99,23 +99,33 @@
         }
         
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9em; table-layout: fixed;}
-        th, td { padding: 10px; text-align: center; border-bottom: 1px solid #444; word-break: break-word; vertical-align: middle;}
-        /* Ajuste de columnas de la tabla de estadísticas */
-        th:first-child, td:first-child { width: 32%; text-align: left; }
-        th:not(:first-child), td:not(:first-child) { width: 9.7%; }
+        th, td { padding: 8px 4px; text-align: center; border-bottom: 1px solid #444; word-break: break-word; vertical-align: middle;}
+        
+        /* === AJUSTE FINAL DE COLUMNAS PARA MÓVIL === */
+        th:first-child, td:first-child { 
+            width: 32%; 
+            text-align: left; 
+            padding-left: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        th:not(:first-child), td:not(:first-child) { 
+            width: 9.7%; 
+        }
+        /* ============================================== */
 
-        /* Estilos para resaltar estadísticas */
         td .stat-value-circle {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 26px;
-            height: 26px;
+            width: 24px;
+            height: 24px;
             margin: 0 auto;
             border-radius: 50%;
             font-weight: bold;
             color: var(--color-background);
-            font-size: 0.9em;
+            font-size: 0.85em;
         }
         .stat-value-circle.goal { background-color: var(--color-success); }
         .stat-value-circle.yellow { background-color: var(--color-warning); color: #111; }
@@ -377,7 +387,7 @@
                 playerStats: { local: {}, rival: {} }, initialPlayerState: null,
                 matchStats: { local: { corners: 0, offsides: 0 }, rival: { corners: 0, offsides: 0 } },
                 matchTimer: 0, timerStartTime: 0, timerBaseTime: 0, isMatchRunning: false,
-                currentHalf: 1, timerInterval: null, lastMinuteCheck: -1, // <-- Añadido para control de minutos en vivo
+                currentHalf: 1, timerInterval: null, lastMinuteCheck: -1,
                 matchEvents: [], eventFlow: { active: false }, activeView: 'local',
                 substitutionWindows: { usedFirstHalf: 0, usedSecondHalf: 0 }
             };
@@ -777,17 +787,13 @@
                 const elapsedSeconds = Math.floor((Date.now() - state.timerStartTime) / 1000);
                 state.matchTimer = state.timerBaseTime + elapsedSeconds;
 
-                // --- INICIO DE LA LÓGICA DE ACTUALIZACIÓN EN VIVO ---
                 const currentMinute = Math.floor(state.matchTimer / 60);
                 if (state.isMatchRunning && currentMinute > state.lastMinuteCheck) {
                     state.lastMinuteCheck = currentMinute;
-                    // Recalcula todo el estado para actualizar los minutos en la tabla
                     this.rebuildAndRecalculateAllState(); 
                 } else {
-                    // Si no hay un recálculo completo, solo actualiza el cronómetro principal
                     DOM.updateTimerDisplay();
                 }
-                // --- FIN DE LA LÓGICA DE ACTUALIZACIÓN EN VIVO ---
                 
                 DOM.updateDocumentTitle();
             }, 1000);
@@ -903,7 +909,6 @@
             const finalTimeDelta = state.matchTimer - lastTime;
             if (finalTimeDelta > 0) this.adjustPlayerMinutes(finalTimeDelta);
             
-            // Actualiza la variable de control de minutos para evitar recálculos innecesarios en el mismo minuto
             state.lastMinuteCheck = Math.floor(state.matchTimer / 60);
 
             DOM.updateAll();
@@ -1329,31 +1334,23 @@
         },
         exportToCsv() {
             const state = AppState.get();
-            // Cabecera sin 'TP'
             let csv = `${state.localTeamName}\nJugador,G,A,D,F,Y,R,MIN\n`;
             state.localPlayers.forEach(p => { 
                 const s = state.playerStats.local[p];
-                // Fila sin 'disparosAPuerta'
                 csv += [p, s.goles, s.asistencias, s.disparos, s.faltas, s.amarillas, s.rojas, MatchLogic.formatMinutesRoundedUp(s.minutosJugados)].join(",") + "\n"; 
             });
-            // Cabecera sin 'TP'
             csv += `\n${state.rivalTeamName}\nDorsal,G,A,D,F,Y,R,MIN\n`;
             state.rivalDorsals.forEach(d => { 
                 const s = state.playerStats.rival[d];
-                // Fila sin 'disparosAPuerta'
                 csv += [d, s.goles, s.asistencias, s.disparos, s.faltas, s.amarillas, s.rojas, MatchLogic.formatMinutesRoundedUp(s.minutosJugados)].join(",") + "\n"; 
             });
 
-            // --- INICIO DE LA LÓGICA PARA AÑADIR LA CRONOLOGÍA ---
             csv += `\n\nCronología del Partido\n`;
             csv += `Minuto,Evento\n`;
             state.matchEvents.forEach(event => {
-                // Limpia las etiquetas HTML del texto del evento
                 const cleanedText = event.text.replace(/<[^>]*>?/gm, '');
-                // Envuelve el texto en comillas dobles para evitar problemas con comas
                 csv += `${event.minute},"${cleanedText}"\n`;
             });
-            // --- FIN DE LA LÓGICA PARA AÑADIR LA CRONOLOGÍA ---
 
             const a = document.createElement("a");
             a.href = URL.createObjectURL(new Blob(["\uFEFF"+csv], {type:'text/csv;charset=utf-8;'}));
