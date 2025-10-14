@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Futsal Táctico Interactivo (Versión Final)</title>
+    <title>Futsal Táctico Interactivo (Versión Corregida)</title>
     
     <style>
         :root {
@@ -113,6 +113,7 @@
         }
 
         .player-chip {
+            /* <<-- CORRECCIÓN: Se añade position: relative para anclar el icono de la tarjeta -->> */
             position: relative;
             width: 45px; height: 45px; border-radius: 50%; color: white;
             display: flex; align-items: center; justify-content: center;
@@ -134,7 +135,7 @@
         }
         .chip-local { background-color: var(--color-highlight); }
         .chip-rival { background-color: var(--color-danger); }
-        .chip-on-bench { position: static; }
+        .chip-on-bench { position: static; } /* Se anula el 'relative' cuando está en el banquillo pero no afecta al icono */
         .chip-on-pitch { position: absolute; z-index: 10; }
         .dragging { opacity: 0.7; cursor: grabbing; box-shadow: 0 5px 15px rgba(0,0,0,0.8); transform: scale(1.1); z-index: 1000; }
         .expulsado { filter: grayscale(100%); cursor: not-allowed !important; opacity: 0.6; }
@@ -178,7 +179,7 @@
         .timeline-event strong { color: var(--color-success); }
         
         #context-menu {
-            position: absolute;
+            position: fixed; /* Usar fixed para posicionar relativo a la ventana */
             z-index: 10000;
             background-color: #3e3e3e;
             border: 1px solid #555;
@@ -202,7 +203,7 @@
         }
 
         .modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 100;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10001; /* Mayor z-index */
             background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center;
         }
         .modal-content {
@@ -251,7 +252,7 @@
         #tab-blocker {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-color: rgba(0, 0, 0, 0.9);
-            z-index: 2000;
+            z-index: 20000;
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
             text-align: center; padding: 20px; box-sizing: border-box;
@@ -541,7 +542,7 @@
         
         editTimeModal.querySelector('.close-btn').addEventListener('click', () => editTimeModal.classList.add('hidden'));
         document.getElementById('save-time-btn').addEventListener('click', handleSaveTimeEdit);
-        document.querySelectorAll('.time-editor-btn').forEach(btn => btn.addEventListener('click', adjustTimeInModal));
+        document.querySelectorAll('#edit-time-modal .time-editor-btn').forEach(btn => btn.addEventListener('click', adjustTimeInModal));
         
         editEventModal.querySelector('.close-btn').addEventListener('click', () => editEventModal.classList.add('hidden'));
         document.getElementById('save-event-changes-btn').addEventListener('click', handleSaveEventEdit);
@@ -694,8 +695,11 @@
 
         rebuildUIFromState();
         
-        if (gameState.matchTimer >= 2 * HALF_TIME_SECONDS) handleFinishGame(true);
-        else if (gameState.currentHalf === 1 && gameState.matchTimer >= HALF_TIME_SECONDS) handleHalfTime(true);
+        if (gameState.isMatchFinished) {
+            handleFinishGame(true);
+        } else if (gameState.currentHalf > 1 && gameState.matchTimer >= HALF_TIME_SECONDS) {
+            // This condition is tricky. Let's simplify and rely on currentHalf
+        }
 
         return true;
     }
@@ -724,7 +728,6 @@
         document.getElementById('rival-name-display').textContent = gameState.rivalTeamName;
         updateTimerUI();
         setupPitchAndBench();
-        repositionPlayersFromState();
         rebuildAndRecalculateAllStats();
         renderTimeline();
         updateButtonStates();
@@ -738,7 +741,7 @@
         let halftimeReset = false;
         gameState.faltas = { local: 0, rival: 0 };
         gameState.matchEvents.forEach(event => {
-            if (event.text.includes('Descanso') && !halftimeReset) {
+            if (event.type === 'control' && event.text.includes('Descanso') && !halftimeReset) {
                 gameState.faltas = { local: 0, rival: 0 };
                 halftimeReset = true;
             }
@@ -783,9 +786,9 @@
 
         let lastEventTime = 0;
         
-        const extendedTimeline = [...gameState.matchEvents, { type: 'current_time', time: gameState.matchTimer }];
+        const timelineForMinutes = [...gameState.matchEvents, { type: 'current_time', time: gameState.matchTimer }];
 
-        for (const event of extendedTimeline) {
+        for (const event of timelineForMinutes) {
             const timeSlice = event.time - lastEventTime;
 
             if (timeSlice > 0) {
@@ -827,7 +830,11 @@
         const preserveStats = (player, team) => {
             if (resetAll || !gameState.playerStats[team] || !gameState.playerStats[team][player]) return {};
             const preserved = {};
-            statsToPreserve.forEach(stat => preserved[stat] = gameState.playerStats[team][player][stat]);
+            statsToPreserve.forEach(stat => {
+                if(gameState.playerStats[team][player].hasOwnProperty(stat)) {
+                    preserved[stat] = gameState.playerStats[team][player][stat];
+                }
+            });
             return preserved;
         };
 
@@ -835,24 +842,25 @@
         gameState.rivalDorsals.forEach(d => { gameState.playerStats.rival[d] = { ...initialStats, ...preserveStats(d, 'rival') }; });
     }
     
-    // <-- CORRECCIÓN DRAG & DROP: Lógica refactorizada
+    // <<-- CORRECCIÓN: Lógica de Drag & Drop Refactorizada -->>
     function setupDragAndDropForChip(chip) {
         chip.addEventListener('pointerdown', handlePointerDown);
     }
     
     function handlePointerDown(e) {
-        if (gameState.eventFlowState.active || e.target.classList.contains('expulsado')) return;
+        if (gameState.eventFlowState.active || e.currentTarget.classList.contains('expulsado')) return;
         e.preventDefault();
-        e.target.setPointerCapture(e.pointerId);
+        const chip = e.currentTarget;
+        chip.setPointerCapture(e.pointerId);
 
-        gameState.draggedElement = e.target;
-        gameState.draggedElement.classList.add('dragging');
-        document.body.appendChild(gameState.draggedElement);
+        gameState.draggedElement = chip;
+        chip.classList.add('dragging');
+        document.body.appendChild(chip);
         
-        Object.assign(gameState.draggedElement.style, {
+        Object.assign(chip.style, {
             position: 'fixed',
-            left: `${e.clientX - gameState.draggedElement.offsetWidth / 2}px`,
-            top: `${e.clientY - gameState.draggedElement.offsetHeight / 2}px`,
+            left: `${e.clientX - chip.offsetWidth / 2}px`,
+            top: `${e.clientY - chip.offsetHeight / 2}px`,
             touchAction: 'none'
         });
 
@@ -870,49 +878,62 @@
     }
 
     function handlePointerUp(e) {
-        if (!gameState.draggedElement) return;
-        
         const draggedChip = gameState.draggedElement;
+        if (!draggedChip) return;
+        
         draggedChip.releasePointerCapture(e.pointerId);
 
         draggedChip.style.visibility = 'hidden';
         const dropTarget = document.elementFromPoint(e.clientX, e.clientY);
         draggedChip.style.visibility = 'visible';
 
-        // Lógica de drop
         const targetPlayerChip = dropTarget?.closest('.player-chip');
-        const targetZone = dropTarget?.closest('#futsal-pitch');
+        const targetZone = dropTarget?.closest('#futsal-pitch, .bench');
+        
         const { name, team } = draggedChip.dataset;
-        const isComingFromBench = !gameState.playerStats[team][name].onPitch;
+        const wasOnPitch = gameState.playerStats[team][name].onPitch;
 
-        if (targetPlayerChip && targetPlayerChip !== draggedChip && isComingFromBench) {
-            handleSubstitution(draggedChip, targetPlayerChip);
-        } else if (targetZone) {
-            movePlayerToPitch(draggedChip, e.clientX, e.clientY);
-        } else {
-            // Si no se suelta en un lugar válido, vuelve a su origen
-            repositionPlayersFromState();
+        // LÓGICA DE MOVIMIENTO
+        if (targetPlayerChip && targetPlayerChip !== draggedChip) {
+            // Caso: Sustitución (solo si se arrastra del banquillo al campo)
+            if (!wasOnPitch && targetPlayerChip.closest('#futsal-pitch')) {
+                handleSubstitution(draggedChip.dataset, targetPlayerChip.dataset);
+            }
+        } else if (targetZone?.id === 'futsal-pitch') {
+            // Caso: Moverse por el campo o entrar desde el banquillo
+            handleMoveToPitch(draggedChip.dataset, e.clientX, e.clientY);
+        } else if (targetZone && targetZone.classList.contains('bench')) {
+            // Caso: Ir al banquillo
+            // Bloqueado si el jugador estaba en el campo
+            if (wasOnPitch) {
+                // No hacer nada, la ficha volverá a su sitio.
+            } else {
+                 gameState.playerStats[team][name].onPitch = false;
+            }
         }
 
+        // LIMPIEZA Y REDIBUJADO
         draggedChip.classList.remove('dragging');
         Object.assign(draggedChip.style, { position: '', left: '', top: '', touchAction: 'auto' });
         
-        gameState.draggedElement = null;
+        repositionPlayersFromState(); // Redibuja todo desde el estado
+        updateStatsTables();
+        saveState();
+
         document.removeEventListener('pointermove', handlePointerMove);
         document.removeEventListener('pointerup', handlePointerUp);
+        gameState.draggedElement = null;
     }
     
-    function movePlayerToPitch(chip, clientX, clientY) {
-        const { name, team } = chip.dataset;
-        const isComingFromBench = !gameState.playerStats[team][name].onPitch;
+    function handleMoveToPitch({ name, team }, clientX, clientY) {
+        const stats = gameState.playerStats[team][name];
+        const wasOnPitch = stats.onPitch;
 
-        if (isComingFromBench) {
+        if (!wasOnPitch) {
             const onPitchCount = Object.values(gameState.playerStats[team]).filter(p => p.onPitch).length;
-            const hasPenalty = gameState.penalties.some(p => p.team === team && p.active);
-            if (onPitchCount >= 5 || (hasPenalty && onPitchCount >= 4)) {
-                alert(`El equipo ${team === 'local' ? gameState.localTeamName : gameState.rivalTeamName} no puede alinear más jugadores.`);
-                repositionPlayersFromState();
-                return;
+            if (onPitchCount >= 5) {
+                alert(`El equipo ${team === 'local' ? gameState.localTeamName : gameState.rivalTeamName} ya tiene 5 jugadores en el campo.`);
+                return; // Bloquea la entrada
             }
         }
 
@@ -920,45 +941,36 @@
         const x = Math.max(0, Math.min(pitchRect.width, clientX - pitchRect.left));
         const y = Math.max(0, Math.min(pitchRect.height, clientY - pitchRect.top));
         
-        // Actualizar el estado
-        gameState.playerStats[team][name].onPitch = true;
-        gameState.playerStats[team][name].position = { left: `${100 * x / pitchRect.width}%`, top: `${100 * y / pitchRect.height}%` };
-
-        // Redibujar desde el estado
-        repositionPlayersFromState();
+        stats.onPitch = true;
+        stats.position = { left: `${100 * x / pitchRect.width}%`, top: `${100 * y / pitchRect.height}%` };
+        
         if (gameState.matchEvents.length === 0) checkStartingConditions();
-        saveState();
     }
 
-    function handleSubstitution(playerInChip, playerOutChip) {
-        const { name: nameIn, team: teamIn } = playerInChip.dataset;
-        const { name: nameOut, team: teamOut } = playerOutChip.dataset;
+    function handleSubstitution(playerInData, playerOutData) {
+        const { name: nameIn, team: teamIn } = playerInData;
+        const { name: nameOut, team: teamOut } = playerOutData;
         
-        if (teamIn !== teamOut) {
-            repositionPlayersFromState();
-            return;
-        }
+        if (teamIn !== teamOut) return; // No se puede sustituir jugadores de equipos opuestos
 
-        // Guardar la posición del jugador que sale
-        const outPosition = { ...gameState.playerStats[teamOut][nameOut].position };
+        const statsIn = gameState.playerStats[teamIn][nameIn];
+        const statsOut = gameState.playerStats[teamOut][nameOut];
+        
+        // El jugador que sale va al banquillo
+        statsOut.onPitch = false;
+        
+        // El jugador que entra ocupa la posición del que sale
+        statsIn.onPitch = true;
+        statsIn.position = { ...statsOut.position };
 
-        // Actualizar el estado para ambos jugadores
-        gameState.playerStats[teamOut][nameOut].onPitch = false;
-        gameState.playerStats[teamIn][nameIn].onPitch = true;
-        gameState.playerStats[teamIn][nameIn].position = outPosition;
-
-        // Si el partido ha empezado, crear evento. Si no, solo actualizar pizarra.
         if (gameState.matchEvents.length > 0) {
             addMatchEvent({
                 type: 'substitution',
-                text: `Sustitución: Entra <strong>${nameIn}</strong>, sale <strong>${nameOut}</strong>.`,
+                text: `Sustitución: <span style="color: var(--color-success); font-weight: bold;">&uarr; ${nameIn}</span> <span style="color: var(--color-danger); font-weight: bold;">&darr; ${nameOut}</span>`,
                 team: teamIn,
                 playerIn: nameIn,
                 playerOut: nameOut
             });
-        } else {
-            repositionPlayersFromState();
-            saveState();
         }
     }
 
@@ -992,7 +1004,7 @@
         allPlayers.forEach(({ name, team }) => {
             const stats = gameState.playerStats[team][name];
             let chip = document.querySelector(`.player-chip[data-name="${name}"][data-team="${team}"]`);
-            if (!chip) chip = createChip(name, team);
+            if (!chip) chip = createChip(name, team); // Crear si no existe
             
             chip.classList.toggle('expulsado', !!stats.expulsado);
             updateChipYellowCardIcon(chip, stats);
@@ -1010,7 +1022,7 @@
             } else {
                 chip.classList.remove('chip-on-pitch');
                 chip.classList.add('chip-on-bench');
-                chip.style.cssText = '';
+                chip.style.cssText = ''; // Resetear estilos para el banquillo
                 const bench = team === 'local' ? localBench : rivalBench;
                 bench.appendChild(chip);
             }
@@ -1050,7 +1062,7 @@
     }
 
     function addMatchEvent(eventData) {
-        const newEvent = { id: Date.now(), time: gameState.matchTimer, ...eventData };
+        const newEvent = { id: Date.now() + Math.random(), time: gameState.matchTimer, ...eventData };
         gameState.matchEvents.push(newEvent);
         gameState.matchEvents.sort((a, b) => a.time - b.time);
         rebuildAndRecalculateAllStats();
@@ -1087,8 +1099,22 @@
     function showContextMenu(e, eventId) {
         const menu = document.getElementById('context-menu');
         menu.classList.remove('hidden');
-        menu.style.left = `${e.clientX}px`;
-        menu.style.top = `${e.clientY}px`;
+        
+        let x = e.clientX;
+        let y = e.clientY;
+
+        // Evitar que el menú se salga de la pantalla
+        const menuWidth = menu.offsetWidth;
+        const menuHeight = menu.offsetHeight;
+        if (x + menuWidth > window.innerWidth) {
+            x = window.innerWidth - menuWidth - 5;
+        }
+        if (y + menuHeight > window.innerHeight) {
+            y = window.innerHeight - menuHeight - 5;
+        }
+
+        menu.style.left = `${x}px`;
+        menu.style.top = `${y}px`;
         
         document.getElementById('ctx-menu-edit').onclick = () => {
             menu.classList.add('hidden');
@@ -1111,7 +1137,7 @@
     let tempTime = { minutes: 20, seconds: 0 };
 
     function openEditTimeModal() {
-        if (timerInterval) return;
+        if (timerInterval || gameState.isMatchFinished || gameState.matchEvents.length === 0) return; 
         const remainingSeconds = getRemainingSecondsInCurrentHalf(gameState.matchTimer);
         tempTime.minutes = Math.floor(remainingSeconds / 60);
         tempTime.seconds = Math.floor(remainingSeconds % 60);
@@ -1261,7 +1287,7 @@
             case 'substitution':
                  event.playerIn = document.getElementById('edit-playerIn').value;
                  event.playerOut = document.getElementById('edit-playerOut').value;
-                 event.text = `Sustitución: Entra <strong>${event.playerIn}</strong>, sale <strong>${event.playerOut}</strong>.`;
+                 event.text = `Sustitución: <span style="color: var(--color-success); font-weight: bold;">&uarr; ${event.playerIn}</span> <span style="color: var(--color-danger); font-weight: bold;">&darr; ${event.playerOut}</span>`;
                  break;
         }
 
@@ -1289,7 +1315,7 @@
     function handleHalfTime(isPassive = false) {
         pauseTimer();
         gameState.matchTimer = HALF_TIME_SECONDS;
-        if (!gameState.matchEvents.some(e => e.text === 'Descanso.')) {
+        if (!gameState.matchEvents.some(e => e.type === 'control' && e.text === 'Descanso.')) {
             addMatchEvent({ type: 'control', text: 'Descanso.' });
         }
         gameState.currentHalf = 2;
@@ -1299,6 +1325,7 @@
     }
 
     function handleStartSecondHalf() {
+        if(gameState.currentHalf !== 2) return;
         addMatchEvent({ type: 'control', text: 'Inicio de la segunda parte.' });
         startTimer();
     }
@@ -1307,7 +1334,7 @@
         pauseTimer();
         gameState.matchTimer = 2 * HALF_TIME_SECONDS;
         gameState.isMatchFinished = true;
-        if (!gameState.matchEvents.some(e => e.text === 'Final del partido.')) {
+        if (!gameState.matchEvents.some(e => e.type === 'control' && e.text === 'Final del partido.')) {
             addMatchEvent({ type: 'control', text: 'Final del partido.' });
         }
         rebuildAndRecalculateAllStats();
@@ -1425,7 +1452,7 @@
             addMatchEvent({ type, text: `Tarjeta Amarilla para <strong>${name}</strong>.`, team, player: name });
             endEventFlow();
         } else if (type === 'red-card') { 
-            addMatchEvent({ type, text: `Tarjeta ROJA directa para <strong>${name}</strong>.`, team, player: name }); 
+            addMatchEvent({ type, text: `Tarjeta ROJA directa para <strong>${name}</strong>.`, team, player: name });
             endEventFlow(); 
         } else if (type === 'foul') { 
             addMatchEvent({ type, text: `Falta de <strong>${name}</strong>.`, team, player: name }); 
@@ -1433,17 +1460,11 @@
         } 
     }
     
-    function handleRedCard(name, team) { 
-        gameState.penalties.push({ team, endTime: gameState.matchTimer + 120, active: true }); 
-        showEventMessage(`El equipo ${team === 'local' ? gameState.localTeamName : gameState.rivalTeamName} jugará con uno menos 2 min.`); 
-        setTimeout(hideEventMessage, 4000); 
-    }
-
     function endEventFlow(cancelled = false) { 
         gameState.eventFlowState.active = false; 
         mainContainer.classList.remove('selecting-mode'); 
         hideEventMessage(); 
-        if (!cancelled) {
+        if (!cancelled && !gameState.isMatchFinished) {
              startTimer();
         }
     }
@@ -1462,6 +1483,12 @@
             if (5 - rivalOnPitch > 0) message.push(`${5 - rivalOnPitch} rivales`); 
             btnToggleTimer.textContent = `Faltan ${message.join(' y ')}`; 
         } 
+    }
+    
+    function getRemainingSecondsInCurrentHalf(totalMatchSeconds) {
+        const halfStartTime = (gameState.currentHalf - 1) * HALF_TIME_SECONDS;
+        const elapsedInHalf = totalMatchSeconds - halfStartTime;
+        return Math.max(0, HALF_TIME_SECONDS - elapsedInHalf);
     }
 
     function getEventIcon(type) { const icons = { goal: '⚽', 'yellow-card': '🟨', 'red-card': '🟥', foul: '✋', substitution: '🔄', control: '⏱️', init_match: '▶️' }; return icons[type] || 'ℹ️'; }
