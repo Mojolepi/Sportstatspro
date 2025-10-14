@@ -91,6 +91,33 @@
             box-shadow: 0 8px 20px rgba(0,0,0,0.6) !important; transition: none !important;
             transform: none !important;
         }
+
+        /* --- INICIO CAMBIO: Estilos para flechas de sustitución --- */
+        @keyframes fadeOutZoom {
+            from { opacity: 1; transform: scale(1.2); }
+            to { opacity: 0; transform: scale(0.5); }
+        }
+        .sub-in::after, .sub-out::after {
+            position: absolute;
+            font-size: 20px;
+            line-height: 1;
+            text-shadow: 0 0 5px black;
+            z-index: 5;
+            animation: fadeOutZoom 3s forwards;
+        }
+        .sub-in::after {
+            content: '⬆️';
+            top: -10px;
+            left: -10px;
+            color: var(--color-success);
+        }
+        .sub-out::after {
+            content: '⬇️';
+            bottom: -5px;
+            right: -10px;
+            color: var(--color-danger);
+        }
+        /* --- FIN CAMBIO --- */
         
         .has-yellow-card .chip-circle::before {
             content: '🟨';
@@ -108,10 +135,35 @@
             line-height: 1; text-shadow: 0 0 3px black;
         }
         
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9em; table-layout: fixed;}
-        th, td { padding: 10px; text-align: center; border-bottom: 1px solid #444; word-break: break-word; vertical-align: middle;}
-        th:first-child, td:first-child { width: 32%; text-align: left; }
-        th:not(:first-child), td:not(:first-child) { width: 9.7%; }
+        /* --- INICIO CAMBIO: Ajustes de tabla --- */
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 15px; 
+            font-size: 0.85em; /* Fuente ligeramente más pequeña */
+            table-layout: fixed;
+        }
+        th, td { 
+            padding: 10px 5px; /* Reducido padding horizontal para más espacio */
+            text-align: center; 
+            border-bottom: 1px solid #444; 
+            word-break: break-word; 
+            vertical-align: middle;
+        }
+        /* Columna de nombre más estrecha */
+        th:first-child, td:first-child { 
+            width: 28%; 
+            text-align: left; 
+        }
+        /* Redistribución del ancho para las otras columnas */
+        th:not(:first-child), td:not(:first-child) { 
+            width: 10.2%; 
+        }
+        /* Evita que el tiempo se parta en dos líneas */
+        table td:last-child {
+            white-space: nowrap;
+        }
+        /* --- FIN CAMBIO --- */
 
         td .stat-value-circle {
             display: inline-flex;
@@ -1541,6 +1593,20 @@
                 }
                 
                 MatchLogic.addMatchEvent({ type: 'substitution', playerIn: onBenchPlayerName, playerOut: onPitchPlayerName, team });
+                
+                // --- INICIO CAMBIO: Aplicar clases para flechas de sustitución ---
+                const playerInChip = document.querySelector(`.player-chip[data-name="${onBenchPlayerName}"][data-team="${team}"]`);
+                const playerOutChip = document.querySelector(`.player-chip[data-name="${onPitchPlayerName}"][data-team="${team}"]`);
+
+                if(playerInChip) playerInChip.classList.add('sub-in');
+                if(playerOutChip) playerOutChip.classList.add('sub-out');
+                
+                setTimeout(() => {
+                    if(playerInChip) playerInChip.classList.remove('sub-in');
+                    if(playerOutChip) playerOutChip.classList.remove('sub-out');
+                }, 3000);
+                // --- FIN CAMBIO ---
+
                 MatchLogic.rebuildAndRecalculateAllState();
             } else if (statsIn.onPitch && statsOut.onPitch) {
                 const posIn = {...statsIn.position};
