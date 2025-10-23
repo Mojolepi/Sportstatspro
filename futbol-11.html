@@ -120,7 +120,13 @@
 <body>
     <main>
         <section id="config-section">
-            <h2>Configuración del Partido</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0;">Configuración del Partido</h2>
+                <button id="btn-home" class="btn-secondary" style="display: flex; align-items: center; gap: 8px; padding: 10px 15px;">
+                    <span style="font-size: 1.2em;">🏠</span>
+                    <span>Menú Principal</span>
+                </button>
+            </div>
             <label for="local-name-input">Nombre Equipo Local:</label>
             <input type="text" id="local-name-input" value="Equipo Local">
             <label for="rival-name">Nombre Rival:</label>
@@ -242,7 +248,8 @@
                 matchStats: { local: { corners: 0, offsides: 0 }, rival: { corners: 0, offsides: 0 } },
                 possession: { team: null, startTime: 0, localSeconds: 0, rivalSeconds: 0 },
                 matchTimer: 0, timerStartTime: 0, timerBaseTime: 0, currentHalf: 1, isMatchRunning: false, timerInterval: null, 
-                lastMinuteCheck: -1, matchEvents: [], eventFlow: { active: false }
+                lastMinuteCheck: -1, matchEvents: [], eventFlow: { active: false },
+                eliminatedPlayers: { local: [], rival: [] }
             };
         },
         init() { this._state = this.getInitial(); },
@@ -253,6 +260,10 @@
                 const loadedState = JSON.parse(savedStateJSON);
                 delete loadedState.timerInterval;
                 this._state = { ...this.getInitial(), ...loadedState };
+                // Asegurar que eliminatedPlayers existe
+                if (!this._state.eliminatedPlayers) {
+                    this._state.eliminatedPlayers = { local: [], rival: [] };
+                }
                 return true;
             } catch (e) {
                 console.error("Error al cargar estado, reseteando.", e);
@@ -276,7 +287,7 @@
             const ids = [
                 'config-section', 'app-header', 'pitch-section', 'game-controls', 'timeline-section',
                 'match-stats-section', 'stats-section', 'local-name-input', 'rival-name',
-                'local-players', 'rival-dorsals', 'start-config', 'btn-toggle-timer', 'minuto-actual',
+                'local-players', 'rival-dorsals', 'start-config', 'btn-home', 'btn-toggle-timer', 'minuto-actual',
                 'futsal-pitch', 'local-bench', 'rival-bench', 'event-timeline', 'formation-modal',
                 'formation-modal-title', 'formation-buttons', 'skip-formation', 'event-flow-message',
                 'possession-local', 'possession-rival', 'btn-half-time', 'btn-start-second',
@@ -316,8 +327,18 @@
             this.elements['local-bench'].innerHTML = ''; 
             this.elements['rival-bench'].innerHTML = '';
             this.elements['futsal-pitch'].querySelectorAll('.player-chip').forEach(chip => chip.remove());
-            state.localPlayers.forEach(p => this.elements['local-bench'].appendChild(this.createChip(p, 'local')));
-            state.rivalDorsals.forEach(d => this.elements['rival-bench'].appendChild(this.createChip(d, 'rival')));
+            
+            // Solo crear chips para jugadores que no están eliminados
+            state.localPlayers.forEach(p => {
+                if (!state.eliminatedPlayers.local.includes(p)) {
+                    this.elements['local-bench'].appendChild(this.createChip(p, 'local'));
+                }
+            });
+            state.rivalDorsals.forEach(d => {
+                if (!state.eliminatedPlayers.rival.includes(d)) {
+                    this.elements['rival-bench'].appendChild(this.createChip(d, 'rival'));
+                }
+            });
         },
         createChip(name, team) {
             const chip = document.createElement('div');
@@ -329,7 +350,61 @@
             chip.addEventListener('click', () => {
                 if (AppState.get().eventFlow.active) EventHandler.processEventSelection(chip);
             });
+            
+            // Agregar funcionalidad de eliminación (solo antes de iniciar partido)
+            let longPressTimer;
+            chip.addEventListener('pointerdown', (e) => {
+                const state = AppState.get();
+                if (state.matchEvents.length > 0) return; // Solo antes de iniciar
+                if (chip.classList.contains('chip-on-pitch')) return; // Solo jugadores del banquillo
+                
+                longPressTimer = setTimeout(() => {
+                    this.showDeletePlayerModal(name, team, chip);
+                }, 1000); // 1 segundo de presión
+            });
+            
+            chip.addEventListener('pointerup', () => {
+                clearTimeout(longPressTimer);
+            });
+            
+            chip.addEventListener('pointerleave', () => {
+                clearTimeout(longPressTimer);
+            });
+            
             return chip;
+        },
+        showDeletePlayerModal(playerName, team, chip) {
+            const state = AppState.get();
+            const teamName = team === 'local' ? state.localTeamName : state.rivalTeamName;
+            const confirmMessage = `¿Eliminar a ${playerName} del equipo ${teamName}?\n\nEsta acción no se puede deshacer.`;
+            
+            if (confirm(confirmMessage)) {
+                this.deletePlayer(playerName, team, chip);
+            }
+        },
+        deletePlayer(playerName, team, chip) {
+            const state = AppState.get();
+            
+            // Eliminar del estado
+            delete state.playerStats[team][playerName];
+            
+            // Eliminar de las listas de jugadores
+            if (team === 'local') {
+                state.localPlayers = state.localPlayers.filter(p => p !== playerName);
+            } else {
+                state.rivalDorsals = state.rivalDorsals.filter(d => d !== playerName);
+            }
+            
+            // Eliminar del DOM
+            chip.remove();
+            
+            // Actualizar estadísticas
+            this.updateStatsTables();
+            AppState.save();
+            
+            // Mostrar mensaje de confirmación
+            const teamName = team === 'local' ? state.localTeamName : state.rivalTeamName;
+            alert(`${playerName} ha sido eliminado del equipo ${teamName}.`);
         },
         updatePlayerChips() {
             const state = AppState.get();
@@ -474,8 +549,20 @@
             const state = AppState.get();
             state.localTeamName = DOM.elements['local-name-input'].value.trim() || 'Local';
             state.rivalTeamName = DOM.elements['rival-name'].value.trim() || 'Rival';
-            state.localPlayers = DOM.elements['local-players'].value.split(',').map(s => s.trim()).filter(Boolean);
-            state.rivalDorsals = DOM.elements['rival-dorsals'].value.split(',').map(s => s.trim()).filter(Boolean);
+            
+            // Inicializar eliminatedPlayers si no existe
+            if (!state.eliminatedPlayers) {
+                state.eliminatedPlayers = { local: [], rival: [] };
+            }
+            
+            // Cargar jugadores desde los inputs
+            const newLocalPlayers = DOM.elements['local-players'].value.split(',').map(s => s.trim()).filter(Boolean);
+            const newRivalDorsals = DOM.elements['rival-dorsals'].value.split(',').map(s => s.trim()).filter(Boolean);
+            
+            // Filtrar jugadores eliminados
+            state.localPlayers = newLocalPlayers.filter(p => !state.eliminatedPlayers.local.includes(p));
+            state.rivalDorsals = newRivalDorsals.filter(d => !state.eliminatedPlayers.rival.includes(d));
+            
             if (state.localPlayers.length < AppConfig.MAX_PLAYERS_ON_PITCH || state.rivalDorsals.length < AppConfig.MAX_PLAYERS_ON_PITCH) {
                 alert(`Se necesitan al menos ${AppConfig.MAX_PLAYERS_ON_PITCH} jugadores por equipo.`);
                 return false;
@@ -677,6 +764,7 @@
     const EventHandler = {
         addEventListeners() {
             DOM.elements['start-config'].addEventListener('click', () => this.handleStartConfig());
+            DOM.elements['btn-home'].addEventListener('click', () => window.location.href = 'index.html');
             DOM.elements.eventButtons.forEach(b => b.addEventListener('click', (e) => this.handleEventButtonClick(e)));
             DOM.elements['btn-half-time'].addEventListener('click', () => this.handleHalfTime(false));
             DOM.elements['btn-start-second'].addEventListener('click', () => this.handleStartSecondHalf());

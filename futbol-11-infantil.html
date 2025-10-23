@@ -190,6 +190,7 @@
             text-align: center;
             border: 2px solid #555;
             -moz-appearance: textfield;
+            appearance: textfield;
         }
         .time-editor-unit input::-webkit-outer-spin-button,
         .time-editor-unit input::-webkit-inner-spin-button {
@@ -251,13 +252,19 @@
 <body>
     <main>
         <section id="config-section">
-            <h2>Configuración del Partido</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0;">Configuración del Partido</h2>
+                <button id="btn-home" class="btn-secondary" style="display: flex; align-items: center; gap: 8px; padding: 10px 15px;">
+                    <span style="font-size: 1.2em;">🏠</span>
+                    <span>Menú Principal</span>
+                </button>
+            </div>
             <label for="local-name-input">Nombre Equipo Local:</label>
             <input type="text" id="local-name-input" value="Equipo Local">
             <label for="rival-name">Nombre Rival:</label>
             <input type="text" id="rival-name" value="Equipo Rival">
             <label for="local-players">Jugadores Locales (Nombres o dorsales separados por coma):</label>
-            <textarea id="local-players" rows="3">ERIK, FRAN, JUANJO, DANY, OLIVER R., GAEL, CESAR, AARON R., NICO, JOEL, JAVIER, OLIVER, ALEX, VICTOR, AARON M., UNAI, HUGO</textarea>
+            <textarea id="local-players" rows="3">ERIK, FRAN, JUANJO, DANNY, RGUEZ, GAEL, CESAR, RUBIA, NICO, JOEL, JAVIER, RUIZ, ALEX, VICTOR, MARTIN, UNAI, HUGO</textarea>
             <label for="rival-dorsals">Dorsales Rivales (separados por coma):</label>
             <textarea id="rival-dorsals" rows="3">1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25</textarea>
             <button id="start-config" class="btn-primary">Guardar y Preparar Pizarra</button>
@@ -423,7 +430,8 @@
                 matchTimer: 0, timerStartTime: 0, timerBaseTime: 0, isMatchRunning: false,
                 currentHalf: 1, timerInterval: null, lastMinuteCheck: -1,
                 matchEvents: [], eventFlow: { active: false }, activeView: 'local',
-                substitutionWindows: { usedFirstHalf: 0, usedSecondHalf: 0 }
+                substitutionWindows: { usedFirstHalf: 0, usedSecondHalf: 0 },
+                eliminatedPlayers: { local: [], rival: [] }
             };
         },
         init() { this._state = this.getInitial(); },
@@ -434,6 +442,10 @@
                 const loadedState = JSON.parse(savedStateJSON);
                 delete loadedState.timerInterval;
                 this._state = { ...this.getInitial(), ...loadedState };
+                // Asegurar que eliminatedPlayers existe
+                if (!this._state.eliminatedPlayers) {
+                    this._state.eliminatedPlayers = { local: [], rival: [] };
+                }
                 return true;
             } catch (e) {
                 console.error("Error al cargar estado, reseteando.", e);
@@ -456,7 +468,7 @@
             const ids = [
                 'config-section', 'app-header', 'pitch-section', 'game-controls', 'timeline-section',
                 'match-stats-section', 'stats-section', 'local-name-input', 'rival-name',
-                'local-players', 'rival-dorsals', 'start-config', 'btn-toggle-timer', 'minuto-actual', 'added-time',
+                'local-players', 'rival-dorsals', 'start-config', 'btn-home', 'btn-toggle-timer', 'minuto-actual', 'added-time',
                 'futsal-pitch', 'local-bench', 'rival-bench', 'event-timeline', 'formation-modal',
                 'formation-modal-title', 'formation-buttons', 'skip-formation', 'event-flow-message',
                 'btn-half-time', 'btn-start-second', 'btn-finish-game', 'btn-reset-match', 'btn-new-match', 
@@ -522,8 +534,18 @@
             this.elements['local-bench'].innerHTML = ''; 
             this.elements['rival-bench'].innerHTML = '';
             this.elements['futsal-pitch'].querySelectorAll('.player-chip').forEach(chip => chip.remove());
-            state.localPlayers.forEach(p => this.elements['local-bench'].appendChild(this.createChip(p, 'local')));
-            state.rivalDorsals.forEach(d => this.elements['rival-bench'].appendChild(this.createChip(d, 'rival')));
+            
+            // Solo crear chips para jugadores que no están eliminados
+            state.localPlayers.forEach(p => {
+                if (!state.eliminatedPlayers.local.includes(p)) {
+                    this.elements['local-bench'].appendChild(this.createChip(p, 'local'));
+                }
+            });
+            state.rivalDorsals.forEach(d => {
+                if (!state.eliminatedPlayers.rival.includes(d)) {
+                    this.elements['rival-bench'].appendChild(this.createChip(d, 'rival'));
+                }
+            });
         },
         isNumeric(str) {
             if (typeof str != "string") return false;
@@ -553,7 +575,65 @@
             chip.addEventListener('click', () => {
                 if (AppState.get().eventFlow.active) EventHandler.processEventSelection(chip);
             });
+            
+            // Agregar funcionalidad de eliminación (solo antes de iniciar partido)
+            let longPressTimer;
+            chip.addEventListener('pointerdown', (e) => {
+                const state = AppState.get();
+                if (state.matchEvents.length > 0) return; // Solo antes de iniciar
+                if (chip.classList.contains('chip-on-pitch')) return; // Solo jugadores del banquillo
+                
+                longPressTimer = setTimeout(() => {
+                    this.showDeletePlayerModal(name, team, chip);
+                }, 1000); // 1 segundo de presión
+            });
+            
+            chip.addEventListener('pointerup', () => {
+                clearTimeout(longPressTimer);
+            });
+            
+            chip.addEventListener('pointerleave', () => {
+                clearTimeout(longPressTimer);
+            });
+            
             return chip;
+        },
+        showDeletePlayerModal(playerName, team, chip) {
+            const state = AppState.get();
+            const teamName = team === 'local' ? state.localTeamName : state.rivalTeamName;
+            const confirmMessage = `¿Eliminar a ${playerName} del equipo ${teamName}?\n\nEsta acción no se puede deshacer.`;
+            
+            if (confirm(confirmMessage)) {
+                this.deletePlayer(playerName, team, chip);
+            }
+        },
+        deletePlayer(playerName, team, chip) {
+            const state = AppState.get();
+            
+            // Inicializar lista de jugadores eliminados si no existe
+            if (!state.eliminatedPlayers) {
+                state.eliminatedPlayers = { local: [], rival: [] };
+            }
+            
+            // Marcar como eliminado
+            state.eliminatedPlayers[team].push(playerName);
+            
+            // Eliminar del estado
+            delete state.playerStats[team][playerName];
+            
+            // NO eliminar de las listas de jugadores aquí, solo marcar como eliminado
+            // Las listas se mantienen para poder recargar desde los inputs si es necesario
+            
+            // Eliminar del DOM
+            chip.remove();
+            
+            // Actualizar estadísticas
+            this.updateStatsTables();
+            AppState.save();
+            
+            // Mostrar mensaje de confirmación
+            const teamName = team === 'local' ? state.localTeamName : state.rivalTeamName;
+            alert(`${playerName} ha sido eliminado del equipo ${teamName}.`);
         },
         updatePlayerChips() {
             const state = AppState.get();
@@ -733,6 +813,20 @@
                 chip.style.display = chip.dataset.team === activeTeam ? 'flex' : 'none';
             });
         },
+        calculateAvailableWindows() {
+            const state = AppState.get();
+            const { usedFirstHalf, usedSecondHalf } = state.substitutionWindows;
+            
+            if (state.currentHalf === 1) {
+                return { firstHalf: Math.max(0, 4 - usedFirstHalf), secondHalf: 0 };
+            } else {
+                // En segunda parte: máximo 3 ventanas, pero restan las usadas en primera
+                const firstHalfAvailable = Math.max(0, 4 - usedFirstHalf);
+                const maxSecondHalf = Math.max(0, 3 - usedFirstHalf);
+                const secondHalfAvailable = Math.max(0, maxSecondHalf - usedSecondHalf);
+                return { firstHalf: firstHalfAvailable, secondHalf: secondHalfAvailable };
+            }
+        },
         updateSubstitutionWindowsUI() {
             const state = AppState.get();
             const { usedFirstHalf, usedSecondHalf } = state.substitutionWindows;
@@ -743,13 +837,14 @@
                     const box = document.createElement('span');
                     box.className = 'window-box';
                     if (i <= usedCount) {
-                        box.textContent = 'X';
+                        box.textContent = '✓';
                         box.classList.add('used');
-                        if (i === usedCount && usedCount > 0) {
-                            box.classList.add('can-undo');
-                            box.dataset.half = halfNumber;
-                            box.onclick = () => EventHandler.handleUndoSubstitutionWindow(halfNumber);
-                        }
+                        box.classList.add('can-undo');
+                        box.dataset.half = halfNumber;
+                        box.onclick = () => EventHandler.handleUndoSubstitutionWindow(halfNumber);
+                        box.title = 'Hacer clic para deshacer esta ventana';
+                    } else {
+                        box.textContent = '○';
                     }
                     container.appendChild(box);
                 }
@@ -759,27 +854,31 @@
             const secondHalfContainer = this.elements['sub-windows-second-half'];
             
             if (state.currentHalf === 1) {
+                // Primera parte: mostrar todas las 4 ventanas disponibles
                 firstHalfContainer.classList.remove('hidden');
                 this.elements['sub-windows-divider'].classList.add('hidden');
                 secondHalfContainer.classList.add('hidden');
                 setupHalf(firstHalfContainer, usedFirstHalf, 4, 1);
             } else { 
+                // Segunda parte: mostrar las ventanas usadas en primera + las disponibles para segunda
+                const firstHalfAvailable = 4 - usedFirstHalf;
+                const maxSecondHalf = Math.max(0, 4 - usedFirstHalf);
+                
+                // Mostrar primera parte solo con las ventanas usadas
                 if (usedFirstHalf > 0) {
                     firstHalfContainer.classList.remove('hidden');
+                    this.elements['sub-windows-divider'].classList.remove('hidden');
                     setupHalf(firstHalfContainer, usedFirstHalf, usedFirstHalf, 1);
                 } else {
                     firstHalfContainer.classList.add('hidden');
+                    this.elements['sub-windows-divider'].classList.add('hidden');
                 }
                 
-                const remaining = 4 - usedFirstHalf;
-                const secondHalfSlots = Math.min(3, remaining);
-
-                if (secondHalfSlots > 0) {
-                    this.elements['sub-windows-divider'].classList.remove('hidden');
+                // Mostrar segunda parte con las ventanas disponibles (máximo 3, menos las usadas en primera)
+                if (maxSecondHalf > 0) {
                     secondHalfContainer.classList.remove('hidden');
-                    setupHalf(secondHalfContainer, usedSecondHalf, secondHalfSlots, 2);
+                    setupHalf(secondHalfContainer, usedSecondHalf, maxSecondHalf, 2);
                 } else {
-                    this.elements['sub-windows-divider'].classList.add('hidden');
                     secondHalfContainer.classList.add('hidden');
                 }
             }
@@ -814,8 +913,20 @@
             const state = AppState.get();
             state.localTeamName = DOM.elements['local-name-input'].value.trim() || 'Local';
             state.rivalTeamName = DOM.elements['rival-name'].value.trim() || 'Rival';
-            state.localPlayers = DOM.elements['local-players'].value.split(',').map(s => s.trim()).filter(Boolean);
-            state.rivalDorsals = DOM.elements['rival-dorsals'].value.split(',').map(s => s.trim()).filter(Boolean);
+            
+            // Inicializar eliminatedPlayers si no existe
+            if (!state.eliminatedPlayers) {
+                state.eliminatedPlayers = { local: [], rival: [] };
+            }
+            
+            // Cargar jugadores desde los inputs
+            const newLocalPlayers = DOM.elements['local-players'].value.split(',').map(s => s.trim()).filter(Boolean);
+            const newRivalDorsals = DOM.elements['rival-dorsals'].value.split(',').map(s => s.trim()).filter(Boolean);
+            
+            // Filtrar jugadores eliminados
+            state.localPlayers = newLocalPlayers.filter(p => !state.eliminatedPlayers.local.includes(p));
+            state.rivalDorsals = newRivalDorsals.filter(d => !state.eliminatedPlayers.rival.includes(d));
+            
             if (state.localPlayers.length < AppConfig.MAX_PLAYERS_ON_PITCH || state.rivalDorsals.length < AppConfig.MAX_PLAYERS_ON_PITCH) {
                 alert(`Se necesitan al menos ${AppConfig.MAX_PLAYERS_ON_PITCH} jugadores por equipo.`);
                 return false;
@@ -857,7 +968,15 @@
                     DOM.updateTimerDisplay();
                 }
                 
+                // Verificar si ha llegado el descanso o final
+                if (state.currentHalf === 1 && state.matchTimer >= AppConfig.HALF_TIME_SECONDS) {
+                    this.handleHalfTime();
+                } else if (state.currentHalf === 2 && state.matchTimer >= AppConfig.FULL_TIME_SECONDS) {
+                    this.handleFinishGame();
+                }
+                
                 DOM.updateDocumentTitle();
+                AppState.save();
             }, 1000);
         },
         startTimer() {
@@ -917,16 +1036,37 @@
             if (!state.initialPlayerState) return;
 
             state.playerStats = JSON.parse(JSON.stringify(state.initialPlayerState));
+            
+            // Eliminar jugadores que están marcados como eliminados
+            if (state.eliminatedPlayers) {
+                state.eliminatedPlayers.local.forEach(playerName => {
+                    delete state.playerStats.local[playerName];
+                });
+                state.eliminatedPlayers.rival.forEach(playerName => {
+                    delete state.playerStats.rival[playerName];
+                });
+            }
+            
             for (const team of Object.values(state.playerStats)) {
                 for (const player of Object.values(team)) {
                     Object.assign(player, { goles: 0, asistencias: 0, disparos: 0, faltas: 0, amarillas: 0, rojas: 0, expulsado: false, minutosJugados: 0 });
                 }
             }
             state.matchStats = { local: { corners: 0, offsides: 0 }, rival: { corners: 0, offsides: 0 } };
-            state.substitutionWindows = { usedFirstHalf: 0, usedSecondHalf: 0 };
+            // No resetear las ventanas de cambios, mantener el estado actual
+            // state.substitutionWindows = { usedFirstHalf: 0, usedSecondHalf: 0 };
             
             let lastTime = 0;
-            let lastLocalSubTime = -Infinity;
+            let lastLocalSubTime = 0;
+
+            // Verificar límites de ventanas antes de procesar eventos
+            const { usedFirstHalf, usedSecondHalf } = state.substitutionWindows;
+            const totalUsed = usedFirstHalf + usedSecondHalf;
+            
+            if (totalUsed >= 4) {
+                // Si ya se agotaron las ventanas, no procesar más cambios
+                return;
+            }
 
             state.matchEvents.forEach(event => {
                 const timeDelta = event.timeInSeconds - lastTime;
@@ -936,10 +1076,9 @@
                 
                 switch (event.type) {
                     case 'substitution':
+                        // El conteo de ventanas se hace en handlePlayerSwap
+                        // Solo actualizar lastLocalSubTime para la lógica de 30 segundos
                         if (event.team === 'local' && (event.timeInSeconds - lastLocalSubTime) > AppConfig.SUBSTITUTION_WINDOW_SECONDS) {
-                            const half = event.timeInSeconds < AppConfig.HALF_TIME_SECONDS ? 1 : 2;
-                            if (half === 1) state.substitutionWindows.usedFirstHalf++;
-                            else state.substitutionWindows.usedSecondHalf++;
                             lastLocalSubTime = event.timeInSeconds;
                         }
                         const statsOut = state.playerStats[event.team]?.[event.playerOut];
@@ -989,6 +1128,7 @@
         addEventListeners() {
             DOM.cacheElements();
             DOM.elements['start-config'].addEventListener('click', () => this.handleStartConfig());
+            DOM.elements['btn-home'].addEventListener('click', () => window.location.href = 'index.html');
             DOM.elements.eventButtons.forEach(b => b.addEventListener('click', (e) => this.handleEventButtonClick(e)));
             DOM.elements['btn-half-time'].addEventListener('click', () => this.handleHalfTime());
             DOM.elements['btn-start-second'].addEventListener('click', () => this.handleStartSecondHalf());
@@ -1120,7 +1260,8 @@
         handleHalfTime() {
             MatchLogic.stopTimer();
             const state = AppState.get();
-            // No ajustamos el matchTimer aquí, mantenemos el tiempo real incluyendo descuento
+            // Ajustar el tiempo al minuto 35 (descanso)
+            state.matchTimer = AppConfig.HALF_TIME_SECONDS;
             MatchLogic.addMatchEvent({ type: 'control', text: 'Descanso.' });
             state.currentHalf = 2;
             MatchLogic.rebuildAndRecalculateAllState();
@@ -1143,7 +1284,13 @@
             if (confirm("¿Seguro que quieres reiniciar? Se perderán todas las estadísticas.")) {
                 MatchLogic.stopTimer();
                 const state = AppState.get();
-                const conf = { localTeamName: state.localTeamName, rivalTeamName: state.rivalTeamName, localPlayers: state.localPlayers, rivalDorsals: state.rivalDorsals };
+                const conf = { 
+                    localTeamName: state.localTeamName, 
+                    rivalTeamName: state.rivalTeamName, 
+                    localPlayers: state.localPlayers, 
+                    rivalDorsals: state.rivalDorsals,
+                    eliminatedPlayers: state.eliminatedPlayers
+                };
                 AppState.init();
                 Object.assign(AppState.get(), conf);
                 MatchLogic.initializeStats();
@@ -1553,14 +1700,35 @@
                 const onPitchPlayerName = statsIn.onPitch ? playerInName : playerOutName;
                 const onBenchPlayerName = statsIn.onPitch ? playerOutName : playerInName;
                 
+                // Verificar y contar ventanas para el equipo local
                 if (team === 'local') {
                     const localSubs = state.matchEvents.filter(e => e.type === 'substitution' && e.team === 'local');
-                    const lastLocalSub = localSubs.pop();
+                    const lastLocalSub = localSubs[localSubs.length - 1];
                     const isNewWindow = !lastLocalSub || (state.matchTimer - lastLocalSub.timeInSeconds) > AppConfig.SUBSTITUTION_WINDOW_SECONDS;
+                    
                     if (isNewWindow) {
                         const { usedFirstHalf, usedSecondHalf } = state.substitutionWindows;
-                        if (state.currentHalf === 1 && usedFirstHalf >= 4) { alert("Has agotado las 4 ventanas de cambios."); return; }
-                        if (state.currentHalf === 2 && (usedSecondHalf >= 3 || usedFirstHalf + usedSecondHalf >= 4)) { alert("Has agotado las ventanas de cambios para la 2ª parte."); return; }
+                        const totalUsed = usedFirstHalf + usedSecondHalf;
+                        
+                        if (totalUsed >= 4) { 
+                            alert("Has agotado las 4 ventanas de cambios del partido."); 
+                            return; 
+                        }
+                        
+                        if (state.currentHalf === 1) {
+                            if (usedFirstHalf >= 4) { 
+                                alert("Has agotado las 4 ventanas de cambios de la primera parte."); 
+                                return; 
+                            }
+                            state.substitutionWindows.usedFirstHalf++;
+                        } else {
+                            const maxSecondHalf = 4 - usedFirstHalf;
+                            if (usedSecondHalf >= maxSecondHalf) { 
+                                alert(`Has agotado las ventanas de cambios para la 2ª parte. Disponibles: ${maxSecondHalf}`); 
+                                return; 
+                            }
+                            state.substitutionWindows.usedSecondHalf++;
+                        }
                     }
                 }
                 
@@ -1582,8 +1750,14 @@
 
         if (AppState.load()) {
             DOM.showMatchUI();
-            DOM.setupBenchesAndPitch();
             const state = AppState.get();
+            // Solo configurar bancos si no hay jugadores eliminados o si es la primera vez
+            if (!state.eliminatedPlayers || (state.eliminatedPlayers.local.length === 0 && state.eliminatedPlayers.rival.length === 0)) {
+                DOM.setupBenchesAndPitch();
+            } else {
+                // Recrear solo los jugadores no eliminados
+                DOM.setupBenchesAndPitch();
+            }
             
             if (state.isMatchRunning) {
                 const elapsedSinceSave = Math.floor((Date.now() - state.timerStartTime) / 1000);

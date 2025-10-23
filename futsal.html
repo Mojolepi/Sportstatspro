@@ -288,7 +288,13 @@
 
     <main>
         <section id="config-section">
-            <h2>Configuración del Partido</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0;">Configuración del Partido</h2>
+                <button id="btn-home" class="btn-secondary" style="display: flex; align-items: center; gap: 8px; padding: 10px 15px;">
+                    <span style="font-size: 1.2em;">🏠</span>
+                    <span>Menú Principal</span>
+                </button>
+            </div>
             <label for="local-name-input">Nombre Equipo Local:</label>
             <input type="text" id="local-name-input" value="Athletic Club Móstoles">
             <label for="rival-name">Nombre Rival:</label>
@@ -488,7 +494,8 @@
             penalties: [],
             eventFlowState: { active: false, type: null, step: 0, payload: {} },
             draggedElement: null,
-            initialLineup: { local: [], rival: [] }
+            initialLineup: { local: [], rival: [] },
+            eliminatedPlayers: { local: [], rival: [] }
         };
     }
 
@@ -517,6 +524,7 @@
 
     function assignAllEventListeners() {
         document.getElementById('start-config').addEventListener('click', handleStartConfig);
+        document.getElementById('btn-home').addEventListener('click', () => window.location.href = 'index.html');
         document.getElementById('btn-toggle-timer').addEventListener('click', handleToggleTimer);
         document.getElementById('btn-half-time').addEventListener('click', handleHalfTime);
         document.getElementById('btn-start-second').addEventListener('click', handleStartSecondHalf);
@@ -671,6 +679,11 @@
 
         gameState = { ...getInitialGameState(), ...JSON.parse(savedStateJSON) };
         
+        // Asegurar que eliminatedPlayers existe
+        if (!gameState.eliminatedPlayers) {
+            gameState.eliminatedPlayers = { local: [], rival: [] };
+        }
+        
         const timerState = JSON.parse(localStorage.getItem(TIMER_STATE_KEY) || '{}');
         if (timerState.isMatchRunning) {
             const elapsedWhileAway = (Date.now() - timerState.timerStartTime) / 1000;
@@ -769,10 +782,10 @@
 
         let lastEventTime = 0;
         
-        const timelineForMinutes = [...gameState.matchEvents, { type: 'current_time', time: gameState.matchTimer }];
+        const timelineForMinutes = [...gameState.matchEvents, { type: 'current_time', timeInSeconds: gameState.matchTimer }];
 
         for (const event of timelineForMinutes) {
-            const timeSlice = event.time - lastEventTime;
+            const timeSlice = event.timeInSeconds - lastEventTime;
 
             if (timeSlice > 0) {
                 for (const team in lineup) {
@@ -791,7 +804,7 @@
                 lineup[event.team].delete(event.player);
             }
             
-            lastEventTime = event.time;
+            lastEventTime = event.timeInSeconds;
         }
     }
     
@@ -1006,6 +1019,26 @@
         chip.dataset.team = team;
         setupDragAndDropForChip(chip);
         chip.addEventListener('click', () => processEventSelection(chip));
+        
+        // Agregar funcionalidad de eliminación (solo antes de iniciar partido)
+        let longPressTimer;
+        chip.addEventListener('pointerdown', (e) => {
+            if (gameState.matchEvents.length > 0) return; // Solo antes de iniciar
+            if (chip.classList.contains('chip-on-pitch')) return; // Solo jugadores del banquillo
+            
+            longPressTimer = setTimeout(() => {
+                showDeletePlayerModal(name, team, chip);
+            }, 1000); // 1 segundo de presión
+        });
+        
+        chip.addEventListener('pointerup', () => {
+            clearTimeout(longPressTimer);
+        });
+        
+        chip.addEventListener('pointerleave', () => {
+            clearTimeout(longPressTimer);
+        });
+        
         return chip;
     }
 
@@ -1055,6 +1088,42 @@
         } else if (icon) {
             icon.remove();
         }
+    }
+    
+    function showDeletePlayerModal(playerName, team, chip) {
+        const teamName = team === 'local' ? gameState.localTeamName : gameState.rivalTeamName;
+        const confirmMessage = `¿Eliminar a ${playerName} del equipo ${teamName}?\n\nEsta acción no se puede deshacer.`;
+        
+        if (confirm(confirmMessage)) {
+            deletePlayer(playerName, team, chip);
+        }
+    }
+    
+    function deletePlayer(playerName, team, chip) {
+        // Inicializar lista de jugadores eliminados si no existe
+        if (!gameState.eliminatedPlayers) {
+            gameState.eliminatedPlayers = { local: [], rival: [] };
+        }
+        
+        // Marcar como eliminado
+        gameState.eliminatedPlayers[team].push(playerName);
+        
+        // Eliminar del estado
+        delete gameState.playerStats[team][playerName];
+        
+        // NO eliminar de las listas de jugadores aquí, solo marcar como eliminado
+        // Las listas se mantienen para poder recargar desde los inputs si es necesario
+        
+        // Eliminar del DOM
+        chip.remove();
+        
+        // Actualizar estadísticas
+        updateStatsTables();
+        saveState();
+        
+        // Mostrar mensaje de confirmación
+        const teamName = team === 'local' ? gameState.localTeamName : gameState.rivalTeamName;
+        alert(`${playerName} ha sido eliminado del equipo ${teamName}.`);
     }
     
     function updateStatsTables() {

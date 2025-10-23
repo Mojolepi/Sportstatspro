@@ -188,7 +188,13 @@
 
     <main>
         <section id="config-section">
-            <h2>Configuración del Partido</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0;">Configuración del Partido</h2>
+                <button id="btn-home" class="btn-secondary" style="display: flex; align-items: center; gap: 8px; padding: 10px 15px;">
+                    <span style="font-size: 1.2em;">🏠</span>
+                    <span>Menú Principal</span>
+                </button>
+            </div>
             <label for="local-name-input">Nombre Equipo Local:</label>
             <input type="text" id="local-name-input" value="Athletic Club Móstoles">
             <label for="rival-name">Nombre Rival:</label>
@@ -408,6 +414,7 @@
 
     function assignAllEventListeners() {
         document.getElementById('start-config').addEventListener('click', handleStartConfig);
+        document.getElementById('btn-home').addEventListener('click', () => window.location.href = 'index.html');
         document.querySelectorAll('.btn-event').forEach(b => b.addEventListener('click', handleEventButtonClick));
         document.getElementById('btn-half-time').addEventListener('click', handleHalfTime);
         document.getElementById('btn-start-second').addEventListener('click', handleStartSecondHalf);
@@ -868,6 +875,26 @@
         chip.addEventListener('dragstart', handleDragStart);
         chip.addEventListener('touchstart', handleTouchStart, {passive: false});
         chip.addEventListener('click', () => processEventSelection(chip));
+        
+        // Agregar funcionalidad de eliminación (solo antes de iniciar partido)
+        let longPressTimer;
+        chip.addEventListener('pointerdown', (e) => {
+            if (gameState.matchEvents.length > 0) return; // Solo antes de iniciar
+            if (chip.classList.contains('chip-on-pitch')) return; // Solo jugadores del banquillo
+            
+            longPressTimer = setTimeout(() => {
+                showDeletePlayerModal(name, team, chip);
+            }, 1000); // 1 segundo de presión
+        });
+        
+        chip.addEventListener('pointerup', () => {
+            clearTimeout(longPressTimer);
+        });
+        
+        chip.addEventListener('pointerleave', () => {
+            clearTimeout(longPressTimer);
+        });
+        
         return chip;
     }
     
@@ -1160,6 +1187,38 @@
     }
 
     function exportToCsv() { let csvContent = "\uFEFF"; csvContent += `${gameState.localTeamName}\n`; csvContent += "Jugador,Goles,Asistencias,Amarillas,Rojas,Faltas,Minutos Jugados\n"; gameState.localPlayers.forEach(p => { const stats = gameState.playerStats.local[p]; csvContent += [p, stats.goles, stats.asistencias, stats.amarillas, stats.rojas, stats.faltas, formatTimeAscending(stats.minutosJugados)].join(",") + "\n"; }); csvContent += `\n${gameState.rivalTeamName}\n`; csvContent += "Dorsal,Goles,Asistencias,Amarillas,Rojas,Faltas,Minutos Jugados\n"; gameState.rivalDorsals.forEach(d => { const stats = gameState.playerStats.rival[d]; csvContent += [d, stats.goles, stats.asistencias, stats.amarillas, stats.rojas, stats.faltas, formatTimeAscending(stats.minutosJugados)].join(",") + "\n"; }); const link = document.createElement("a"); link.href = URL.createObjectURL(new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })); link.download = `estadisticas_${gameState.localTeamName}_vs_${gameState.rivalTeamName}.csv`; document.body.appendChild(link); link.click(); document.body.removeChild(link); }
+    
+    function showDeletePlayerModal(playerName, team, chip) {
+        const teamName = team === 'local' ? gameState.localTeamName : gameState.rivalTeamName;
+        const confirmMessage = `¿Eliminar a ${playerName} del equipo ${teamName}?\n\nEsta acción no se puede deshacer.`;
+        
+        if (confirm(confirmMessage)) {
+            deletePlayer(playerName, team, chip);
+        }
+    }
+    
+    function deletePlayer(playerName, team, chip) {
+        // Eliminar del estado
+        delete gameState.playerStats[team][playerName];
+        
+        // Eliminar de las listas de jugadores
+        if (team === 'local') {
+            gameState.localPlayers = gameState.localPlayers.filter(p => p !== playerName);
+        } else {
+            gameState.rivalDorsals = gameState.rivalDorsals.filter(d => d !== playerName);
+        }
+        
+        // Eliminar del DOM
+        chip.remove();
+        
+        // Actualizar estadísticas
+        updateStatsTables();
+        saveState();
+        
+        // Mostrar mensaje de confirmación
+        const teamName = team === 'local' ? gameState.localTeamName : gameState.rivalTeamName;
+        alert(`${playerName} ha sido eliminado del equipo ${teamName}.`);
+    }
 </script>
 </body>
 </html>
