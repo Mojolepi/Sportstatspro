@@ -346,8 +346,6 @@
                 <button id="btn-half-time" class="btn-secondary" disabled>Descanso</button>
                 <button id="btn-start-second" class="btn-secondary" disabled>Inicio 2ª</button>
                 <button id="btn-finish-game" class="btn-danger" disabled>Finalizar</button>
-                <button id="btn-reset-match" class="btn-secondary">Reiniciar</button> 
-                <button id="btn-new-match" class="btn-secondary">Nuevo Partido</button>
             </div>
             <div class="event-group">
                 <button class="btn-event" data-event="goal">GOL ⚽</button>
@@ -378,6 +376,10 @@
                 </thead>
                 <tbody></tbody>
             </table>
+            <div class="control-group" style="margin-top: 20px;">
+                <button id="btn-reset-match" class="btn-secondary">Reiniciar</button>
+                <button id="btn-new-match" class="btn-secondary">Nuevo Partido</button>
+            </div>
             <button id="btn-export-excel" class="btn-primary hidden" style="margin-top: 20px;">Exportar a Excel</button>
         </section>
         
@@ -823,157 +825,162 @@
         gameState.rivalDorsals.forEach(d => { gameState.playerStats.rival[d] = { ...initialStats, ...preserveStats(d, 'rival') }; });
     }
     
-    // Lógica de Drag & Drop
+    // Lógica de Drag & Drop (sistema estándar como futsal-mini)
     function setupDragAndDropForChip(chip) {
-        chip.addEventListener('pointerdown', handlePointerDown);
+        chip.draggable = true;
+        chip.addEventListener('dragstart', handleDragStart);
+        chip.addEventListener('touchstart', handleTouchStart, {passive: false});
     }
     
-    function handlePointerDown(e) {
-        if (gameState.eventFlowState.active || e.currentTarget.classList.contains('expulsado')) return;
-        e.preventDefault();
-        const chip = e.currentTarget;
-        chip.setPointerCapture(e.pointerId);
-
-        gameState.draggedElement = chip;
-        chip.classList.add('dragging');
-        document.body.appendChild(chip);
-        
-        Object.assign(chip.style, {
-            position: 'fixed',
-            left: `${e.clientX - chip.offsetWidth / 2}px`,
-            top: `${e.clientY - chip.offsetHeight / 2}px`,
-            touchAction: 'none'
-        });
-
-        document.addEventListener('pointermove', handlePointerMove);
-        document.addEventListener('pointerup', handlePointerUp);
+    function handleDragStart(e) { 
+        if(gameState.eventFlowState.active || e.target.classList.contains('expulsado')) return e.preventDefault(); 
+        gameState.draggedElement = e.target; 
+        setTimeout(() => e.target.classList.add('dragging'), 0); 
+    }
+    
+    function handleTouchStart(e) { 
+        if(gameState.eventFlowState.active || e.target.classList.contains('expulsado')) return; 
+        e.preventDefault(); 
+        gameState.draggedElement = e.target; 
+        gameState.draggedElement.classList.add('dragging'); 
+        const touch = e.touches[0]; 
+        Object.assign(gameState.draggedElement.style, { position: 'fixed', left: `${touch.clientX}px`, top: `${touch.clientY}px`, transform: `translate(-50%, -50%)`, zIndex: 1000 }); 
+        document.addEventListener('touchmove', handleTouchMove, {passive: false}); 
+        document.addEventListener('touchend', handleTouchEnd); 
     }
 
-    function handlePointerMove(e) {
-        if (!gameState.draggedElement) return;
-        e.preventDefault();
-        Object.assign(gameState.draggedElement.style, {
-            left: `${e.clientX - gameState.draggedElement.offsetWidth / 2}px`,
-            top: `${e.clientY - gameState.draggedElement.offsetHeight / 2}px`,
-        });
+    function handleTouchMove(e) { 
+        e.preventDefault(); 
+        if(!gameState.draggedElement) return; 
+        const touch = e.touches[0]; 
+        Object.assign(gameState.draggedElement.style, { left: `${touch.clientX}px`, top: `${touch.clientY}px` }); 
     }
 
-    function handlePointerUp(e) {
-        const draggedChip = gameState.draggedElement;
-        if (!draggedChip) return;
-        
-        draggedChip.releasePointerCapture(e.pointerId);
+    function handleTouchEnd(e) { 
+        if(!gameState.draggedElement) return; 
+        const touch = e.changedTouches[0]; 
+        gameState.draggedElement.style.position = '';
+        gameState.draggedElement.style.zIndex = '';
+        handlePlayerDrop(gameState.draggedElement, touch.clientX, touch.clientY); 
+        gameState.draggedElement.classList.remove('dragging');
+        gameState.draggedElement = null; 
+        document.removeEventListener('touchmove', handleTouchMove); 
+        document.removeEventListener('touchend', handleTouchEnd); 
+    }
 
-        draggedChip.style.visibility = 'hidden';
-        const dropTarget = document.elementFromPoint(e.clientX, e.clientY);
-        draggedChip.style.visibility = 'visible';
-
-        const targetPlayerChip = dropTarget?.closest('.player-chip');
-        const targetZone = dropTarget?.closest('#futsal-pitch, .bench');
-        
-        if (targetPlayerChip && targetPlayerChip !== draggedChip) {
-            const draggedData = draggedChip.dataset;
-            const targetData = targetPlayerChip.dataset;
-
-            if (draggedData.team === targetData.team) {
-                const draggedStats = gameState.playerStats[draggedData.team][draggedData.name];
-                const targetStats = gameState.playerStats[targetData.team][targetData.name];
-                
-                // CORRECCIÓN 1: Lógica de sustitución explícita y bidireccional
-                // Comprueba si un jugador está en el campo y el otro en el banquillo para realizar el cambio.
-                if (draggedStats.onPitch !== targetStats.onPitch) {
-                    let playerIn, playerOut;
-                    
-                    // Caso 1: Arrastrar un jugador del campo a uno del banquillo
-                    if (draggedStats.onPitch && !targetStats.onPitch) {
-                        playerIn = targetData;
-                        playerOut = draggedData;
-                    } 
-                    // Caso 2: Arrastrar un jugador del banquillo a uno del campo
-                    else if (!draggedStats.onPitch && targetStats.onPitch) {
-                        playerIn = draggedData;
-                        playerOut = targetData;
-                    }
-
-                    if (playerIn && playerOut) {
-                        handleSubstitution(playerIn, playerOut);
-                    }
-                }
-            }
-        } else if (targetZone?.id === 'futsal-pitch') {
-            handleMoveToPitch(draggedChip.dataset, e.clientX, e.clientY);
-        } else if (targetZone && targetZone.classList.contains('bench')) {
-            const { name, team } = draggedChip.dataset;
-            const wasOnPitch = gameState.playerStats[team][name].onPitch;
-            if (!wasOnPitch) {
-                gameState.playerStats[team][name].onPitch = false;
-            }
-        }
-
-        draggedChip.classList.remove('dragging');
-        draggedChip.style.cssText = ''; 
-        
-        repositionPlayersFromState();
-        updateStatsTables();
-        saveState();
-
-        document.removeEventListener('pointermove', handlePointerMove);
-        document.removeEventListener('pointerup', handlePointerUp);
+    function handleDrop(e) { 
+        e.preventDefault(); 
+        if (!gameState.draggedElement) return; 
+        handlePlayerDrop(gameState.draggedElement, e.clientX, e.clientY); 
+        gameState.draggedElement.classList.remove('dragging');
         gameState.draggedElement = null;
     }
-    
-    function handleMoveToPitch({ name, team }, clientX, clientY) {
-        const stats = gameState.playerStats[team][name];
-        const wasOnPitch = stats.onPitch;
 
-        if (!wasOnPitch) {
-            const maxPlayers = getTeamMaxPlayers(team);
+    function handlePlayerDrop(draggedChip, clientX, clientY) {
+        draggedChip.style.display = 'none';
+        const dropTarget = document.elementFromPoint(clientX, clientY);
+        draggedChip.style.display = '';
+        const targetPlayer = dropTarget?.closest('.player-chip');
+        const targetZone = dropTarget?.closest('#futsal-pitch, .bench');
+        if (targetPlayer && targetPlayer !== draggedChip) return handleSubstitution(draggedChip, targetPlayer);
+        if (targetZone?.id === 'futsal-pitch') return movePlayerToPitch(draggedChip, clientX, clientY);
+        if (targetZone?.classList.contains('bench')) return movePlayerToBench(draggedChip, targetZone);
+    }
+    
+    function movePlayerToPitch(chip, clientX, clientY) {
+        const { name, team } = chip.dataset;
+        const isComingFromBench = chip.classList.contains('chip-on-bench');
+        if (isComingFromBench) {
             const onPitchCount = Object.values(gameState.playerStats[team]).filter(p => p.onPitch).length;
+            const maxPlayers = getTeamMaxPlayers(team);
             if (onPitchCount >= maxPlayers) {
-                alert(`El equipo ${team === 'local' ? gameState.localTeamName : gameState.rivalTeamName} ya tiene ${maxPlayers} jugadores en el campo debido a una sanción.`);
+                alert(`El equipo ${team === 'local' ? gameState.localTeamName : gameState.rivalTeamName} no puede alinear más jugadores.`);
                 return;
             }
         }
 
-        const pitchRect = pitch.getBoundingClientRect();
-        const x = Math.max(0, Math.min(pitchRect.width, clientX - pitchRect.left));
-        const y = Math.max(0, Math.min(pitchRect.height, clientY - pitchRect.top));
-        
-        stats.onPitch = true;
-        stats.position = { left: `${100 * x / pitchRect.width}%`, top: `${100 * y / pitchRect.height}%` };
-        
-        if (gameState.matchEvents.length === 0) checkStartingConditions();
+        const rect = pitch.getBoundingClientRect();
+        const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+        const y = Math.max(0, Math.min(rect.height, clientY - rect.top));
+        const pos = { left: `${100 * x / rect.width}%`, top: `${100 * y / rect.height}%` };
+
+        chip.className = `player-chip chip-${team} chip-on-pitch`;
+        Object.assign(chip.style, { ...pos, transform: 'translate(-50%, -50%)' });
+        pitch.appendChild(chip);
+        gameState.playerStats[team][name].onPitch = true;
+        gameState.playerStats[team][name].position = pos;
+        updateStatsTables();
+        saveState();
+    }
+    
+    function movePlayerToBench(chip, targetBench) {
+        const { name, team } = chip.dataset;
+        const isOnPitch = chip.classList.contains('chip-on-pitch');
+
+        if (targetBench.id !== `${team}-bench`) return;
+        chip.className = `player-chip chip-${team} chip-on-bench`;
+        chip.style.cssText = '';
+        targetBench.appendChild(chip);
+        gameState.playerStats[team][name].onPitch = false;
+        updateStatsTables();
+        saveState();
     }
 
-    function handleSubstitution(playerInData, playerOutData) {
-        const { name: nameIn, team: teamIn } = playerInData;
-        const { name: nameOut, team: teamOut } = playerOutData;
-        
-        if (teamIn !== teamOut) return;
+    function handleSubstitution(playerInChip, playerOutChip) {
+        const sameTeam = playerInChip.dataset.team === playerOutChip.dataset.team;
+        if (!sameTeam) return;
 
-        const statsIn = gameState.playerStats[teamIn][nameIn];
-        const statsOut = gameState.playerStats[teamOut][nameOut];
+        const { name: nameIn, team } = playerInChip.dataset;
+        const { name: nameOut } = playerOutChip.dataset;
+        const statsIn = gameState.playerStats[team][nameIn];
+        const statsOut = gameState.playerStats[team][nameOut];
         
-        statsOut.onPitch = false;
-        statsIn.onPitch = true;
-        statsIn.position = { ...statsOut.position };
+        // Intercambiar posiciones y estados
+        const inPosition = {...statsIn.position};
+        const inOnPitch = statsIn.onPitch;
+        const outPosition = {...statsOut.position};
+        const outOnPitch = statsOut.onPitch;
+        
+        // Actualizar estados
+        statsIn.position = outPosition;
+        statsIn.onPitch = outOnPitch;
+        statsOut.position = inPosition;
+        statsOut.onPitch = inOnPitch;
+        
+        // Actualizar elementos visuales
+        updatePlayerChipVisuals(playerInChip, statsIn, team);
+        updatePlayerChipVisuals(playerOutChip, statsOut, team);
 
-        // CORRECCIÓN 2: No registrar sustituciones como evento si el partido no ha comenzado
+        // Solo registrar como sustitución si uno está en el campo y el otro en el banquillo
         const hasStarted = gameState.matchEvents.some(e => e.type === 'init_match');
-        if (!hasStarted) {
-            // Permite el cambio visual para ajustar la alineación inicial, pero no crea un evento en la cronología.
-            repositionPlayersFromState();
-            updateStatsTables();
-            return;
+        if (hasStarted && inOnPitch !== outOnPitch) {
+            const playerOnPitch = inOnPitch ? nameIn : nameOut;
+            const playerOnBench = inOnPitch ? nameOut : nameIn;
+            addMatchEvent({
+                type: 'substitution',
+                text: `Sustitución: <span style="color: var(--color-success); font-weight: bold;">&uarr; ${playerOnBench}</span> <span style="color: var(--color-danger); font-weight: bold;">&darr; ${playerOnPitch}</span>`,
+                team: team,
+                playerIn: playerOnBench,
+                playerOut: playerOnPitch
+            });
         }
-
-        addMatchEvent({
-            type: 'substitution',
-            text: `Sustitución: <span style="color: var(--color-success); font-weight: bold;">&uarr; ${nameIn}</span> <span style="color: var(--color-danger); font-weight: bold;">&darr; ${nameOut}</span>`,
-            team: teamIn,
-            playerIn: nameIn,
-            playerOut: nameOut
-        });
+        
+        updateStatsTables();
+        saveState();
+    }
+    
+    function updatePlayerChipVisuals(chip, stats, team) {
+        const bench = team === 'local' ? localBench : rivalBench;
+        
+        if (stats.onPitch) {
+            chip.className = `player-chip chip-${team} chip-on-pitch`;
+            Object.assign(chip.style, { ...stats.position, transform: 'translate(-50%, -50%)' });
+            pitch.appendChild(chip);
+        } else {
+            chip.className = `player-chip chip-${team} chip-on-bench`;
+            chip.style.cssText = '';
+            bench.appendChild(chip);
+        }
     }
 
     // --- UI Y EVENTOS ---
@@ -984,11 +991,16 @@
         pitch.querySelectorAll('.player-chip').forEach(chip => chip.remove());
         gameState.localPlayers.forEach(p => localBench.appendChild(createChip(p, 'local')));
         gameState.rivalDorsals.forEach(d => rivalBench.appendChild(createChip(d, 'rival')));
+        
+        [pitch, localBench, rivalBench].forEach(zone => {
+            zone.addEventListener('dragover', (e) => e.preventDefault());
+            zone.addEventListener('drop', handleDrop);
+        });
     }
     
     function createChip(name, team) {
         const chip = document.createElement('div');
-        chip.className = `player-chip chip-${team}`;
+        chip.className = `player-chip chip-${team} chip-on-bench`;
         chip.textContent = name;
         chip.dataset.name = name;
         chip.dataset.team = team;

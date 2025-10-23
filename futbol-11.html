@@ -168,8 +168,7 @@
             </div>
             <div class="control-group">
                 <button id="btn-half-time" class="btn-secondary" disabled>Descanso</button><button id="btn-start-second" class="btn-secondary" disabled>Inicio 2ª</button>
-                <button id="btn-finish-game" class="btn-danger" disabled>Finalizar</button><button id="btn-reset-match" class="btn-secondary">Reiniciar</button>
-                <button id="btn-new-match" class="btn-secondary">Nuevo Partido</button>
+                <button id="btn-finish-game" class="btn-danger" disabled>Finalizar</button>
             </div>
         </section>
         
@@ -197,6 +196,10 @@
             <table id="local-stats-table"><thead><tr><th>Jugador</th><th>G</th><th>A</th><th>D</th><th>TP</th><th>F</th><th>🟨</th><th>🟥</th><th>MIN</th></tr></thead><tbody></tbody></table>
             <h3 id="rival-stats-title" style="margin-top: 20px;"></h3>
             <table id="rival-stats-table"><thead><tr><th>Dorsal</th><th>G</th><th>A</th><th>D</th><th>TP</th><th>F</th><th>🟨</th><th>🟥</th><th>MIN</th></tr></thead><tbody></tbody></table>
+            <div class="control-group" style="margin-top: 20px;">
+                <button id="btn-reset-match" class="btn-secondary">Reiniciar</button>
+                <button id="btn-new-match" class="btn-secondary">Nuevo Partido</button>
+            </div>
             <button id="btn-export-excel" class="btn-primary hidden" style="margin-top: 20px; width: 100%;">Exportar a Excel</button>
         </section>
         
@@ -238,8 +241,8 @@
                 playerStats: { local: {}, rival: {} },
                 matchStats: { local: { corners: 0, offsides: 0 }, rival: { corners: 0, offsides: 0 } },
                 possession: { team: null, startTime: 0, localSeconds: 0, rivalSeconds: 0 },
-                matchTimer: 0, currentHalf: 1, isMatchRunning: false, timerInterval: null, 
-                timerLastUpdated: null, matchEvents: [], eventFlow: { active: false }
+                matchTimer: 0, timerStartTime: 0, timerBaseTime: 0, currentHalf: 1, isMatchRunning: false, timerInterval: null, 
+                lastMinuteCheck: -1, matchEvents: [], eventFlow: { active: false }
             };
         },
         init() { this._state = this.getInitial(); },
@@ -247,7 +250,9 @@
             const savedStateJSON = localStorage.getItem(AppConfig.APP_STATE_KEY);
             if (!savedStateJSON) return false;
             try {
-                this._state = { ...this.getInitial(), ...JSON.parse(savedStateJSON) };
+                const loadedState = JSON.parse(savedStateJSON);
+                delete loadedState.timerInterval;
+                this._state = { ...this.getInitial(), ...loadedState };
                 return true;
             } catch (e) {
                 console.error("Error al cargar estado, reseteando.", e);
@@ -255,7 +260,11 @@
                 return false;
             }
         },
-        save() { localStorage.setItem(AppConfig.APP_STATE_KEY, JSON.stringify(this._state)); },
+        save() { 
+            const stateToSave = {...this._state};
+            delete stateToSave.timerInterval;
+            localStorage.setItem(AppConfig.APP_STATE_KEY, JSON.stringify(stateToSave)); 
+        },
         get() { return this._state; },
         set(newState) { this._state = newState; }
     };
@@ -293,7 +302,7 @@
             this.elements['rival-stats-title'].textContent = state.rivalTeamName;
             this.elements['possession-local'].textContent = state.localTeamName;
             this.elements['possession-rival'].textContent = state.rivalTeamName;
-            this.elements['minuto-actual'].value = MatchLogic.formatTime(state.matchTimer);
+            this.updateTimerDisplay();
             this.updateButtonStates();
             this.updateScoreboard();
             this.updatePlayerChips();
@@ -413,6 +422,26 @@
             this.elements['possession-local'].classList.toggle('active', state.possession.team === 'local');
             this.elements['possession-rival'].classList.toggle('active', state.possession.team === 'rival');
         },
+        updateTimerDisplay() {
+            const state = AppState.get();
+            const mainTimerEl = this.elements['minuto-actual'];
+            const addedTimeEl = this.elements['added-time'];
+
+            if (state.currentHalf === 1 && state.matchTimer >= AppConfig.FIRST_HALF_MAX_TIME) {
+                mainTimerEl.value = MatchLogic.formatTime(AppConfig.FIRST_HALF_MAX_TIME);
+                const addedSeconds = state.matchTimer - AppConfig.FIRST_HALF_MAX_TIME;
+                addedTimeEl.textContent = `+${MatchLogic.formatTime(addedSeconds)}`;
+                addedTimeEl.classList.remove('hidden');
+            } else if (state.currentHalf === 2 && state.matchTimer >= AppConfig.SECOND_HALF_MAX_TIME) {
+                mainTimerEl.value = MatchLogic.formatTime(AppConfig.SECOND_HALF_MAX_TIME);
+                const addedSeconds = state.matchTimer - AppConfig.SECOND_HALF_MAX_TIME;
+                addedTimeEl.textContent = `+${MatchLogic.formatTime(addedSeconds)}`;
+                addedTimeEl.classList.remove('hidden');
+            } else {
+                mainTimerEl.value = MatchLogic.formatTime(state.matchTimer);
+                addedTimeEl.classList.add('hidden');
+            }
+        },
         updateDocumentTitle() {
             const state = AppState.get();
             const time = MatchLogic.formatTime(state.matchTimer);
@@ -468,41 +497,94 @@
             const rivalReady = Object.values(state.playerStats.rival).filter(p => p.onPitch).length === AppConfig.MAX_PLAYERS_ON_PITCH;
             return localReady && rivalReady;
         },
+        _createTimerInterval() {
+            const state = AppState.get();
+            clearInterval(state.timerInterval);
+            state.timerInterval = setInterval(() => {
+                if (!state.isMatchRunning) {
+                    clearInterval(state.timerInterval);
+                    state.timerInterval = null;
+                    return;
+                }
+                const elapsedSeconds = Math.floor((Date.now() - state.timerStartTime) / 1000);
+                state.matchTimer = state.timerBaseTime + elapsedSeconds;
+
+                const currentMinute = Math.floor(state.matchTimer / 60);
+                if (state.isMatchRunning && currentMinute > state.lastMinuteCheck) {
+                    state.lastMinuteCheck = currentMinute;
+                    this.rebuildAndRecalculateAllState(); 
+                } else {
+                    DOM.updateTimerDisplay();
+                }
+                
+                DOM.updateDocumentTitle();
+            }, 1000);
+        },
         startTimer() {
             const state = AppState.get();
             if (state.isMatchRunning) return;
             state.isMatchRunning = true;
-            state.possession.startTime = Date.now();
+            state.timerStartTime = Date.now();
+            state.timerBaseTime = state.matchTimer;
             if (state.possession.team === null) this.setPossession('local');
-            state.timerInterval = setInterval(() => {
-                state.matchTimer++;
-                if ((state.currentHalf === 1 && state.matchTimer >= AppConfig.FIRST_HALF_MAX_TIME) || (state.currentHalf === 2 && state.matchTimer >= AppConfig.SECOND_HALF_MAX_TIME)) {
-                    if (state.currentHalf === 1) EventHandler.handleHalfTime(true); else EventHandler.handleFinishGame(true);
-                    return;
-                }
-                this.adjustPlayerMinutes(1);
-                this.updatePossession(1);
-                DOM.elements['minuto-actual'].value = this.formatTime(state.matchTimer);
-                DOM.updateDocumentTitle();
-            }, 1000);
+            this._createTimerInterval();
             DOM.updateButtonStates();
+            AppState.save();
         },
         stopTimer() {
             const state = AppState.get();
             if (!state.isMatchRunning) return;
+            const elapsedSeconds = Math.floor((Date.now() - state.timerStartTime) / 1000);
+            state.matchTimer = state.timerBaseTime + elapsedSeconds;
             this.updatePossession(Math.floor((Date.now() - state.possession.startTime) / 1000));
             state.isMatchRunning = false;
             clearInterval(state.timerInterval);
             state.timerInterval = null;
+            this.rebuildAndRecalculateAllState();
             DOM.updateButtonStates();
             AppState.save();
         },
-        resumeTimerAfterPause(elapsedSeconds) {
-            this.adjustPlayerMinutes(elapsedSeconds);
-            this.updatePossession(elapsedSeconds);
+        rebuildAndRecalculateAllState() {
             const state = AppState.get();
-            state.matchTimer += elapsedSeconds;
-            state.timerLastUpdated = null;
+            if (!state.initialPlayerState) return;
+
+            state.playerStats = JSON.parse(JSON.stringify(state.initialPlayerState));
+            for (const team of Object.values(state.playerStats)) {
+                for (const player of Object.values(team)) {
+                    Object.assign(player, { goles: 0, asistencias: 0, disparos: 0, disparosAPuerta: 0, faltas: 0, amarillas: 0, rojas: 0, expulsado: false, minutosJugados: 0 });
+                }
+            }
+            state.matchStats = { local: { corners: 0, offsides: 0 }, rival: { corners: 0, offsides: 0 } };
+            
+            let lastTime = 0;
+            state.matchEvents.forEach(event => {
+                const timeDelta = event.timeInSeconds - lastTime;
+                if (timeDelta > 0) this.adjustPlayerMinutes(timeDelta);
+
+                const teamPStats = state.playerStats[event.team];
+                
+                switch (event.type) {
+                    case 'red-card':
+                        if (teamPStats?.[event.player]) { teamPStats[event.player].rojas++; teamPStats[event.player].expulsado = true; this.setPlayerOnBench(event.player, event.team, false); }
+                        break;
+                    case 'yellow-card': 
+                        if (teamPStats?.[event.player]) { teamPStats[event.player].amarillas++; if (teamPStats[event.player].amarillas >= 2) { teamPStats[event.player].expulsado = true; this.setPlayerOnBench(event.player, event.team, false); } }
+                        break;
+                    case 'goal': if(teamPStats?.[event.goleador]){teamPStats[event.goleador].goles++;teamPStats[event.goleador].disparos++;teamPStats[event.goleador].disparosAPuerta++;} if(event.asistente && state.playerStats[event.team]?.[event.asistente])state.playerStats[event.team][event.asistente].asistencias++; break;
+                    case 'shot': if(teamPStats?.[event.player]) teamPStats[event.player].disparos++; break;
+                    case 'foul': if(teamPStats?.[event.player]) teamPStats[event.player].faltas++; break;
+                    case 'corner': if(state.matchStats[event.team]) state.matchStats[event.team].corners++; break;
+                    case 'offside': if(state.matchStats[event.team]) state.matchStats[event.team].offsides++; break;
+                }
+                lastTime = event.timeInSeconds;
+            });
+
+            const finalTimeDelta = state.matchTimer - lastTime;
+            if (finalTimeDelta > 0) this.adjustPlayerMinutes(finalTimeDelta);
+            
+            state.lastMinuteCheck = Math.floor(state.matchTimer / 60);
+
+            DOM.updateAll();
         },
         adjustPlayerMinutes(seconds) {
             if (seconds <= 0) return;
@@ -652,11 +734,7 @@
         handleHalfTime(isAuto = false) {
             MatchLogic.stopTimer();
             const state = AppState.get();
-            if (!isAuto && state.matchTimer < AppConfig.HALF_TIME_SECONDS) {
-                const diff = AppConfig.HALF_TIME_SECONDS - state.matchTimer;
-                MatchLogic.adjustPlayerMinutes(diff);
-            }
-            state.matchTimer = AppConfig.HALF_TIME_SECONDS;
+            // No ajustamos el matchTimer aquí, mantenemos el tiempo real incluyendo descuento
             MatchLogic.addMatchEvent({ type: 'control', text: 'Descanso.' });
             state.currentHalf = 2;
             DOM.updateAll();
@@ -700,13 +778,14 @@
         },
         handleVisibilityChange() {
             const state = AppState.get();
-            if (document.hidden && state.isMatchRunning) {
-                state.timerLastUpdated = Date.now();
-                MatchLogic.stopTimer();
-            } else if (!document.hidden && state.timerLastUpdated) {
-                const elapsed = Math.floor((Date.now() - state.timerLastUpdated) / 1000);
-                MatchLogic.resumeTimerAfterPause(elapsed);
-                MatchLogic.startTimer();
+            if (document.hidden) {
+                if (state.isMatchRunning) AppState.save();
+                return;
+            }
+            if (state.isMatchRunning) {
+                const elapsedSeconds = Math.floor((Date.now() - state.timerStartTime) / 1000);
+                state.matchTimer = state.timerBaseTime + elapsedSeconds;
+                MatchLogic.rebuildAndRecalculateAllState();
             }
         },
         handleEventButtonClick(e) {
@@ -901,22 +980,19 @@
         if (AppState.load()) {
             DOM.showMatchUI();
             DOM.setupBenchesAndPitch();
-
             const state = AppState.get();
-            let shouldStartTimer = state.isMatchRunning;
-
-            if (state.timerLastUpdated) {
-                const elapsed = Math.floor((Date.now() - state.timerLastUpdated) / 1000);
-                MatchLogic.resumeTimerAfterPause(elapsed); 
-            }
             
-            DOM.updateAll();
-
-            if (shouldStartTimer) {
-                state.isMatchRunning = false; 
-                MatchLogic.startTimer();
+            if (state.isMatchRunning) {
+                const elapsedSinceSave = Math.floor((Date.now() - state.timerStartTime) / 1000);
+                state.matchTimer = state.timerBaseTime + elapsedSinceSave;
+                MatchLogic._createTimerInterval();
             }
 
+            if (state.initialPlayerState) {
+                MatchLogic.rebuildAndRecalculateAllState();
+            } else {
+                DOM.updateAll();
+            }
         } else {
             AppState.init();
         }
