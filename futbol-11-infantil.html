@@ -1082,7 +1082,12 @@
                             lastLocalSubTime = event.timeInSeconds;
                         }
                         const statsOut = state.playerStats[event.team]?.[event.playerOut];
-                        const position = statsOut ? { ...statsOut.position } : null;
+                        const statsIn = state.playerStats[event.team]?.[event.playerIn];
+                        
+                        // Si el jugador que entra ya está en el campo, mantener su posición actual
+                        // Si viene del banquillo, tomar la posición del jugador que sale
+                        const position = statsIn && statsIn.onPitch ? statsIn.position : (statsOut ? { ...statsOut.position } : null);
+                        
                         this.setPlayerOnBench(event.playerOut, event.team);
                         this.setPlayerOnPitch(event.playerIn, event.team, position);
                         break;

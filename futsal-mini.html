@@ -521,11 +521,10 @@
     }
 
     function setupInitialConfig() {
-        const RANDOM_NAMES = ["Adrián", "Borja", "Carlos", "David", "Emilio", "Fran", "Gabriel", "Hugo", "Iván", "Jaime"];
         const dorsals = Array.from({length: 10}, () => Math.floor(Math.random() * 99) + 1);
         localNameInput.value = "Athletic Club Móstoles";
         rivalNameInput.value = "Rival";
-        localPlayersInput.value = RANDOM_NAMES.join(', ');
+        localPlayersInput.value = "Enzo, Guillen, Pablo, Lucas, Ruben, Diego, Adri, Rober, Unai, Marcos, Alex, Carlos";
         rivalDorsalsInput.value = [...new Set(dorsals)].join(', ');
     }
     
