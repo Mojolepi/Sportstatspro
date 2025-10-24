@@ -212,37 +212,55 @@
         }
         .modal-content .close-btn { float: right; font-size: 1.5em; cursor: pointer; }
         
-        .time-editor {
+        .time-editor-container {
             display: flex;
             justify-content: center;
             align-items: center;
             gap: 15px;
-            margin: 25px 0;
+            margin-bottom: 20px;
         }
-        .time-adjust-group {
+        .time-editor-unit {
             display: flex;
             align-items: center;
             gap: 10px;
         }
-        .time-editor-btn {
-            font-size: 1.8em;
-            font-weight: bold;
-            width: 45px;
-            height: 45px;
-            padding: 0;
-            line-height: 1;
-            border-radius: 50%;
+        .time-editor-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
         }
-        .time-editor-display {
-            font-size: 2.5em;
+        .time-editor-buttons button {
+            font-size: 1.2em;
+            padding: 0;
+            width: 40px;
+            height: 35px;
+            line-height: 35px;
+            background-color: var(--color-background-secondary);
+            border: 1px solid var(--color-text);
+            color: var(--color-text);
+            border-radius: 4px;
+        }
+        .time-editor-unit input {
+            width: 80px;
+            height: 75px;
+            font-size: 3em;
             font-weight: bold;
-            font-family: 'Courier New', Courier, monospace;
-            width: 70px;
             text-align: center;
+            border: 2px solid #555;
+            background-color: #333;
+            color: var(--color-text);
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+        .time-editor-unit input::-webkit-outer-spin-button,
+        .time-editor-unit input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
         }
         .time-editor-separator {
-            font-size: 2em;
+            font-size: 3em;
             font-weight: bold;
+            padding-bottom: 5px;
         }
 
         .hidden { display: none !important; }
@@ -403,20 +421,27 @@
             <div class="modal-content">
                 <span class="close-btn">&times;</span>
                 <h3>Ajustar Tiempo (Cuenta atrás de la mitad actual)</h3>
-                <div class="time-editor">
-                    <div class="time-adjust-group">
-                        <button class="time-editor-btn btn-secondary" data-unit="minutes" data-action="decrease">-</button>
-                        <span id="edit-time-minutes-display" class="time-editor-display">20</span>
-                        <button class="time-editor-btn btn-secondary" data-unit="minutes" data-action="increase">+</button>
+                <div class="time-editor-container">
+                    <div class="time-editor-unit">
+                        <div class="time-editor-buttons">
+                            <button id="time-editor-min-plus">+</button>
+                            <button id="time-editor-min-minus">-</button>
+                        </div>
+                        <input type="number" id="time-editor-min" min="0" max="25">
                     </div>
                     <span class="time-editor-separator">:</span>
-                    <div class="time-adjust-group">
-                         <button class="time-editor-btn btn-secondary" data-unit="seconds" data-action="decrease">-</button>
-                        <span id="edit-time-seconds-display" class="time-editor-display">00</span>
-                        <button class="time-editor-btn btn-secondary" data-unit="seconds" data-action="increase">+</button>
+                    <div class="time-editor-unit">
+                        <input type="number" id="time-editor-sec" min="0" max="59">
+                        <div class="time-editor-buttons">
+                            <button id="time-editor-sec-plus">+</button>
+                            <button id="time-editor-sec-minus">-</button>
+                        </div>
                     </div>
                 </div>
-                <button id="save-time-btn" class="btn-primary" style="width: 100%;">Guardar</button>
+                <div style="text-align: center; display:flex; gap: 10px; justify-content: center;">
+                    <button id="save-time-btn" class="btn-primary">Guardar</button>
+                    <button id="cancel-time-btn" class="btn-secondary">Cancelar</button>
+                </div>
             </div>
         </div>
         
@@ -539,7 +564,13 @@
         
         editTimeModal.querySelector('.close-btn').addEventListener('click', () => editTimeModal.classList.add('hidden'));
         document.getElementById('save-time-btn').addEventListener('click', handleSaveTimeEdit);
-        document.querySelectorAll('#edit-time-modal .time-editor-btn').forEach(btn => btn.addEventListener('click', adjustTimeInModal));
+        document.getElementById('cancel-time-btn').addEventListener('click', () => editTimeModal.classList.add('hidden'));
+        
+        // Event listeners para los botones de tiempo
+        document.getElementById('time-editor-min-plus').addEventListener('click', () => adjustTimeValue('min', 1));
+        document.getElementById('time-editor-min-minus').addEventListener('click', () => adjustTimeValue('min', -1));
+        document.getElementById('time-editor-sec-plus').addEventListener('click', () => adjustTimeValue('sec', 1));
+        document.getElementById('time-editor-sec-minus').addEventListener('click', () => adjustTimeValue('sec', -1));
         
         editEventModal.querySelector('.close-btn').addEventListener('click', () => editEventModal.classList.add('hidden'));
         document.getElementById('save-event-changes-btn').addEventListener('click', handleSaveEventEdit);
@@ -589,6 +620,7 @@
             gameState.matchTimer = timerState.timerBaseTime + elapsed;
             
             updateTimerUI();
+            recalculateAllPlayerMinutes();
             updateStatsTables();
             checkPenalties();
             
@@ -782,10 +814,10 @@
 
         let lastEventTime = 0;
         
-        const timelineForMinutes = [...gameState.matchEvents, { type: 'current_time', timeInSeconds: gameState.matchTimer }];
+        const timelineForMinutes = [...gameState.matchEvents, { type: 'current_time', time: gameState.matchTimer }];
 
         for (const event of timelineForMinutes) {
-            const timeSlice = event.timeInSeconds - lastEventTime;
+            const timeSlice = event.time - lastEventTime;
 
             if (timeSlice > 0) {
                 for (const team in lineup) {
@@ -804,7 +836,7 @@
                 lineup[event.team].delete(event.player);
             }
             
-            lastEventTime = event.timeInSeconds;
+            lastEventTime = event.time;
         }
     }
     
@@ -1219,31 +1251,48 @@
     function openEditTimeModal() {
         if (timerInterval || gameState.isMatchFinished || gameState.matchEvents.length === 0) return; 
         const remainingSeconds = getRemainingSecondsInCurrentHalf(gameState.matchTimer);
-        tempTime.minutes = Math.floor(remainingSeconds / 60);
-        tempTime.seconds = Math.floor(remainingSeconds % 60);
-        updateTimeModalDisplays();
+        const mins = Math.floor(remainingSeconds / 60);
+        const secs = Math.floor(remainingSeconds % 60);
+        
+        document.getElementById('time-editor-min').value = mins;
+        document.getElementById('time-editor-sec').value = secs;
         editTimeModal.classList.remove('hidden');
     }
 
-    function adjustTimeInModal(e) {
-        const { unit, action } = e.currentTarget.dataset;
-        const amount = action === 'increase' ? 1 : -1;
+    function adjustTimeValue(unit, delta) {
+        const input = document.getElementById(`time-editor-${unit}`);
+        let value = parseInt(input.value) || 0;
+        value += delta;
         
-        if (unit === 'minutes') {
-            tempTime.minutes = (tempTime.minutes + amount + 21) % 21;
-        } else if (unit === 'seconds') {
-            tempTime.seconds = (tempTime.seconds + amount + 60) % 60;
+        if (unit === 'min') {
+            if (value < 0) value = 0;
+            if (value > 25) value = 25;
+        } else if (unit === 'sec') {
+            if (value < 0) {
+                value = 59;
+                const minInput = document.getElementById('time-editor-min');
+                const minValue = parseInt(minInput.value) || 0;
+                if (minValue > 0) {
+                    minInput.value = minValue - 1;
+                }
+            }
+            if (value > 59) {
+                value = 0;
+                const minInput = document.getElementById('time-editor-min');
+                const minValue = parseInt(minInput.value) || 0;
+                if (minValue < 25) {
+                    minInput.value = minValue + 1;
+                }
+            }
         }
-        updateTimeModalDisplays();
-    }
-
-    function updateTimeModalDisplays() {
-        document.getElementById('edit-time-minutes-display').textContent = String(tempTime.minutes).padStart(2, '0');
-        document.getElementById('edit-time-seconds-display').textContent = String(tempTime.seconds).padStart(2, '0');
+        
+        input.value = value.toString().padStart(2, '0');
     }
 
     function handleSaveTimeEdit() {
-        const newRemainingSecondsInHalf = (tempTime.minutes * 60) + tempTime.seconds;
+        const newMins = parseInt(document.getElementById('time-editor-min').value) || 0;
+        const newSecs = parseInt(document.getElementById('time-editor-sec').value) || 0;
+        const newRemainingSecondsInHalf = (newMins * 60) + newSecs;
         
         const halfOffset = gameState.currentHalf === 2 ? HALF_TIME_SECONDS : 0;
         gameState.matchTimer = halfOffset + (HALF_TIME_SECONDS - newRemainingSecondsInHalf);

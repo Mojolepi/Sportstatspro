@@ -138,9 +138,56 @@
             border-radius: 10px; width: 90%; max-width: 400px;
         }
         .modal-content .close-btn { float: right; font-size: 1.5em; cursor: pointer; }
-        .time-edit-container { display: flex; gap: 10px; align-items: center; justify-content: center; margin: 20px 0; }
-        .time-edit-container input { text-align: center; font-size: 1.5em; width: 80px; }
-        .time-edit-container span { font-size: 1.5em; }
+        .time-editor-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .time-editor-unit {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .time-editor-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .time-editor-buttons button {
+            font-size: 1.2em;
+            padding: 0;
+            width: 40px;
+            height: 35px;
+            line-height: 35px;
+            background-color: var(--color-background-secondary);
+            border: 1px solid var(--color-text);
+            color: var(--color-text);
+            border-radius: 4px;
+        }
+        .time-editor-unit input {
+            width: 80px;
+            height: 75px;
+            font-size: 3em;
+            font-weight: bold;
+            text-align: center;
+            border: 2px solid #555;
+            background-color: #333;
+            color: var(--color-text);
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+        .time-editor-unit input::-webkit-outer-spin-button,
+        .time-editor-unit input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .time-editor-separator {
+            font-size: 3em;
+            font-weight: bold;
+            padding-bottom: 5px;
+        }
 
         .hidden { display: none !important; }
         
@@ -306,12 +353,27 @@
             <div class="modal-content">
                 <span class="close-btn">&times;</span>
                 <h3>Ajustar Tiempo (Cuenta atrás de la mitad actual)</h3>
-                <div class="time-edit-container">
-                    <input type="number" id="edit-time-minutes" min="0" max="50">
-                    <span>:</span>
-                    <input type="number" id="edit-time-seconds" min="0" max="59">
+                <div class="time-editor-container">
+                    <div class="time-editor-unit">
+                        <div class="time-editor-buttons">
+                            <button id="time-editor-min-plus">+</button>
+                            <button id="time-editor-min-minus">-</button>
+                        </div>
+                        <input type="number" id="time-editor-min" min="0" max="25">
+                    </div>
+                    <span class="time-editor-separator">:</span>
+                    <div class="time-editor-unit">
+                        <input type="number" id="time-editor-sec" min="0" max="59">
+                        <div class="time-editor-buttons">
+                            <button id="time-editor-sec-plus">+</button>
+                            <button id="time-editor-sec-minus">-</button>
+                        </div>
+                    </div>
                 </div>
-                <button id="save-time-btn" class="btn-primary" style="width: 100%;">Guardar</button>
+                <div style="text-align: center; display:flex; gap: 10px; justify-content: center;">
+                    <button id="save-time-btn" class="btn-primary">Guardar</button>
+                    <button id="cancel-time-btn" class="btn-secondary">Cancelar</button>
+                </div>
             </div>
         </div>
     </main>
@@ -428,6 +490,13 @@
         editEventModal.querySelector('.close-btn').addEventListener('click', () => editEventModal.classList.add('hidden'));
         editTimeModal.querySelector('.close-btn').addEventListener('click', () => editTimeModal.classList.add('hidden'));
         document.getElementById('save-time-btn').addEventListener('click', handleSaveTimeEdit);
+        document.getElementById('cancel-time-btn').addEventListener('click', () => editTimeModal.classList.add('hidden'));
+        
+        // Event listeners para los botones de tiempo
+        document.getElementById('time-editor-min-plus').addEventListener('click', () => adjustTimeValue('min', 1));
+        document.getElementById('time-editor-min-minus').addEventListener('click', () => adjustTimeValue('min', -1));
+        document.getElementById('time-editor-sec-plus').addEventListener('click', () => adjustTimeValue('sec', 1));
+        document.getElementById('time-editor-sec-minus').addEventListener('click', () => adjustTimeValue('sec', -1));
         
         eventFlowMessage.addEventListener('click', () => endEventFlow(true));
         
@@ -480,9 +549,8 @@
     }
 
     function formatTimeAscending(seconds) { 
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
+        const mins = Math.ceil(seconds / 60);
+        return `${mins}'`;
     }
 
     // --- FIN LÓGICA DEL CRONÓMETRO ---
@@ -744,14 +812,45 @@
         const remainingSeconds = getRemainingSecondsInCurrentHalf(gameState.matchTimer);
         const mins = Math.floor(remainingSeconds / 60);
         const secs = remainingSeconds % 60;
-        document.getElementById('edit-time-minutes').value = mins;
-        document.getElementById('edit-time-seconds').value = secs;
+        
+        document.getElementById('time-editor-min').value = mins;
+        document.getElementById('time-editor-sec').value = secs;
         editTimeModal.classList.remove('hidden');
     }
     
+    function adjustTimeValue(unit, delta) {
+        const input = document.getElementById(`time-editor-${unit}`);
+        let value = parseInt(input.value) || 0;
+        value += delta;
+        
+        if (unit === 'min') {
+            if (value < 0) value = 0;
+            if (value > 25) value = 25;
+        } else if (unit === 'sec') {
+            if (value < 0) {
+                value = 59;
+                const minInput = document.getElementById('time-editor-min');
+                const minValue = parseInt(minInput.value) || 0;
+                if (minValue > 0) {
+                    minInput.value = minValue - 1;
+                }
+            }
+            if (value > 59) {
+                value = 0;
+                const minInput = document.getElementById('time-editor-min');
+                const minValue = parseInt(minInput.value) || 0;
+                if (minValue < 25) {
+                    minInput.value = minValue + 1;
+                }
+            }
+        }
+        
+        input.value = value.toString().padStart(2, '0');
+    }
+
     function handleSaveTimeEdit() {
-        const newMins = parseInt(document.getElementById('edit-time-minutes').value, 10) || 0;
-        const newSecs = parseInt(document.getElementById('edit-time-seconds').value, 10) || 0;
+        const newMins = parseInt(document.getElementById('time-editor-min').value) || 0;
+        const newSecs = parseInt(document.getElementById('time-editor-sec').value) || 0;
         const newRemainingSecondsInHalf = (newMins * 60) + newSecs;
         const halfOffset = gameState.currentHalf === 2 ? HALF_TIME_SECONDS : 0;
         let newTimeInSeconds = halfOffset + (HALF_TIME_SECONDS - newRemainingSecondsInHalf);
