@@ -1743,6 +1743,8 @@
                 const posIn = {...statsIn.position};
                 statsIn.position = {...statsOut.position};
                 statsOut.position = posIn;
+                // Actualizar el estado inicial para conservar los cambios de posición
+                state.initialPlayerState = JSON.parse(JSON.stringify(state.playerStats));
             }
             AppState.save();
         }
