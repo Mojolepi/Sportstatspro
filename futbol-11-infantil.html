@@ -2027,9 +2027,9 @@
             }
         },
         handleHalfTime() {
-            MatchLogic.stopTimer();
             const state = AppState.get();
             
+            // NO pausar el partido, solo ajustar el tiempo al descanso
             // Ajustar el tiempo al minuto 35 (descanso) - 35 minutos = 2100 segundos
             const halftimeSeconds = AppConfig.HALF_TIME_SECONDS; // 35 * 60 = 2100
             const timeAdjustment = halftimeSeconds - state.matchTimer;
@@ -2040,7 +2040,14 @@
                 this.adjustPlayerMinutes(timeAdjustment);
             }
             
-            state.matchTimer = halftimeSeconds;
+            // Actualizar el tiempo base del timer si está corriendo
+            if (state.isMatchRunning) {
+                state.timerBaseTime = halftimeSeconds;
+                state.timerStartTime = Date.now(); // Resetear el tiempo de inicio
+            } else {
+                state.matchTimer = halftimeSeconds;
+            }
+            
             MatchLogic.addMatchEvent({ type: 'control', text: 'Descanso.' });
             state.currentHalf = 2;
             
@@ -2054,9 +2061,9 @@
             MatchLogic.startTimer();
         },
         handleFinishGame() {
-            MatchLogic.stopTimer();
             const state = AppState.get();
             
+            // NO pausar el partido, solo ajustar el tiempo al final
             // Ajustar el tiempo al minuto 70 (final) - 70 minutos = 4200 segundos
             const fullTimeSeconds = AppConfig.FULL_TIME_SECONDS; // 70 * 60 = 4200
             const timeAdjustment = fullTimeSeconds - state.matchTimer;
@@ -2067,7 +2074,14 @@
                 this.adjustPlayerMinutes(timeAdjustment);
             }
             
-            state.matchTimer = fullTimeSeconds;
+            // Actualizar el tiempo base del timer si está corriendo
+            if (state.isMatchRunning) {
+                state.timerBaseTime = fullTimeSeconds;
+                state.timerStartTime = Date.now(); // Resetear el tiempo de inicio
+            } else {
+                state.matchTimer = fullTimeSeconds;
+            }
+            
             MatchLogic.addMatchEvent({ type: 'control', text: 'Final del partido.' });
             
             // Recalcular todo el estado con el nuevo tiempo
