@@ -7,6 +7,7 @@
     
     <style>
         :root {
+            /* Colores principales */
             --color-monochrome: #1c1c1c; 
             --color-text: #f0f0f0; 
             --color-highlight: #4a90e2; 
@@ -15,6 +16,21 @@
             --color-danger: #d0021b; 
             --color-background-secondary: #2c2c2c;
             --color-pitch: #c2a185;
+            
+            /* Sombras y efectos */
+            --shadow-sm: 0 2px 5px rgba(0, 0, 0, 0.2);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 8px 20px rgba(0, 0, 0, 0.4);
+            
+            /* Transiciones */
+            --transition-fast: 0.15s ease;
+            --transition-normal: 0.2s ease;
+            --transition-slow: 0.3s ease;
+            
+            /* Border radius */
+            --radius-sm: 6px;
+            --radius-md: 8px;
+            --radius-lg: 10px;
         }
         html, body {
             width: 100%; height: 100%; margin: 0; padding: 0;
@@ -24,7 +40,13 @@
             -webkit-tap-highlight-color: transparent;
         }
         main { padding: 10px; max-width: 900px; margin: 0 auto; }
-        section { background-color: var(--color-background-secondary); padding: 15px; border-radius: 10px; margin-bottom: 15px; }
+        section { 
+            background-color: var(--color-background-secondary); 
+            padding: 15px; 
+            border-radius: var(--radius-lg); 
+            margin-bottom: 15px; 
+            box-shadow: var(--shadow-md);
+        }
         
         #app-header { display: none; text-align: center; margin-bottom: 15px; }
         
@@ -69,6 +91,7 @@
         .btn-primary { background-color: var(--color-highlight); color: var(--color-monochrome); }
         .btn-secondary { background-color: var(--color-background-secondary); color: var(--color-text); border: 1px solid var(--color-text); }
         .btn-danger { background-color: var(--color-danger); color: var(--color-text); }
+        .btn-warning { background-color: var(--color-warning); color: var(--color-monochrome); }
         .btn-event { background-color: var(--color-background-secondary); color: var(--color-highlight); border: 2px solid var(--color-highlight); font-weight: bold; }
 
         #game-controls { padding-top: 5px; }
@@ -403,6 +426,7 @@
             <div class="control-group" style="margin-top: 20px;">
                 <button id="btn-reset-match" class="btn-secondary">Reiniciar</button>
                 <button id="btn-new-match" class="btn-secondary">Nuevo Partido</button>
+                <button id="btn-repair-state" class="btn-warning" title="Reparar estado de jugadores">🔧 Reparar Estado</button>
             </div>
             <button id="btn-export-excel" class="btn-primary hidden" style="margin-top: 20px;">Exportar a Excel</button>
         </section>
@@ -557,6 +581,7 @@
         document.getElementById('btn-reset-match').addEventListener('click', handleResetMatch);
         document.getElementById('btn-new-match').addEventListener('click', handleNewMatch);
         document.getElementById('btn-export-excel').addEventListener('click', exportToCsv);
+        document.getElementById('btn-repair-state').addEventListener('click', handleRepairState);
         document.getElementById('local-add-foul').addEventListener('click', () => handleQuickFoul('local'));
         document.getElementById('rival-add-foul').addEventListener('click', () => handleQuickFoul('rival'));
         document.querySelectorAll('.btn-event').forEach(b => b.addEventListener('click', handleEventButtonClick));
@@ -1501,11 +1526,43 @@
 
     function handleNewMatch() {
         if (confirm("¿Estás seguro de empezar un partido nuevo de cero? Se perderá el partido actual y guardado.")) {
-            isNavigatingIntentionally = true;
-            localStorage.removeItem(APP_STATE_KEY);
-            localStorage.removeItem(TIMER_STATE_KEY);
-            location.reload();
+            try {
+                // Detener todos los timers y procesos activos
+                if (gameState.isMatchRunning) {
+                    stopTimer();
+                }
+                
+                // Limpiar completamente el localStorage
+                localStorage.removeItem(APP_STATE_KEY);
+                localStorage.removeItem(TIMER_STATE_KEY);
+                
+                // Forzar recarga completa de la página
+                setTimeout(() => {
+                    window.location.href = window.location.href.split('?')[0];
+                }, 100);
+                
+            } catch (error) {
+                console.error('Error en handleNewMatch, usando limpieza forzada:', error);
+                // Si hay algún error, usar la limpieza forzada como respaldo
+                localStorage.clear();
+                setTimeout(() => {
+                    window.location.reload(true);
+                }, 50);
+            }
         }
+    }
+    
+    function handleRepairState() {
+        console.log('Iniciando reparación manual del estado...');
+        const repaired = diagnoseAndRepairPlayerState();
+        
+        if (repaired) {
+            alert('Se han detectado y reparado problemas en el estado de los jugadores.\n\nRevisa la consola del navegador para más detalles.');
+        } else {
+            alert('No se encontraron problemas en el estado de los jugadores.');
+        }
+        
+        updateAll();
     }
     
     function handleQuickFoul(team) {
@@ -1705,6 +1762,132 @@
         const localScore = document.getElementById('local-score').textContent;
         const rivalScore = document.getElementById('rival-score').textContent;
         document.title = forceText ? `${time} | Futsal` : `${time} | ${gameState.localTeamName} ${localScore}-${rivalScore} ${gameState.rivalTeamName}`;
+    }
+    
+    // Función de diagnóstico y reparación de inconsistencias
+    function diagnoseAndRepairPlayerState() {
+        const issues = [];
+        
+        // Verificar jugadores que están en el campo pero no tienen posición
+        Object.keys(gameState.playerStats).forEach(team => {
+            Object.keys(gameState.playerStats[team]).forEach(playerName => {
+                const player = gameState.playerStats[team][playerName];
+                const chip = document.querySelector(`.player-chip[data-name="${playerName}"][data-team="${team}"]`);
+                
+                if (player.onPitch && !player.position) {
+                    issues.push(`${playerName} está en el campo pero sin posición`);
+                    // Reparar: poner en el banquillo
+                    player.onPitch = false;
+                    player.position = null;
+                }
+                
+                if (player.onPitch && !chip) {
+                    issues.push(`${playerName} está en el campo pero no tiene chip en el DOM`);
+                    // Reparar: crear chip
+                    const newChip = createPlayerChip(playerName, team);
+                    pitch.appendChild(newChip);
+                }
+                
+                if (!player.onPitch && chip && chip.classList.contains('chip-on-pitch')) {
+                    issues.push(`${playerName} está en el banquillo pero su chip está en el campo`);
+                    // Reparar: mover chip al banquillo
+                    const bench = team === 'local' ? localBench : rivalBench;
+                    bench.appendChild(chip);
+                    chip.classList.remove('chip-on-pitch');
+                    chip.classList.add('chip-on-bench');
+                    chip.style.cssText = '';
+                }
+            });
+        });
+        
+        // Detectar y reparar superposiciones de jugadores
+        detectAndFixOverlappingPlayers();
+        
+        if (issues.length > 0) {
+            console.warn('Problemas detectados en el estado de jugadores:', issues);
+            console.log('Reparando inconsistencias...');
+            updatePlayerChipVisuals();
+            saveState();
+            return true; // Se encontraron y repararon problemas
+        }
+        
+        return false; // No se encontraron problemas
+    }
+    
+    // Función para detectar y corregir jugadores superpuestos
+    function detectAndFixOverlappingPlayers() {
+        const playersOnPitch = [];
+        
+        // Recopilar todos los jugadores en el campo
+        Object.keys(gameState.playerStats).forEach(team => {
+            Object.keys(gameState.playerStats[team]).forEach(playerName => {
+                const player = gameState.playerStats[team][playerName];
+                if (player.onPitch && player.position) {
+                    playersOnPitch.push({
+                        name: playerName,
+                        team: team,
+                        position: player.position,
+                        player: player
+                    });
+                }
+            });
+        });
+        
+        // Detectar superposiciones (misma posición exacta)
+        const overlappingGroups = [];
+        const processed = new Set();
+        
+        playersOnPitch.forEach((player1, i) => {
+            if (processed.has(player1.name)) return;
+            
+            const group = [player1];
+            processed.add(player1.name);
+            
+            playersOnPitch.forEach((player2, j) => {
+                if (i !== j && !processed.has(player2.name)) {
+                    if (player1.position.left === player2.position.left && 
+                        player1.position.top === player2.position.top) {
+                        group.push(player2);
+                        processed.add(player2.name);
+                    }
+                }
+            });
+            
+            if (group.length > 1) {
+                overlappingGroups.push(group);
+            }
+        });
+        
+        // Reparar superposiciones
+        overlappingGroups.forEach(group => {
+            console.warn(`Superposición detectada: ${group.map(p => p.name).join(', ')}`);
+            
+            // Mantener el primer jugador en su posición original
+            const firstPlayer = group[0];
+            
+            // Reposicionar los demás jugadores ligeramente
+            group.slice(1).forEach((player, index) => {
+                const originalLeft = parseFloat(firstPlayer.position.left);
+                const originalTop = parseFloat(firstPlayer.position.top);
+                
+                // Calcular nueva posición con pequeño desplazamiento
+                const offset = (index + 1) * 2; // 2% de separación
+                const newLeft = Math.min(95, originalLeft + offset);
+                const newTop = Math.min(95, originalTop + offset);
+                
+                player.player.position = {
+                    left: `${newLeft}%`,
+                    top: `${newTop}%`
+                };
+                
+                console.log(`Reposicionando ${player.name} a ${newLeft}%, ${newTop}%`);
+            });
+        });
+        
+        if (overlappingGroups.length > 0) {
+            console.log(`Se repararon ${overlappingGroups.length} superposiciones`);
+            saveState();
+        }
     }
     
     function exportToCsv() { 
