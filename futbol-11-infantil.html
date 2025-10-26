@@ -1146,15 +1146,14 @@
             Object.keys(state.playerStats).forEach(team => {
                 Object.keys(state.playerStats[team]).forEach(playerName => {
                     const stats = state.playerStats[team][playerName];
-                    const chip = document.querySelector(`.player-chip[data-name="${playerName}"][data-team="${team}"]`);
+                    let chip = document.querySelector(`.player-chip[data-name="${playerName}"][data-team="${team}"]`);
                     
                     // Si el chip no existe, crear uno nuevo
                     if (!chip) {
                         console.warn(`Chip no encontrado para ${playerName} (${team}), recreando...`);
-                        const newChip = this.createChip(playerName, team);
+                        chip = this.createChip(playerName, team);
                         const targetParent = stats.onPitch ? this.elements['futsal-pitch'] : this.elements[`${team}-bench`];
-                        targetParent.appendChild(newChip);
-                        return;
+                        targetParent.appendChild(chip);
                     }
                     
                     if (chip.classList.contains('dragging')) return;
@@ -1167,8 +1166,20 @@
                     if (chip.parentElement !== targetParent) targetParent.appendChild(chip);
                     chip.classList.toggle('chip-on-pitch', stats.onPitch);
                     chip.classList.toggle('chip-on-bench', !stats.onPitch);
-                    if (stats.onPitch && stats.position) Object.assign(chip.style, stats.position);
-                    else chip.style.cssText = '';
+                    
+                    if (stats.onPitch && stats.position) {
+                        // Aplicar posición con verificación de superposición
+                        const adjustedPosition = DragAndDrop.adjustPositionToAvoidOverlap(stats.position, team, playerName);
+                        Object.assign(chip.style, adjustedPosition);
+                        
+                        // Actualizar la posición en el estado si fue ajustada
+                        if (adjustedPosition.left !== stats.position.left || adjustedPosition.top !== stats.position.top) {
+                            stats.position = adjustedPosition;
+                            console.log(`Posición ajustada para ${playerName}: ${adjustedPosition.left}, ${adjustedPosition.top}`);
+                        }
+                    } else {
+                        chip.style.cssText = '';
+                    }
                 });
             });
             this.updateTeamView();
@@ -1690,8 +1701,8 @@
             
             // Limpiar completamente el intervalo
             if (state.timerInterval) {
-                clearInterval(state.timerInterval);
-                state.timerInterval = null;
+            clearInterval(state.timerInterval);
+            state.timerInterval = null;
             }
             
             this.rebuildAndRecalculateAllState();
@@ -2018,11 +2029,25 @@
         handleHalfTime() {
             MatchLogic.stopTimer();
             const state = AppState.get();
-            // Ajustar el tiempo al minuto 35 (descanso)
-            state.matchTimer = AppConfig.HALF_TIME_SECONDS;
+            
+            // Ajustar el tiempo al minuto 35 (descanso) - 35 minutos = 2100 segundos
+            const halftimeSeconds = AppConfig.HALF_TIME_SECONDS; // 35 * 60 = 2100
+            const timeAdjustment = halftimeSeconds - state.matchTimer;
+            
+            if (timeAdjustment > 0) {
+                console.log(`Ajustando tiempo al descanso: +${timeAdjustment} segundos`);
+                // Ajustar minutos de todos los jugadores en el campo
+                this.adjustPlayerMinutes(timeAdjustment);
+            }
+            
+            state.matchTimer = halftimeSeconds;
             MatchLogic.addMatchEvent({ type: 'control', text: 'Descanso.' });
             state.currentHalf = 2;
+            
+            // Recalcular todo el estado con el nuevo tiempo
             MatchLogic.rebuildAndRecalculateAllState();
+            
+            console.log(`Tiempo ajustado al descanso: ${Math.floor(state.matchTimer / 60)}:${String(state.matchTimer % 60).padStart(2, '0')}`);
         },
         handleStartSecondHalf() {
             MatchLogic.addMatchEvent({ type: 'control', text: 'Inicio de la segunda parte.' });
@@ -2031,12 +2056,26 @@
         handleFinishGame() {
             MatchLogic.stopTimer();
             const state = AppState.get();
-            if (state.matchTimer < AppConfig.FULL_TIME_SECONDS) {
-                state.matchTimer = AppConfig.FULL_TIME_SECONDS;
+            
+            // Ajustar el tiempo al minuto 70 (final) - 70 minutos = 4200 segundos
+            const fullTimeSeconds = AppConfig.FULL_TIME_SECONDS; // 70 * 60 = 4200
+            const timeAdjustment = fullTimeSeconds - state.matchTimer;
+            
+            if (timeAdjustment > 0) {
+                console.log(`Ajustando tiempo al final: +${timeAdjustment} segundos`);
+                // Ajustar minutos de todos los jugadores en el campo
+                this.adjustPlayerMinutes(timeAdjustment);
             }
+            
+            state.matchTimer = fullTimeSeconds;
             MatchLogic.addMatchEvent({ type: 'control', text: 'Final del partido.' });
-            DOM.elements['btn-export-excel'].classList.remove('hidden');
+            
+            // Recalcular todo el estado con el nuevo tiempo
             MatchLogic.rebuildAndRecalculateAllState();
+            
+            DOM.elements['btn-export-excel'].classList.remove('hidden');
+            
+            console.log(`Tiempo ajustado al final: ${Math.floor(state.matchTimer / 60)}:${String(state.matchTimer % 60).padStart(2, '0')}`);
         },
         handleResetMatch() {
             if (confirm("¿Seguro que quieres reiniciar? Se perderán todas las estadísticas.")) {
@@ -2076,7 +2115,7 @@
                     }
                     
                     // Limpiar completamente el localStorage
-                    localStorage.removeItem(AppConfig.APP_STATE_KEY);
+                localStorage.removeItem(AppConfig.APP_STATE_KEY);
                     
                     // Limpiar cualquier estado en memoria
                     AppState.init();
@@ -2550,7 +2589,7 @@
         // Función para ajustar posición y evitar superposiciones
         adjustPositionToAvoidOverlap(targetPos, team, playerName) {
             const state = AppState.get();
-            const minDistance = 3; // Distancia mínima en porcentaje
+            const minDistance = 4; // Aumentar distancia mínima para evitar superposiciones
             
             // Obtener todas las posiciones ocupadas por otros jugadores del mismo equipo
             const occupiedPositions = [];
@@ -2568,7 +2607,7 @@
             
             let adjustedPos = { ...targetPos };
             let attempts = 0;
-            const maxAttempts = 10;
+            const maxAttempts = 20; // Aumentar intentos
             
             // Buscar una posición que no esté ocupada
             while (attempts < maxAttempts) {
@@ -2589,14 +2628,31 @@
                 }
                 
                 if (!tooClose) {
+                    console.log(`Posición válida encontrada para ${playerName}: ${adjustedPos.left}, ${adjustedPos.top}`);
                     break; // Posición válida encontrada
                 }
                 
-                // Ajustar posición ligeramente
-                const offset = minDistance;
-                adjustedPos.left = `${Math.min(95, Math.max(5, currentLeft + offset))}%`;
-                adjustedPos.top = `${Math.min(95, Math.max(5, currentTop + offset))}%`;
+                // Ajustar posición con patrón espiral para mejor distribución
+                const angle = (attempts * 45) * (Math.PI / 180); // 45 grados por intento
+                const radius = minDistance + (attempts * 0.5); // Radio creciente
+                const offsetX = Math.cos(angle) * radius;
+                const offsetY = Math.sin(angle) * radius;
+                
+                const newLeft = Math.min(95, Math.max(5, currentLeft + offsetX));
+                const newTop = Math.min(95, Math.max(5, currentTop + offsetY));
+                
+                adjustedPos.left = `${newLeft}%`;
+                adjustedPos.top = `${newTop}%`;
                 attempts++;
+            }
+            
+            if (attempts >= maxAttempts) {
+                console.warn(`No se pudo encontrar posición válida para ${playerName} después de ${maxAttempts} intentos`);
+                // Como último recurso, usar una posición aleatoria en el campo
+                adjustedPos = {
+                    left: `${Math.random() * 80 + 10}%`, // Entre 10% y 90%
+                    top: `${Math.random() * 80 + 10}%`
+                };
             }
             
             return adjustedPos;
@@ -2634,31 +2690,31 @@
                         // Lógica normal de conteo de ventanas
                         // Excluir sustituciones durante el descanso del conteo
                         const localSubs = state.matchEvents.filter(e => e.type === 'substitution' && e.team === 'local' && !e.duringHalfTime);
-                        const lastLocalSub = localSubs[localSubs.length - 1];
-                        const isNewWindow = !lastLocalSub || (state.matchTimer - lastLocalSub.timeInSeconds) > AppConfig.SUBSTITUTION_WINDOW_SECONDS;
+                    const lastLocalSub = localSubs[localSubs.length - 1];
+                    const isNewWindow = !lastLocalSub || (state.matchTimer - lastLocalSub.timeInSeconds) > AppConfig.SUBSTITUTION_WINDOW_SECONDS;
+                    
+                    if (isNewWindow) {
+                        const { usedFirstHalf, usedSecondHalf } = state.substitutionWindows;
+                        const totalUsed = usedFirstHalf + usedSecondHalf;
                         
-                        if (isNewWindow) {
-                            const { usedFirstHalf, usedSecondHalf } = state.substitutionWindows;
-                            const totalUsed = usedFirstHalf + usedSecondHalf;
-                            
-                            if (totalUsed >= 4) { 
-                                alert("Has agotado las 4 ventanas de cambios del partido."); 
+                        if (totalUsed >= 4) { 
+                            alert("Has agotado las 4 ventanas de cambios del partido."); 
+                            return; 
+                        }
+                        
+                        if (state.currentHalf === 1) {
+                            if (usedFirstHalf >= 4) { 
+                                alert("Has agotado las 4 ventanas de cambios de la primera parte."); 
                                 return; 
                             }
-                            
-                            if (state.currentHalf === 1) {
-                                if (usedFirstHalf >= 4) { 
-                                    alert("Has agotado las 4 ventanas de cambios de la primera parte."); 
-                                    return; 
-                                }
-                                state.substitutionWindows.usedFirstHalf++;
-                            } else {
-                                const maxSecondHalf = 4 - usedFirstHalf;
-                                if (usedSecondHalf >= maxSecondHalf) { 
-                                    alert(`Has agotado las ventanas de cambios para la 2ª parte. Disponibles: ${maxSecondHalf}`); 
-                                    return; 
-                                }
-                                state.substitutionWindows.usedSecondHalf++;
+                            state.substitutionWindows.usedFirstHalf++;
+                        } else {
+                            const maxSecondHalf = 4 - usedFirstHalf;
+                            if (usedSecondHalf >= maxSecondHalf) { 
+                                alert(`Has agotado las ventanas de cambios para la 2ª parte. Disponibles: ${maxSecondHalf}`); 
+                                return; 
+                            }
+                            state.substitutionWindows.usedSecondHalf++;
                             }
                         }
                     }
