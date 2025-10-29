@@ -1350,6 +1350,17 @@
                 timerButton.disabled = false;
             }
             
+            // Logging para diagnosticar el estado de los botones
+            console.log('Estado de botones:', {
+                started,
+                finished,
+                currentHalf: state.currentHalf,
+                isMatchRunning: state.isMatchRunning,
+                btnHalfTimeDisabled: !started || finished || state.currentHalf !== 1,
+                btnStartSecondDisabled: !started || finished || state.currentHalf !== 2 || state.isMatchRunning,
+                btnFinishGameDisabled: !started || finished
+            });
+            
             this.elements['minuto-actual'].classList.toggle('editable', started && !state.isMatchRunning && !finished);
             this.elements['btn-half-time'].disabled = !started || finished || state.currentHalf !== 1;
             this.elements['btn-start-second'].disabled = !started || finished || state.currentHalf !== 2 || state.isMatchRunning;
@@ -1718,6 +1729,180 @@
                 });
             });
         },
+        recalculatePlayerMinutes() {
+            const state = AppState.get();
+            console.log('Recalculando minutos de jugadores para tiempo:', state.matchTimer);
+            
+            // Resetear todos los minutos a 0
+            Object.values(state.playerStats).forEach(team => {
+                Object.values(team).forEach(player => {
+                    player.minutosJugados = 0;
+                });
+            });
+            
+            // Crear un mapa del estado de jugadores en cada momento del tiempo
+            const timeStates = new Map(); // tiempo -> {local: Set, rival: Set}
+            
+            // Estado inicial: todos los jugadores que están en el campo al inicio
+            const initialLocalPlayers = new Set();
+            const initialRivalPlayers = new Set();
+            
+            // Obtener jugadores que están en el campo actualmente
+            Object.values(state.playerStats.local).forEach(player => {
+                if (player.onPitch) initialLocalPlayers.add(player.name);
+            });
+            Object.values(state.playerStats.rival).forEach(player => {
+                if (player.onPitch) initialRivalPlayers.add(player.name);
+            });
+            
+            // Procesar eventos de sustitución hacia atrás para reconstruir el estado inicial
+            const substitutionEvents = state.matchEvents
+                .filter(e => e.type === 'substitution')
+                .sort((a, b) => b.timeInSeconds - a.timeInSeconds); // Orden inverso
+            
+            let currentLocalPlayers = new Set(initialLocalPlayers);
+            let currentRivalPlayers = new Set(initialRivalPlayers);
+            
+            substitutionEvents.forEach(event => {
+                if (event.team === 'local') {
+                    // Si el jugador que salió está actualmente en el campo, significa que fue sustituido después
+                    if (currentLocalPlayers.has(event.playerOut)) {
+                        currentLocalPlayers.delete(event.playerOut);
+                        currentLocalPlayers.add(event.playerIn);
+                    }
+                } else {
+                    if (currentRivalPlayers.has(event.playerOut)) {
+                        currentRivalPlayers.delete(event.playerOut);
+                        currentRivalPlayers.add(event.playerIn);
+                    }
+                }
+            });
+            
+            // Ahora tenemos el estado inicial correcto
+            console.log('Estado inicial reconstruido:', {
+                local: Array.from(currentLocalPlayers),
+                rival: Array.from(currentRivalPlayers)
+            });
+            
+            // Guardar el estado inicial
+            timeStates.set(0, {
+                local: new Set(currentLocalPlayers),
+                rival: new Set(currentRivalPlayers)
+            });
+            
+            // Procesar eventos cronológicamente para crear estados en cada momento
+            const sortedEvents = state.matchEvents.sort((a, b) => a.timeInSeconds - b.timeInSeconds);
+            
+            sortedEvents.forEach(event => {
+                if (event.type === 'substitution') {
+                    // Obtener el estado anterior más cercano
+                    const previousTime = Math.max(...Array.from(timeStates.keys()).filter(t => t <= event.timeInSeconds));
+                    const previousState = timeStates.get(previousTime);
+                    
+                    // Crear nuevo estado basado en el anterior
+                    const newState = {
+                        local: new Set(previousState.local),
+                        rival: new Set(previousState.rival)
+                    };
+                    
+                    // Aplicar la sustitución
+                    if (event.team === 'local') {
+                        newState.local.delete(event.playerOut);
+                        newState.local.add(event.playerIn);
+                    } else {
+                        newState.rival.delete(event.playerOut);
+                        newState.rival.add(event.playerIn);
+                    }
+                    
+                    // Guardar el nuevo estado
+                    timeStates.set(event.timeInSeconds, newState);
+                }
+            });
+            
+            // Calcular minutos para cada período de tiempo
+            const sortedTimes = Array.from(timeStates.keys()).sort((a, b) => a - b);
+            
+            for (let i = 0; i < sortedTimes.length; i++) {
+                const currentTime = sortedTimes[i];
+                let nextTime = sortedTimes[i + 1];
+                
+                // Si no hay siguiente tiempo, usar el tiempo actual del partido
+                if (nextTime === undefined) {
+                    nextTime = state.matchTimer;
+                }
+                
+                // CORRECCIÓN: Si estamos en el descanso o después, limitar el tiempo del primer tiempo
+                if (state.currentHalf === 1 && currentTime < AppConfig.HALF_TIME_SECONDS) {
+                    // Si el siguiente tiempo excede el descanso, limitarlo al descanso
+                    if (nextTime > AppConfig.HALF_TIME_SECONDS) {
+                        nextTime = AppConfig.HALF_TIME_SECONDS;
+                    }
+                } else if (state.currentHalf === 2 && currentTime >= AppConfig.HALF_TIME_SECONDS) {
+                    // Para el segundo tiempo, ajustar el tiempo relativo
+                    const adjustedCurrentTime = Math.max(0, currentTime - AppConfig.HALF_TIME_SECONDS);
+                    const adjustedNextTime = Math.max(0, nextTime - AppConfig.HALF_TIME_SECONDS);
+                    
+                    // Solo procesar si hay tiempo válido en el segundo tiempo
+                    if (adjustedNextTime > adjustedCurrentTime) {
+                        const timeDelta = adjustedNextTime - adjustedCurrentTime;
+                        const stateAtTime = timeStates.get(currentTime);
+                        
+                        console.log(`Período 2º tiempo ${adjustedCurrentTime}s - ${adjustedNextTime}s (${timeDelta}s):`, {
+                            local: Array.from(stateAtTime.local),
+                            rival: Array.from(stateAtTime.rival)
+                        });
+                        
+                        // Agregar minutos SOLO a jugadores que estaban en el campo
+                        stateAtTime.local.forEach(playerName => {
+                            const player = state.playerStats.local[playerName];
+                            if (player) {
+                                player.minutosJugados += timeDelta;
+                                console.log(`  ${playerName} (local): +${timeDelta}s = ${Math.floor(player.minutosJugados / 60)}'`);
+                            }
+                        });
+                        
+                        stateAtTime.rival.forEach(playerName => {
+                            const player = state.playerStats.rival[playerName];
+                            if (player) {
+                                player.minutosJugados += timeDelta;
+                                console.log(`  ${playerName} (rival): +${timeDelta}s = ${Math.floor(player.minutosJugados / 60)}'`);
+                            }
+                        });
+                    }
+                    continue; // Saltar el procesamiento normal para el segundo tiempo
+                }
+                
+                const timeDelta = nextTime - currentTime;
+                
+                if (timeDelta > 0) {
+                    const stateAtTime = timeStates.get(currentTime);
+                    
+                    console.log(`Período ${currentTime}s - ${nextTime}s (${timeDelta}s):`, {
+                        local: Array.from(stateAtTime.local),
+                        rival: Array.from(stateAtTime.rival)
+                    });
+                    
+                    // Agregar minutos SOLO a jugadores que estaban en el campo
+                    stateAtTime.local.forEach(playerName => {
+                        const player = state.playerStats.local[playerName];
+                        if (player) {
+                            player.minutosJugados += timeDelta;
+                            console.log(`  ${playerName} (local): +${timeDelta}s = ${Math.floor(player.minutosJugados / 60)}'`);
+                        }
+                    });
+                    
+                    stateAtTime.rival.forEach(playerName => {
+                        const player = state.playerStats.rival[playerName];
+                        if (player) {
+                            player.minutosJugados += timeDelta;
+                            console.log(`  ${playerName} (rival): +${timeDelta}s = ${Math.floor(player.minutosJugados / 60)}'`);
+                        }
+                    });
+                }
+            }
+            
+            console.log('Minutos finales recalculados:', Object.values(state.playerStats.local).map(p => ({name: p.name || 'unknown', minutes: Math.floor(p.minutosJugados / 60)})));
+        },
         addMatchEvent(eventData) {
             const state = AppState.get();
             const event = { id: Date.now(), timeInSeconds: state.matchTimer, ...eventData };
@@ -1785,17 +1970,20 @@
                 }
             }
 
-            // Restaurar las posiciones actuales y minutos
+            // Restaurar las posiciones actuales (pero NO los minutos)
             Object.keys(currentPositions).forEach(team => {
                 Object.keys(currentPositions[team]).forEach(playerName => {
                     if (state.playerStats[team] && state.playerStats[team][playerName]) {
                         const savedPosition = currentPositions[team][playerName];
                         state.playerStats[team][playerName].position = savedPosition.position;
                         state.playerStats[team][playerName].onPitch = savedPosition.onPitch;
-                        state.playerStats[team][playerName].minutosJugados = savedPosition.minutosJugados;
+                        // NO restaurar minutosJugados - se recalcularán después
                     }
                 });
             });
+            
+            // Recalcular minutos correctamente basándose en eventos y tiempo actual
+            this.recalculatePlayerMinutes();
             state.matchStats = { local: { corners: 0, offsides: 0 }, rival: { corners: 0, offsides: 0 } };
             // No resetear las ventanas de cambios, mantener el estado actual
             // state.substitutionWindows = { usedFirstHalf: 0, usedSecondHalf: 0 };
@@ -1886,6 +2074,113 @@
         },
         getMaxPlayersForTeam(team) {
             return AppConfig.MAX_PLAYERS_ON_PITCH - Object.values(AppState.get().playerStats[team]).filter(p => p.expulsado).length;
+        },
+        handleHalfTime() {
+            const state = AppState.get();
+            
+            console.log('handleHalfTime llamado - Estado actual:', {
+                matchTimer: state.matchTimer,
+                currentHalf: state.currentHalf,
+                isMatchRunning: state.isMatchRunning,
+                halftimeSeconds: AppConfig.HALF_TIME_SECONDS
+            });
+            
+            // Verificar si ya estamos en descanso
+            if (state.currentHalf === 2) {
+                console.log('Ya estamos en la segunda parte, ignorando llamada a handleHalfTime');
+                return;
+            }
+            
+            // NO pausar el partido, solo ajustar el tiempo al descanso
+            // Ajustar el tiempo al minuto 35 (descanso) - 35 minutos = 2100 segundos
+            const halftimeSeconds = AppConfig.HALF_TIME_SECONDS; // 35 * 60 = 2100
+            const timeAdjustment = halftimeSeconds - state.matchTimer;
+            
+            console.log(`Ajuste de tiempo necesario: ${timeAdjustment} segundos`);
+            
+            // NO ajustar minutos aquí, se recalcularán después
+            
+            // Actualizar el tiempo base del timer si está corriendo
+            if (state.isMatchRunning) {
+                console.log('Timer está corriendo - ajustando tiempo base');
+                state.timerBaseTime = halftimeSeconds;
+                state.timerStartTime = Date.now(); // Resetear el tiempo de inicio
+            } else {
+                console.log('Timer está pausado - ajustando tiempo directamente');
+                state.matchTimer = halftimeSeconds;
+            }
+            
+            MatchLogic.addMatchEvent({ type: 'control', text: 'Descanso.' });
+            state.currentHalf = 2;
+            
+            // PAUSAR el partido después del descanso
+            MatchLogic.stopTimer();
+            
+            // Recalcular minutos de jugadores con el nuevo tiempo
+            MatchLogic.recalculatePlayerMinutes();
+            
+            // Recalcular todo el estado con el nuevo tiempo
+            MatchLogic.rebuildAndRecalculateAllState();
+            
+            console.log(`Tiempo ajustado al descanso: ${Math.floor(state.matchTimer / 60)}:${String(state.matchTimer % 60).padStart(2, '0')}`);
+            
+            // Actualizar botones después del cambio
+            DOM.updateButtonStates();
+        },
+        handleStartSecondHalf() {
+            MatchLogic.addMatchEvent({ type: 'control', text: 'Inicio de la segunda parte.' });
+            MatchLogic.startTimer();
+        },
+        handleFinishGame() {
+            const state = AppState.get();
+            
+            console.log('handleFinishGame llamado - Estado actual:', {
+                matchTimer: state.matchTimer,
+                currentHalf: state.currentHalf,
+                isMatchRunning: state.isMatchRunning,
+                fullTimeSeconds: AppConfig.FULL_TIME_SECONDS
+            });
+            
+            // Verificar si ya hemos terminado
+            const finished = state.matchEvents.some(e => e.text.includes('Final'));
+            if (finished) {
+                console.log('El partido ya ha terminado, ignorando llamada a handleFinishGame');
+                return;
+            }
+            
+            // NO pausar el partido, solo ajustar el tiempo al final
+            // Ajustar el tiempo al minuto 70 (final) - 70 minutos = 4200 segundos
+            const fullTimeSeconds = AppConfig.FULL_TIME_SECONDS; // 70 * 60 = 4200
+            const timeAdjustment = fullTimeSeconds - state.matchTimer;
+            
+            console.log(`Ajuste de tiempo necesario: ${timeAdjustment} segundos`);
+            
+            // NO ajustar minutos aquí, se recalcularán después
+            
+            // Actualizar el tiempo base del timer si está corriendo
+            if (state.isMatchRunning) {
+                console.log('Timer está corriendo - ajustando tiempo base');
+                state.timerBaseTime = fullTimeSeconds;
+                state.timerStartTime = Date.now(); // Resetear el tiempo de inicio
+            } else {
+                console.log('Timer está pausado - ajustando tiempo directamente');
+                state.matchTimer = fullTimeSeconds;
+            }
+            
+            MatchLogic.addMatchEvent({ type: 'control', text: 'Final del partido.' });
+            
+            // Recalcular minutos de jugadores con el nuevo tiempo
+            MatchLogic.recalculatePlayerMinutes();
+            
+            // Recalcular todo el estado con el nuevo tiempo
+            MatchLogic.rebuildAndRecalculateAllState();
+            
+            DOM.elements['btn-export-excel'].classList.remove('hidden');
+            
+            console.log(`Tiempo ajustado al final: ${Math.floor(state.matchTimer / 60)}:${String(state.matchTimer % 60).padStart(2, '0')}`);
+            
+            // Actualizar botones después del cambio
+            DOM.updateButtonStates();
         }
     };
 
@@ -1898,9 +2193,9 @@
             DOM.elements['start-config'].addEventListener('click', () => this.handleStartConfig());
             DOM.elements['btn-home'].addEventListener('click', () => window.location.href = 'index.html');
             DOM.elements.eventButtons.forEach(b => b.addEventListener('click', (e) => this.handleEventButtonClick(e)));
-            DOM.elements['btn-half-time'].addEventListener('click', () => this.handleHalfTime());
-            DOM.elements['btn-start-second'].addEventListener('click', () => this.handleStartSecondHalf());
-            DOM.elements['btn-finish-game'].addEventListener('click', () => this.handleFinishGame());
+            DOM.elements['btn-half-time'].addEventListener('click', () => MatchLogic.handleHalfTime());
+            DOM.elements['btn-start-second'].addEventListener('click', () => MatchLogic.handleStartSecondHalf());
+            DOM.elements['btn-finish-game'].addEventListener('click', () => MatchLogic.handleFinishGame());
             DOM.elements['btn-reset-match'].addEventListener('click', () => this.handleResetMatch());
             DOM.elements['btn-new-match'].addEventListener('click', () => this.handleNewMatch());
             DOM.elements['btn-export-excel'].addEventListener('click', () => this.exportToCsv());
@@ -2025,71 +2320,6 @@
                 if(state.isMatchRunning) MatchLogic.stopTimer();
                 else MatchLogic.startTimer();
             }
-        },
-        handleHalfTime() {
-            const state = AppState.get();
-            
-            // NO pausar el partido, solo ajustar el tiempo al descanso
-            // Ajustar el tiempo al minuto 35 (descanso) - 35 minutos = 2100 segundos
-            const halftimeSeconds = AppConfig.HALF_TIME_SECONDS; // 35 * 60 = 2100
-            const timeAdjustment = halftimeSeconds - state.matchTimer;
-            
-            if (timeAdjustment > 0) {
-                console.log(`Ajustando tiempo al descanso: +${timeAdjustment} segundos`);
-                // Ajustar minutos de todos los jugadores en el campo
-                this.adjustPlayerMinutes(timeAdjustment);
-            }
-            
-            // Actualizar el tiempo base del timer si está corriendo
-            if (state.isMatchRunning) {
-                state.timerBaseTime = halftimeSeconds;
-                state.timerStartTime = Date.now(); // Resetear el tiempo de inicio
-            } else {
-                state.matchTimer = halftimeSeconds;
-            }
-            
-            MatchLogic.addMatchEvent({ type: 'control', text: 'Descanso.' });
-            state.currentHalf = 2;
-            
-            // Recalcular todo el estado con el nuevo tiempo
-            MatchLogic.rebuildAndRecalculateAllState();
-            
-            console.log(`Tiempo ajustado al descanso: ${Math.floor(state.matchTimer / 60)}:${String(state.matchTimer % 60).padStart(2, '0')}`);
-        },
-        handleStartSecondHalf() {
-            MatchLogic.addMatchEvent({ type: 'control', text: 'Inicio de la segunda parte.' });
-            MatchLogic.startTimer();
-        },
-        handleFinishGame() {
-            const state = AppState.get();
-            
-            // NO pausar el partido, solo ajustar el tiempo al final
-            // Ajustar el tiempo al minuto 70 (final) - 70 minutos = 4200 segundos
-            const fullTimeSeconds = AppConfig.FULL_TIME_SECONDS; // 70 * 60 = 4200
-            const timeAdjustment = fullTimeSeconds - state.matchTimer;
-            
-            if (timeAdjustment > 0) {
-                console.log(`Ajustando tiempo al final: +${timeAdjustment} segundos`);
-                // Ajustar minutos de todos los jugadores en el campo
-                this.adjustPlayerMinutes(timeAdjustment);
-            }
-            
-            // Actualizar el tiempo base del timer si está corriendo
-            if (state.isMatchRunning) {
-                state.timerBaseTime = fullTimeSeconds;
-                state.timerStartTime = Date.now(); // Resetear el tiempo de inicio
-            } else {
-                state.matchTimer = fullTimeSeconds;
-            }
-            
-            MatchLogic.addMatchEvent({ type: 'control', text: 'Final del partido.' });
-            
-            // Recalcular todo el estado con el nuevo tiempo
-            MatchLogic.rebuildAndRecalculateAllState();
-            
-            DOM.elements['btn-export-excel'].classList.remove('hidden');
-            
-            console.log(`Tiempo ajustado al final: ${Math.floor(state.matchTimer / 60)}:${String(state.matchTimer % 60).padStart(2, '0')}`);
         },
         handleResetMatch() {
             if (confirm("¿Seguro que quieres reiniciar? Se perderán todas las estadísticas.")) {
