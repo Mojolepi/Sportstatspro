@@ -2002,7 +2002,8 @@
 
             state.matchEvents.forEach(event => {
                 const timeDelta = event.timeInSeconds - lastTime;
-                if (timeDelta > 0) this.adjustPlayerMinutes(timeDelta);
+                // Los minutos ya se recalculan íntegramente en recalculatePlayerMinutes();
+                // aquí no debemos volver a incrementarlos para evitar doble conteo.
 
                 const teamPStats = state.playerStats[event.team];
                 
@@ -2039,8 +2040,8 @@
                 lastTime = event.timeInSeconds;
             });
 
-            const finalTimeDelta = state.matchTimer - lastTime;
-            if (finalTimeDelta > 0) this.adjustPlayerMinutes(finalTimeDelta);
+            // Los minutos finales ya están contemplados en recalculatePlayerMinutes();
+            // no sumar delta restante para evitar duplicados.
             
             state.lastMinuteCheck = Math.floor(state.matchTimer / 60);
 
