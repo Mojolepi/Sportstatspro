@@ -1579,6 +1579,19 @@
             const state = AppState.get();
             if (!state.initialPlayerState) return;
 
+            // IMPORTANTE: Guardar las posiciones actuales que el usuario ha movido
+            // antes de restaurar desde initialPlayerState
+            const currentPositions = {};
+            Object.keys(state.playerStats).forEach(team => {
+                currentPositions[team] = {};
+                Object.keys(state.playerStats[team]).forEach(playerName => {
+                    const player = state.playerStats[team][playerName];
+                    if (player.position) {
+                        currentPositions[team][playerName] = { ...player.position };
+                    }
+                });
+            });
+
             // Restaurar el estado inicial de los jugadores
             state.playerStats = JSON.parse(JSON.stringify(state.initialPlayerState));
             
@@ -1607,6 +1620,16 @@
                     player.position = preservedPosition;
                 }
             }
+            
+            // CRÍTICO: Restaurar las posiciones actuales que el usuario ha movido
+            // Esto asegura que las fichas se mantengan donde el usuario las colocó
+            Object.keys(currentPositions).forEach(team => {
+                Object.keys(currentPositions[team]).forEach(playerName => {
+                    if (state.playerStats[team] && state.playerStats[team][playerName]) {
+                        state.playerStats[team][playerName].position = currentPositions[team][playerName];
+                    }
+                });
+            });
             state.matchStats = { local: { corners: 0, offsides: 0 }, rival: { corners: 0, offsides: 0 } };
             
             // Variables para rastrear el tiempo
@@ -1699,12 +1722,22 @@
                         }
                         const statsOut = teamPStats?.[event.playerOut];
                         const statsIn = teamPStats?.[event.playerIn];
-                        const position = (statsIn?.onPitch ? statsIn.position : statsOut?.position) || null;
+                        
+                        // Preservar la posición: si el jugador que entra ya tiene una posición guardada, mantenerla
+                        // Si no, usar la del jugador que sale
+                        let position = null;
+                        if (statsIn?.position) {
+                            // El jugador que entra ya tiene una posición (probablemente del usuario)
+                            position = { ...statsIn.position };
+                        } else if (statsOut?.position) {
+                            // Usar la posición del jugador que sale
+                            position = { ...statsOut.position };
+                        }
                         
                         // El jugador que sale ya no está en el campo
                         this.setPlayerOnBench(event.playerOut, event.team);
-                        // El jugador que entra ahora está en el campo
-                        this.setPlayerOnPitch(event.playerIn, event.team, position ? { ...position } : null);
+                        // El jugador que entra ahora está en el campo, preservando su posición o usando la del que sale
+                        this.setPlayerOnPitch(event.playerIn, event.team, position);
                         break;
                     case 'red-card':
                         if (playerStats) {
@@ -2410,6 +2443,13 @@
                         top: `${100 * (clientY - rect.top) / rect.height}%`
                     };
                     MatchLogic.setPlayerOnPitch(dragged.dataset.name, dragged.dataset.team, pos);
+                    // Actualizar el estado inicial para preservar esta posición
+                    if (state.initialPlayerState) {
+                        const initialStats = state.initialPlayerState[dragged.dataset.team]?.[dragged.dataset.name];
+                        if (initialStats) {
+                            initialStats.position = { ...pos };
+                        }
+                    }
                 }
             } else if (targetZone?.classList.contains('bench')) {
                 if (state.matchEvents.some(e => e.type === 'init_match')) {
@@ -2439,6 +2479,34 @@
                 statsOut.onPitch = onPitchIn;
                 state.initialPlayerState = JSON.parse(JSON.stringify(state.playerStats));
             } else if (statsIn.onPitch !== statsOut.onPitch) {
+                // Durante el partido: intercambio de posiciones en sustituciones
+                // Preservar las posiciones que el usuario ha movido
+                const posIn = statsIn.position ? {...statsIn.position} : null;
+                const posOut = statsOut.position ? {...statsOut.position} : null;
+                
+                // Intercambiar posiciones si ambas existen
+                if (posIn && posOut) {
+                    statsIn.position = posOut;
+                    statsOut.position = posIn;
+                } else if (posOut) {
+                    // Si solo el que sale tiene posición, dársela al que entra
+                    statsIn.position = posOut;
+                } else if (posIn) {
+                    // Si solo el que entra tiene posición, dársela al que sale
+                    statsOut.position = posIn;
+                }
+                
+                // Actualizar initialPlayerState para preservar las nuevas posiciones
+                if (state.initialPlayerState) {
+                    const initialStatsIn = state.initialPlayerState[team]?.[playerInName];
+                    const initialStatsOut = state.initialPlayerState[team]?.[playerOutName];
+                    if (initialStatsIn && statsIn.position) {
+                        initialStatsIn.position = {...statsIn.position};
+                    }
+                    if (initialStatsOut && statsOut.position) {
+                        initialStatsOut.position = {...statsOut.position};
+                    }
+                }
                 const onPitchPlayerName = statsIn.onPitch ? playerInName : playerOutName;
                 const onBenchPlayerName = statsIn.onPitch ? playerOutName : playerInName;
                 
@@ -2477,11 +2545,26 @@
                 MatchLogic.addMatchEvent({ type: 'substitution', playerIn: onBenchPlayerName, playerOut: onPitchPlayerName, team });
                 MatchLogic.rebuildAndRecalculateAllState();
             } else if (statsIn.onPitch && statsOut.onPitch) {
-                const posIn = {...statsIn.position};
-                statsIn.position = {...statsOut.position};
-                statsOut.position = posIn;
+                // Intercambio de posiciones entre dos jugadores en el campo
+                const posIn = statsIn.position ? {...statsIn.position} : null;
+                const posOut = statsOut.position ? {...statsOut.position} : null;
+                
+                if (posIn && posOut) {
+                    statsIn.position = posOut;
+                    statsOut.position = posIn;
+                }
+                
                 // Actualizar el estado inicial para conservar los cambios de posición
-                state.initialPlayerState = JSON.parse(JSON.stringify(state.playerStats));
+                if (state.initialPlayerState) {
+                    const initialStatsIn = state.initialPlayerState[team]?.[playerInName];
+                    const initialStatsOut = state.initialPlayerState[team]?.[playerOutName];
+                    if (initialStatsIn && statsIn.position) {
+                        initialStatsIn.position = {...statsIn.position};
+                    }
+                    if (initialStatsOut && statsOut.position) {
+                        initialStatsOut.position = {...statsOut.position};
+                    }
+                }
             }
             AppState.save();
         }
