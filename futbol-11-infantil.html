@@ -1540,6 +1540,22 @@
         },
         addMatchEvent(eventData) {
             const state = AppState.get();
+            
+            // Prevenir eventos duplicados de sustitución en el mismo tiempo
+            if (eventData.type === 'substitution') {
+                const duplicate = state.matchEvents.find(e => 
+                    e.type === 'substitution' && 
+                    e.team === eventData.team &&
+                    e.playerIn === eventData.playerIn &&
+                    e.playerOut === eventData.playerOut &&
+                    Math.abs(e.timeInSeconds - state.matchTimer) < 2 // Mismo tiempo (2 segundos de margen)
+                );
+                if (duplicate) {
+                    console.warn('Evento de sustitución duplicado detectado y omitido');
+                    return;
+                }
+            }
+            
             const event = { id: Date.now(), timeInSeconds: state.matchTimer, ...eventData };
             event.minute = Math.floor(event.timeInSeconds / 60);
             event.text = this.generateEventText(event);
@@ -1594,7 +1610,9 @@
             state.matchStats = { local: { corners: 0, offsides: 0 }, rival: { corners: 0, offsides: 0 } };
             
             // Variables para rastrear el tiempo
-            let lastTime = 0;
+            // Encontrar el tiempo del evento init_match para empezar a contar desde ahí
+            const initMatchEvent = state.matchEvents.find(e => e.type === 'init_match');
+            let lastTime = initMatchEvent ? initMatchEvent.timeInSeconds : 0;
             let lastLocalSubTime = 0;
 
             const { usedFirstHalf, usedSecondHalf } = state.substitutionWindows;
@@ -1615,6 +1633,31 @@
             // Procesar eventos en orden cronológico
             // Los eventos ya están ordenados por timeInSeconds
             // IMPORTANTE: Solo procesar eventos hasta el tiempo actual del partido
+            
+            // Primero, sumar el tiempo desde el inicio hasta el primer evento (o hasta ahora si no hay eventos)
+            // Esto asegura que los jugadores que están en el campo desde el inicio cuenten su tiempo
+            if (initMatchEvent) {
+                const firstEventAfterInit = state.matchEvents.find(e => 
+                    e.type !== 'init_match' && 
+                    e.type !== 'control' && 
+                    e.timeInSeconds > initMatchEvent.timeInSeconds &&
+                    e.timeInSeconds <= state.matchTimer
+                );
+                
+                const timeUntilFirstEvent = firstEventAfterInit 
+                    ? firstEventAfterInit.timeInSeconds - lastTime 
+                    : state.matchTimer - lastTime;
+                
+                if (timeUntilFirstEvent > 0) {
+                    this.adjustPlayerMinutes(timeUntilFirstEvent);
+                    if (firstEventAfterInit) {
+                        lastTime = firstEventAfterInit.timeInSeconds;
+                    } else {
+                        lastTime = state.matchTimer;
+                    }
+                }
+            }
+            
             state.matchEvents.forEach(event => {
                 // Solo procesar eventos que tienen un tiempo válido
                 // y que ocurrieron ANTES o EN el tiempo actual del partido
@@ -1625,6 +1668,12 @@
                 // CRÍTICO: No procesar eventos que ocurren después del tiempo actual
                 // Esto previene que eventos futuros afecten el estado cuando se modifica el tiempo
                 if (event.timeInSeconds > state.matchTimer) {
+                    return;
+                }
+                
+                // Saltar eventos init_match y control ya que no afectan el estado de jugadores
+                if (event.type === 'init_match' || event.type === 'control') {
+                    lastTime = event.timeInSeconds;
                     return;
                 }
 
@@ -2230,34 +2279,62 @@
             );
         },
         exportToCsv() {
-            const state = AppState.get();
-            const formatPlayerRow = (player, stats) => 
-                [player, stats.goles, stats.asistencias, stats.disparos, stats.faltas, 
-                 stats.amarillas, stats.rojas, MatchLogic.formatMinutesRoundedUp(stats.minutosJugados)].join(",");
-            
-            const lines = [
-                `${state.localTeamName}`,
-                'Jugador,G,A,D,F,Y,R,MIN',
-                ...state.localPlayers.map(p => formatPlayerRow(p, state.playerStats.local[p])),
-                '',
-                `${state.rivalTeamName}`,
-                'Dorsal,G,A,D,F,Y,R,MIN',
-                ...state.rivalDorsals.map(d => formatPlayerRow(d, state.playerStats.rival[d])),
-                '',
-                'Cronología del Partido',
-                'Minuto,Evento',
-                ...state.matchEvents.map(e => 
-                    `${e.minute},"${e.text.replace(/<[^>]*>?/gm, '')}"`
-                )
-            ];
-            
-            const csv = lines.join('\n');
-            const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
-            const a = document.createElement("a");
-            a.href = URL.createObjectURL(blob);
-            a.download = `estadisticas_${state.localTeamName}_vs_${state.rivalTeamName}.csv`;
-            a.click();
-            URL.revokeObjectURL(a.href);
+            try {
+                const state = AppState.get();
+                
+                // Asegurar que los minutos están calculados correctamente antes de exportar
+                MatchLogic.rebuildAndRecalculateAllState();
+                
+                const formatPlayerRow = (player, stats) => {
+                    const statsObj = stats || {};
+                    return [
+                        player || '',
+                        statsObj.goles || 0,
+                        statsObj.asistencias || 0,
+                        statsObj.disparos || 0,
+                        statsObj.faltas || 0,
+                        statsObj.amarillas || 0,
+                        statsObj.rojas || 0,
+                        MatchLogic.formatMinutesRoundedUp(statsObj.minutosJugados || 0)
+                    ].join(",");
+                };
+                
+                const lines = [
+                    `${state.localTeamName || 'Local'}`,
+                    'Jugador,G,A,D,F,Y,R,MIN',
+                    ...(state.localPlayers || []).map(p => formatPlayerRow(p, state.playerStats?.local?.[p])),
+                    '',
+                    `${state.rivalTeamName || 'Rival'}`,
+                    'Dorsal,G,A,D,F,Y,R,MIN',
+                    ...(state.rivalDorsals || []).map(d => formatPlayerRow(d, state.playerStats?.rival?.[d])),
+                    '',
+                    'Cronología del Partido',
+                    'Minuto,Evento',
+                    ...(state.matchEvents || []).map(e => 
+                        `${e.minute || 0},"${(e.text || '').replace(/<[^>]*>?/gm, '').replace(/"/g, '""')}"`
+                    )
+                ];
+                
+                const csv = lines.join('\n');
+                const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+                const a = document.createElement("a");
+                const url = URL.createObjectURL(blob);
+                a.href = url;
+                a.download = `estadisticas_${(state.localTeamName || 'Local').replace(/[^a-zA-Z0-9]/g, '_')}_vs_${(state.rivalTeamName || 'Rival').replace(/[^a-zA-Z0-9]/g, '_')}.csv`;
+                
+                // Agregar el elemento al DOM temporalmente para asegurar compatibilidad
+                document.body.appendChild(a);
+                a.click();
+                
+                // Esperar antes de revocar la URL para asegurar que el navegador descargue el archivo
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 1000);
+            } catch (error) {
+                console.error('Error al exportar a CSV:', error);
+                alert('Error al exportar el archivo. Por favor, inténtalo de nuevo.');
+            }
         },
     };
 
