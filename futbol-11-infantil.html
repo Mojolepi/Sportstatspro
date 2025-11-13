@@ -731,7 +731,7 @@
             <label for="rival-name">Nombre Rival:</label>
             <input type="text" id="rival-name" value="Equipo Rival">
             <label for="local-players">Jugadores Locales (Nombres o dorsales separados por coma):</label>
-            <textarea id="local-players" rows="3">ERIK, FRAN, JUANJO, DANNY, RGUEZ, GAEL, CESAR, RUBIA, NICO, JOEL, JAVIER, RUIZ, ALEX, VICTOR, MARTIN, UNAI, HUGO</textarea>
+            <textarea id="local-players" rows="3">ERIK, FRAN, JUANJO, DANY, RGUEZ, GAEL, CESAR, RUBIA, NICO, JOEL, JAVIER, RUIZ, ALEX, VICTOR, MARTIN, UNAI, HUGO</textarea>
             <label for="rival-dorsals">Dorsales Rivales (separados por coma):</label>
             <textarea id="rival-dorsals" rows="3">1,2,3,4,5,6,7,8,9,10,11,12,13,14</textarea>
             <button id="start-config" class="btn-primary">Guardar y Preparar Pizarra</button>
@@ -1111,31 +1111,74 @@
         },
         updatePlayerChips() {
             const state = AppState.get();
+            
+            // Crear un mapa de chips existentes para acceso rápido
+            const existingChips = new Map();
+            document.querySelectorAll('.player-chip').forEach(chip => {
+                const key = `${chip.dataset.name}|${chip.dataset.team}`;
+                existingChips.set(key, chip);
+            });
+            
+            // Procesar todos los jugadores del estado
             Object.keys(state.playerStats).forEach(team => {
                 Object.keys(state.playerStats[team]).forEach(playerName => {
                     const stats = state.playerStats[team][playerName];
-                    const chip = document.querySelector(`.player-chip[data-name="${playerName}"][data-team="${team}"]`);
-                    if (!chip || chip.classList.contains('dragging')) {
+                    const chipKey = `${playerName}|${team}`;
+                    let chip = existingChips.get(chipKey);
+                    
+                    // Si el chip no existe, crearlo
+                    if (!chip) {
+                        chip = this.createChip(playerName, team);
+                        existingChips.set(chipKey, chip);
+                    }
+                    
+                    // Si el chip está siendo arrastrado, no modificarlo
+                    if (chip.classList.contains('dragging')) {
                         return;
                     }
                     
+                    // Actualizar estado visual del chip
                     const hasYellow = stats.amarillas === 1 && !stats.expulsado;
                     chip.classList.toggle('has-yellow-card', hasYellow);
                     chip.classList.toggle('expulsado', stats.expulsado);
+                    chip.draggable = !stats.expulsado;
 
-                    const targetParent = stats.onPitch ? this.elements['futsal-pitch'] : this.elements[`${team}-bench`];
+                    // Determinar el contenedor objetivo
+                    const targetParent = stats.onPitch 
+                        ? this.elements['futsal-pitch'] 
+                        : this.elements[`${team}-bench`];
+                    
+                    // Mover el chip al contenedor correcto si es necesario
                     if (chip.parentElement !== targetParent) {
                         targetParent.appendChild(chip);
                     }
+                    
+                    // Actualizar clases CSS
                     chip.classList.toggle('chip-on-pitch', stats.onPitch);
                     chip.classList.toggle('chip-on-bench', !stats.onPitch);
-                    if (stats.onPitch) {
-                        Object.assign(chip.style, stats.position);
+                    
+                    // Actualizar posición si está en el campo
+                    if (stats.onPitch && stats.position) {
+                        Object.assign(chip.style, stats.position, {
+                            transform: 'translate(-50%, -50%)',
+                            display: ''
+                        });
                     } else {
                         chip.style.cssText = '';
                     }
                 });
             });
+            
+            // Limpiar chips huérfanos (que existen en el DOM pero no en el estado)
+            // Esto previene acumulación de elementos en el DOM
+            document.querySelectorAll('.player-chip').forEach(chip => {
+                const playerName = chip.dataset.name;
+                const team = chip.dataset.team;
+                if (!state.playerStats[team] || !state.playerStats[team][playerName]) {
+                    chip.remove();
+                }
+            });
+            
             this.updateTeamView();
         },
         updateScoreboard() {
@@ -1474,21 +1517,41 @@
         _createTimerInterval() {
             const state = AppState.get();
             clearInterval(state.timerInterval);
+            
+            // Variable para rastrear el último tiempo en que se hizo recálculo completo
+            let lastFullRecalculation = state.matchTimer;
+            const FULL_RECALCULATION_INTERVAL = 60; // Recalcular completamente cada 60 segundos
+            
             state.timerInterval = setInterval(() => {
                 if (!state.isMatchRunning) {
                     clearInterval(state.timerInterval);
                     state.timerInterval = null;
                     return;
                 }
+                
                 const elapsedSeconds = Math.floor((Date.now() - state.timerStartTime) / 1000);
                 const previousTimer = state.matchTimer;
                 state.matchTimer = state.timerBaseTime + elapsedSeconds;
 
-                // Recalcular minutos jugados cuando el tiempo avanza
-                // Solo actualizamos la visualización si el tiempo no cambió
-                // Si el tiempo cambió, rebuildAndRecalculateAllState ya actualizará todo
+                // Optimización: Usar actualización incremental cuando sea posible
+                const timeSinceFullRecalc = state.matchTimer - lastFullRecalculation;
+                const timeDelta = state.matchTimer - previousTimer;
+                
                 if (state.matchTimer !== previousTimer) {
-                    this.rebuildAndRecalculateAllState();
+                    // Si ha pasado suficiente tiempo, hacer recálculo completo para asegurar precisión
+                    if (timeSinceFullRecalc >= FULL_RECALCULATION_INTERVAL) {
+                        this.rebuildAndRecalculateAllState();
+                        lastFullRecalculation = state.matchTimer;
+                    } else if (timeDelta > 0 && timeDelta <= 5) {
+                        // Actualización incremental para cambios pequeños (más eficiente)
+                        this.adjustPlayerMinutes(timeDelta);
+                        DOM.updateTimerDisplay();
+                        DOM.updateStatsTables();
+                    } else {
+                        // Si el cambio es grande o inesperado, recalcular completamente
+                        this.rebuildAndRecalculateAllState();
+                        lastFullRecalculation = state.matchTimer;
+                    }
                 } else {
                     DOM.updateTimerDisplay();
                 }
@@ -1501,7 +1564,12 @@
                 }
                 
                 DOM.updateDocumentTitle();
-                AppState.save();
+                
+                // Guardar estado con menos frecuencia para mejor rendimiento
+                // Solo guardar cada 5 segundos o cuando sea crítico
+                if (state.matchTimer % 5 === 0 || !state.isMatchRunning) {
+                    AppState.save();
+                }
             }, AppConfig.TIMER_INTERVAL_MS);
         },
         startTimer() {
@@ -1522,6 +1590,8 @@
             state.isMatchRunning = false;
             clearInterval(state.timerInterval);
             state.timerInterval = null;
+            // CRÍTICO: Recalcular completamente al detener el timer
+            // Esto asegura que los minutos jugados sean precisos
             this.rebuildAndRecalculateAllState();
             DOM.updateButtonStates();
             AppState.save();
@@ -1632,80 +1702,53 @@
             });
             state.matchStats = { local: { corners: 0, offsides: 0 }, rival: { corners: 0, offsides: 0 } };
             
-            // Variables para rastrear el tiempo
-            // Encontrar el tiempo del evento init_match para empezar a contar desde ahí
-            const initMatchEvent = state.matchEvents.find(e => e.type === 'init_match');
-            let lastTime = initMatchEvent ? initMatchEvent.timeInSeconds : 0;
-            let lastLocalSubTime = 0;
-
-            const { usedFirstHalf, usedSecondHalf } = state.substitutionWindows;
-            const totalUsed = usedFirstHalf + usedSecondHalf;
-            
-            if (totalUsed >= AppConfig.MAX_SUBSTITUTION_WINDOWS) {
-                return;
-            }
-            
             // Si el partido no ha iniciado todavía, no procesar eventos
-            // Solo restaurar el estado inicial y salir
             const hasStarted = state.matchEvents.some(e => e.type === 'init_match');
             if (!hasStarted) {
                 DOM.updateAll();
                 return;
             }
 
-            // Procesar eventos en orden cronológico
-            // Los eventos ya están ordenados por timeInSeconds
-            // IMPORTANTE: Solo procesar eventos hasta el tiempo actual del partido
+            // NUEVA LÓGICA MEJORADA: Calcular minutos jugados de forma más precisa
+            // Filtrar y ordenar eventos válidos hasta el tiempo actual
+            const validEvents = state.matchEvents
+                .filter(e => e.timeInSeconds >= 0 && e.timeInSeconds <= state.matchTimer)
+                .sort((a, b) => a.timeInSeconds - b.timeInSeconds);
             
-            // Primero, sumar el tiempo desde el inicio hasta el primer evento (o hasta ahora si no hay eventos)
-            // Esto asegura que los jugadores que están en el campo desde el inicio cuenten su tiempo
-            if (initMatchEvent) {
-                const firstEventAfterInit = state.matchEvents.find(e => 
-                    e.type !== 'init_match' && 
-                    e.type !== 'control' && 
-                    e.timeInSeconds > initMatchEvent.timeInSeconds &&
-                    e.timeInSeconds <= state.matchTimer
-                );
-                
-                const timeUntilFirstEvent = firstEventAfterInit 
-                    ? firstEventAfterInit.timeInSeconds - lastTime 
-                    : state.matchTimer - lastTime;
-                
-                if (timeUntilFirstEvent > 0) {
-                    this.adjustPlayerMinutes(timeUntilFirstEvent);
-                    if (firstEventAfterInit) {
-                        lastTime = firstEventAfterInit.timeInSeconds;
-                    } else {
-                        lastTime = state.matchTimer;
-                    }
-                }
+            // Encontrar el evento de inicio del partido
+            const initMatchEvent = validEvents.find(e => e.type === 'init_match');
+            if (!initMatchEvent) {
+                DOM.updateAll();
+                return;
             }
             
-            state.matchEvents.forEach(event => {
-                // Solo procesar eventos que tienen un tiempo válido
-                // y que ocurrieron ANTES o EN el tiempo actual del partido
-                if (event.timeInSeconds < 0 || event.timeInSeconds < lastTime) {
-                    return;
-                }
-                
-                // CRÍTICO: No procesar eventos que ocurren después del tiempo actual
-                // Esto previene que eventos futuros afecten el estado cuando se modifica el tiempo
-                if (event.timeInSeconds > state.matchTimer) {
-                    return;
-                }
-                
-                // Saltar eventos init_match y control ya que no afectan el estado de jugadores
-                if (event.type === 'init_match' || event.type === 'control') {
+            let lastTime = initMatchEvent.timeInSeconds;
+            let lastLocalSubTime = 0;
+            
+            // Procesar cada evento en orden cronológico
+            for (const event of validEvents) {
+                // Saltar eventos de control e init_match después del primero
+                // PERO contar el tiempo jugado ANTES de ellos
+                if (event.type === 'control' || (event.type === 'init_match' && event !== initMatchEvent)) {
+                    // Contar el tiempo jugado hasta este evento de control
+                    const timeDelta = event.timeInSeconds - lastTime;
+                    if (timeDelta > 0) {
+                        this.adjustPlayerMinutes(timeDelta);
+                    }
                     lastTime = event.timeInSeconds;
-                    return;
+                    continue;
                 }
-
-                // Calcular el delta de tiempo desde el último evento
+                
+                // Si el evento ocurre antes del último tiempo procesado, saltarlo
+                if (event.timeInSeconds < lastTime) {
+                    continue;
+                }
+                
+                // Calcular el delta de tiempo desde el último evento procesado
                 const timeDelta = event.timeInSeconds - lastTime;
                 
-                // Sumar minutos jugados a los jugadores que están en el campo
-                // Esto se hace ANTES de procesar el evento para que los cambios
-                // (sustituciones, expulsiones) se reflejen correctamente
+                // CRÍTICO: Sumar minutos jugados ANTES de procesar el evento
+                // Esto asegura que los jugadores que están en el campo cuenten su tiempo correctamente
                 if (timeDelta > 0) {
                     this.adjustPlayerMinutes(timeDelta);
                 }
@@ -1727,16 +1770,14 @@
                         // Si no, usar la del jugador que sale
                         let position = null;
                         if (statsIn?.position) {
-                            // El jugador que entra ya tiene una posición (probablemente del usuario)
                             position = { ...statsIn.position };
                         } else if (statsOut?.position) {
-                            // Usar la posición del jugador que sale
                             position = { ...statsOut.position };
                         }
                         
                         // El jugador que sale ya no está en el campo
                         this.setPlayerOnBench(event.playerOut, event.team);
-                        // El jugador que entra ahora está en el campo, preservando su posición o usando la del que sale
+                        // El jugador que entra ahora está en el campo
                         this.setPlayerOnPitch(event.playerIn, event.team, position);
                         break;
                     case 'red-card':
@@ -1780,18 +1821,16 @@
                         }
                         break;
                     case 'init_match':
-                    case 'control':
-                        // Estos eventos no cambian el estado de los jugadores en el campo
-                        // Solo actualizamos el tiempo
+                        // Ya procesado al inicio
                         break;
                 }
                 
                 // Actualizar el tiempo del último evento procesado
                 lastTime = event.timeInSeconds;
-            });
+            }
 
-            // Sumar el tiempo restante desde el último evento hasta el tiempo actual
-            // Esto es crucial para que los minutos jugados se actualicen en tiempo real
+            // CRÍTICO: Sumar el tiempo restante desde el último evento hasta el tiempo actual
+            // Esto incluye cualquier tiempo de descuento o tiempo adicional
             const finalTimeDelta = state.matchTimer - lastTime;
             if (finalTimeDelta > 0) {
                 this.adjustPlayerMinutes(finalTimeDelta);
@@ -1986,8 +2025,12 @@
             state.timerBaseTime = state.matchTimer;
             MatchLogic.addMatchEvent({ type: 'control', text: 'Final del partido.' });
             DOM.elements['btn-export-excel'].classList.remove('hidden');
-            // Recalcular todos los minutos jugados hasta el final
+            // CRÍTICO: Recalcular todos los minutos jugados hasta el final
+            // Esto asegura que todos los jugadores tengan el tiempo correcto, incluyendo descuentos
             MatchLogic.rebuildAndRecalculateAllState();
+            // Forzar actualización de todas las tablas después del recálculo
+            DOM.updateAll();
+            AppState.save();
         },
         handleResetMatch() {
             if (confirm("¿Seguro que quieres reiniciar? Se perderán todas las estadísticas.")) {
