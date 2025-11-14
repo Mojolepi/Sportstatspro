@@ -1822,11 +1822,16 @@
                         break;
                     case 'own-goal':
                         // Gol en propia: el gol se suma al equipo contrario
+                        // Si un jugador local se lo mete, se guarda en local.ownGoals y cuenta para el rival
+                        // Si un jugador rival se lo mete, se guarda en rival.ownGoals y cuenta para el local
                         const opposingTeam = event.team === 'local' ? 'rival' : 'local';
-                        if (!state.matchStats[opposingTeam].ownGoals) {
-                            state.matchStats[opposingTeam].ownGoals = 0;
+                        if (!state.matchStats[event.team]) {
+                            state.matchStats[event.team] = { corners: 0, offsides: 0, ownGoals: 0 };
                         }
-                        state.matchStats[opposingTeam].ownGoals++;
+                        if (!state.matchStats[event.team].ownGoals) {
+                            state.matchStats[event.team].ownGoals = 0;
+                        }
+                        state.matchStats[event.team].ownGoals++;
                         // El jugador que se lo metió no suma gol, pero sí disparo
                         if (playerStats) {
                             playerStats.disparos++;
