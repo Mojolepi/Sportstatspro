@@ -2282,6 +2282,10 @@
                         }
                         updatedData.team = state.localPlayers.includes(updatedData.goleador) ? 'local' : 'rival';
                         break;
+                    case 'own-goal':
+                        updatedData.player = document.getElementById('edit-player').value;
+                        updatedData.team = state.localPlayers.includes(updatedData.player) ? 'local' : 'rival';
+                        break;
                     case 'substitution':
                         updatedData.playerIn = document.getElementById('edit-player-in').value;
                         updatedData.playerOut = document.getElementById('edit-player-out').value;
