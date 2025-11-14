@@ -241,27 +241,6 @@
             height: 100%;
         }
         
-        #view-toggle-buttons {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        
-        .btn-view {
-            flex: 1;
-            padding: 10px;
-            font-size: 0.9em;
-        }
-        
-        .btn-view.local.active {
-            background: linear-gradient(145deg, var(--color-primary), #0056b3);
-            box-shadow: 0 0 8px var(--color-primary);
-        }
-        
-        .btn-view.rival.active {
-            background: linear-gradient(145deg, var(--color-danger), #a71d2a);
-            box-shadow: 0 0 8px var(--color-danger);
-        }
         
         #bench-container {
             display: block;
@@ -752,40 +731,53 @@
 
         <section id="pitch-section" class="hidden">
             <h2>Pizarra Táctica</h2>
-            <div id="view-toggle-buttons">
-                <button id="btn-view-local" class="btn-view local active"></button>
-                <button id="btn-view-rival" class="btn-view rival"></button>
-            </div>
             <div id="event-flow-message" class="hidden"></div>
             <div id="basketball-court">
-                <div class="basketball-court-lines"><svg viewBox="0 0 94 50" preserveAspectRatio="xMidYMid meet">
+                <div class="basketball-court-lines"><svg viewBox="0 0 100 50" preserveAspectRatio="xMidYMid meet">
+                    <!-- Fondo de la cancha -->
+                    <rect x="0" y="0" width="100" height="50" fill="var(--color-pitch)"/>
+                    
                     <!-- Líneas exteriores -->
-                    <rect x="0" y="0" width="94" height="50" stroke="var(--color-pitch-lines)" stroke-width="0.5" fill="none"/>
+                    <rect x="0" y="0" width="100" height="50" stroke="var(--color-pitch-lines)" stroke-width="1" fill="none"/>
+                    
                     <!-- Línea central -->
-                    <line x1="47" y1="0" x2="47" y2="50" stroke="var(--color-pitch-lines)" stroke-width="0.5"/>
+                    <line x1="50" y1="0" x2="50" y2="50" stroke="var(--color-pitch-lines)" stroke-width="1"/>
+                    
                     <!-- Círculo central -->
-                    <circle cx="47" cy="25" r="6" stroke="var(--color-pitch-lines)" stroke-width="0.5" fill="none"/>
-                    <circle cx="47" cy="25" r="0.3" fill="var(--color-pitch-lines)"/>
-                    <!-- Canasta izquierda (local) -->
-                    <rect x="0" y="19" width="5.8" height="12" stroke="var(--color-pitch-lines)" stroke-width="0.5" fill="none"/>
-                    <line x1="0" y1="25" x2="5.8" y2="25" stroke="var(--color-pitch-lines)" stroke-width="0.5"/>
-                    <circle cx="5.8" cy="25" r="1.8" stroke="var(--color-pitch-lines)" stroke-width="0.5" fill="none"/>
-                    <path d="M 0 19 Q 2.9 15 5.8 19" stroke="var(--color-pitch-lines)" stroke-width="0.5" fill="none"/>
-                    <path d="M 0 31 Q 2.9 35 5.8 31" stroke="var(--color-pitch-lines)" stroke-width="0.5" fill="none"/>
+                    <circle cx="50" cy="25" r="5.5" stroke="var(--color-pitch-lines)" stroke-width="1" fill="none"/>
+                    <circle cx="50" cy="25" r="0.4" fill="var(--color-pitch-lines)"/>
+                    
+                    <!-- Zona izquierda (local) -->
+                    <!-- Línea de tiros libres -->
+                    <line x1="0" y1="18" x2="19" y2="18" stroke="var(--color-pitch-lines)" stroke-width="1"/>
+                    <line x1="0" y1="32" x2="19" y2="32" stroke="var(--color-pitch-lines)" stroke-width="1"/>
+                    <!-- Zona restringida -->
+                    <rect x="0" y="18" width="19" height="14" stroke="var(--color-pitch-lines)" stroke-width="1" fill="none"/>
+                    <!-- Círculo de tiros libres -->
+                    <path d="M 0 18 A 5.8 5.8 0 0 1 0 32" stroke="var(--color-pitch-lines)" stroke-width="1" fill="none"/>
+                    <!-- Canasta izquierda -->
+                    <circle cx="5.8" cy="25" r="1.5" stroke="var(--color-pitch-lines)" stroke-width="1" fill="none"/>
+                    <line x1="0" y1="25" x2="5.8" y2="25" stroke="var(--color-pitch-lines)" stroke-width="1"/>
                     <!-- Línea de 3 puntos izquierda -->
-                    <path d="M 0 3.6 A 19.75 19.75 0 0 1 0 46.4" stroke="var(--color-pitch-lines)" stroke-width="0.5" fill="none"/>
-                    <line x1="0" y1="3.6" x2="19.75" y2="3.6" stroke="var(--color-pitch-lines)" stroke-width="0.5"/>
-                    <line x1="0" y1="46.4" x2="19.75" y2="46.4" stroke="var(--color-pitch-lines)" stroke-width="0.5"/>
-                    <!-- Canasta derecha (rival) -->
-                    <rect x="88.2" y="19" width="5.8" height="12" stroke="var(--color-pitch-lines)" stroke-width="0.5" fill="none"/>
-                    <line x1="94" y1="25" x2="88.2" y2="25" stroke="var(--color-pitch-lines)" stroke-width="0.5"/>
-                    <circle cx="88.2" cy="25" r="1.8" stroke="var(--color-pitch-lines)" stroke-width="0.5" fill="none"/>
-                    <path d="M 94 19 Q 91.1 15 88.2 19" stroke="var(--color-pitch-lines)" stroke-width="0.5" fill="none"/>
-                    <path d="M 94 31 Q 91.1 35 88.2 31" stroke="var(--color-pitch-lines)" stroke-width="0.5" fill="none"/>
+                    <path d="M 0 4.5 A 20.5 20.5 0 0 1 0 45.5" stroke="var(--color-pitch-lines)" stroke-width="1" fill="none"/>
+                    <line x1="0" y1="4.5" x2="20.5" y2="4.5" stroke="var(--color-pitch-lines)" stroke-width="1"/>
+                    <line x1="0" y1="45.5" x2="20.5" y2="45.5" stroke="var(--color-pitch-lines)" stroke-width="1"/>
+                    
+                    <!-- Zona derecha (rival) -->
+                    <!-- Línea de tiros libres -->
+                    <line x1="100" y1="18" x2="81" y2="18" stroke="var(--color-pitch-lines)" stroke-width="1"/>
+                    <line x1="100" y1="32" x2="81" y2="32" stroke="var(--color-pitch-lines)" stroke-width="1"/>
+                    <!-- Zona restringida -->
+                    <rect x="81" y="18" width="19" height="14" stroke="var(--color-pitch-lines)" stroke-width="1" fill="none"/>
+                    <!-- Círculo de tiros libres -->
+                    <path d="M 100 18 A 5.8 5.8 0 0 0 100 32" stroke="var(--color-pitch-lines)" stroke-width="1" fill="none"/>
+                    <!-- Canasta derecha -->
+                    <circle cx="94.2" cy="25" r="1.5" stroke="var(--color-pitch-lines)" stroke-width="1" fill="none"/>
+                    <line x1="100" y1="25" x2="94.2" y2="25" stroke="var(--color-pitch-lines)" stroke-width="1"/>
                     <!-- Línea de 3 puntos derecha -->
-                    <path d="M 94 3.6 A 19.75 19.75 0 0 0 94 46.4" stroke="var(--color-pitch-lines)" stroke-width="0.5" fill="none"/>
-                    <line x1="94" y1="3.6" x2="74.25" y2="3.6" stroke="var(--color-pitch-lines)" stroke-width="0.5"/>
-                    <line x1="94" y1="46.4" x2="74.25" y2="46.4" stroke="var(--color-pitch-lines)" stroke-width="0.5"/>
+                    <path d="M 100 4.5 A 20.5 20.5 0 0 0 100 45.5" stroke="var(--color-pitch-lines)" stroke-width="1" fill="none"/>
+                    <line x1="100" y1="4.5" x2="79.5" y2="4.5" stroke="var(--color-pitch-lines)" stroke-width="1"/>
+                    <line x1="100" y1="45.5" x2="79.5" y2="45.5" stroke="var(--color-pitch-lines)" stroke-width="1"/>
                 </svg></div>
             </div>
             <div id="bench-container"><div id="local-bench" class="bench"></div><div id="rival-bench" class="bench"></div></div>
@@ -803,8 +795,12 @@
                 </div>
             </div>
              <div class="event-group">
-                  <button class="btn-event" data-event="basket">CANASTA 🏀</button><button class="btn-event" data-event="shot">TIRO 💥</button>
-                  <button class="btn-event" data-event="foul">FALTA ✋</button><button class="btn-event" data-event="technical-foul">FALTA TÉCNICA 🟨</button>
+                  <button class="btn-event" data-event="basket-3">CANASTA 3PT 🏀</button>
+                  <button class="btn-event" data-event="basket-2">CANASTA 2PT 🏀</button>
+                  <button class="btn-event" data-event="basket-1">TIRO LIBRE 🏀</button>
+                  <button class="btn-event" data-event="shot">TIRO 💥</button>
+                  <button class="btn-event" data-event="foul">FALTA ✋</button>
+                  <button class="btn-event" data-event="technical-foul">FALTA TÉCNICA 🟨</button>
                   <button class="btn-event" data-event="ejection">EXPULSIÓN 🟥</button>
              </div>
             <div class="control-group">
@@ -939,7 +935,7 @@
                 matchStats: { local: {}, rival: {} },
                 matchTimer: 0, timerStartTime: 0, timerBaseTime: 0, isMatchRunning: false,
                 currentQuarter: 1, timerInterval: null, lastMinuteCheck: -1,
-                matchEvents: [], eventFlow: { active: false }, activeView: 'local',
+                matchEvents: [], eventFlow: { active: false },
                 substitutionWindows: { usedFirstHalf: 0, usedSecondHalf: 0 },
                 eliminatedPlayers: { local: [], rival: [] }
             };
@@ -983,7 +979,7 @@
                 'btn-end-quarter', 'btn-start-next-quarter', 'btn-finish-game', 'btn-reset-match', 'btn-new-match', 
                 'btn-export-excel', 'local-name', 'rival-name-display', 'local-score', 'rival-score',
                 'local-stats-title', 'rival-stats-title', 'local-stats-table', 'rival-stats-table',
-                'btn-view-local', 'btn-view-rival', 'substitution-windows-display',
+                'substitution-windows-display',
                 'sub-windows-first-half', 'sub-windows-second-half', 'sub-windows-divider',
                 'time-editor-modal', 'time-editor-min', 'time-editor-sec',
                 'save-time-btn', 'cancel-time-btn', 'edit-event-modal', 'edit-event-title', 'edit-event-content',
@@ -1005,8 +1001,6 @@
             this.elements['rival-name-display'].textContent = state.rivalTeamName;
             this.elements['local-stats-title'].textContent = state.localTeamName;
             this.elements['rival-stats-title'].textContent = state.rivalTeamName;
-            this.elements['btn-view-local'].textContent = state.localTeamName;
-            this.elements['btn-view-rival'].textContent = state.rivalTeamName;
             this.updateTimerDisplay();
             this.updateButtonStates();
             this.updateScoreboard();
@@ -1393,14 +1387,11 @@
             });
         },
         updateTeamView() {
-            const state = AppState.get();
-            const activeTeam = state.activeView;
-            this.elements['btn-view-local'].classList.toggle('active', activeTeam === 'local');
-            this.elements['btn-view-rival'].classList.toggle('active', activeTeam === 'rival');
-            this.elements['local-bench'].classList.toggle('hidden', activeTeam !== 'local');
-            this.elements['rival-bench'].classList.toggle('hidden', activeTeam !== 'rival');
+            // Mostrar ambos equipos siempre en la pizarra
+            this.elements['local-bench'].classList.remove('hidden');
+            this.elements['rival-bench'].classList.remove('hidden');
             this.elements['basketball-court'].querySelectorAll('.chip-on-pitch').forEach(chip => {
-                chip.style.display = chip.dataset.team === activeTeam ? 'flex' : 'none';
+                chip.style.display = 'flex';
             });
         },
         calculateAvailableWindows() {
@@ -1487,7 +1478,8 @@
             switch (event.type) {
                 case 'basket':
                 case 'goal':
-                    return `CANASTA de <strong>${event.anotador || event.goleador}</strong>` + (event.asistente ? `. Asistencia de <strong>${event.asistente}</strong>` : '.');
+                    const puntosText = event.puntos ? ` (${event.puntos} puntos)` : '';
+                    return `CANASTA${puntosText} de <strong>${event.anotador || event.goleador}</strong>` + (event.asistente ? `. Asistencia de <strong>${event.asistente}</strong>` : '.');
                 case 'substitution':
                     return `Sustitución (${getTeamName(event.team)}): <span style="color: var(--color-success);">⬆️</span> <strong>${event.playerIn}</strong>, <span style="color: var(--color-danger);">⬇️</span> <strong>${event.playerOut}</strong>.`;
                 case 'shot':
@@ -1825,7 +1817,10 @@
                         const anotadorStats = teamPStats?.[event.anotador || event.goleador];
                         if (anotadorStats) {
                             anotadorStats.puntos += event.puntos || 2;
-                            anotadorStats.tiros++;
+                            // Solo contar como tiro si no es tiro libre
+                            if (event.basketType !== 'basket-1') {
+                                anotadorStats.tiros++;
+                            }
                         }
                         if (event.asistente && teamPStats?.[event.asistente]) {
                             teamPStats[event.asistente].asistencias++;
@@ -1911,8 +1906,6 @@
             DOM.elements['btn-new-match'].addEventListener('click', () => this.handleNewMatch());
             DOM.elements['btn-export-excel'].addEventListener('click', () => this.exportToCsv());
             DOM.elements['btn-toggle-timer'].addEventListener('click', () => this.handleToggleTimer());
-            DOM.elements['btn-view-local'].addEventListener('click', () => this.handleViewToggle('local'));
-            DOM.elements['btn-view-rival'].addEventListener('click', () => this.handleViewToggle('rival'));
             DOM.elements['minuto-actual'].addEventListener('click', () => this.handleTimeClick());
             this.addTimeEditorListeners();
             DOM.elements['cancel-edit-btn'].addEventListener('click', () => DOM.elements['edit-event-modal'].classList.remove('visible'));
@@ -1976,13 +1969,6 @@
                 state.matchTimer = state.timerBaseTime + elapsedSeconds;
                 MatchLogic.rebuildAndRecalculateAllState();
             }
-        },
-        handleViewToggle(team) {
-            const state = AppState.get();
-            if (state.activeView === team) return;
-            state.activeView = team;
-            DOM.updateTeamView();
-            AppState.save();
         },
         handleStartConfig() {
             AppState.init();
@@ -2088,7 +2074,7 @@
             document.querySelector('main').classList.add('selecting-mode');
             DOM.elements['pitch-section'].scrollIntoView({ behavior: 'smooth', block: 'center' });
             let prompt = `Selecciona el jugador`;
-            if (type === 'basket') prompt = "Selecciona al <strong>anotador</strong>";
+            if (type === 'basket-3' || type === 'basket-2' || type === 'basket-1') prompt = "Selecciona al <strong>anotador</strong>";
             else if (type === 'shot') prompt = "Selecciona al <strong>tirador</strong>";
             else if (type === 'foul') prompt = "Selecciona al <strong>infractor</strong>";
             else if (type === 'technical-foul' || type === 'ejection') prompt = "Selecciona al jugador (campo o banquillo)";
@@ -2119,20 +2105,17 @@
             if (!state.eventFlow.active) return;
             const { type, step } = state.eventFlow;
             const { name, team } = chip.dataset;
-            if (team !== state.activeView) {
-                alert(`Cambia a la vista del equipo '${team === 'local' ? state.localTeamName : state.rivalTeamName}' para interactuar con este jugador.`);
-                return;
-            }
             const isCardEvent = type === 'technical-foul' || type === 'ejection';
             if (!isCardEvent && !chip.classList.contains('chip-on-pitch')) return;
             
-            if (type === 'basket' && step === 1) {
-                state.eventFlow = { ...state.eventFlow, step: 2, anotador: name, team };
-                DOM.elements['event-flow-message'].innerHTML = `CANASTA de <strong>${name}</strong>. Selecciona al <strong>asistente</strong> (o clic en el anotador si no hay).`;
-            } else if (type === 'basket' && step === 2) {
-                const { anotador, team } = state.eventFlow;
+            if ((type === 'basket-3' || type === 'basket-2' || type === 'basket-1') && step === 1) {
+                const puntos = type === 'basket-3' ? 3 : type === 'basket-2' ? 2 : 1;
+                state.eventFlow = { ...state.eventFlow, step: 2, anotador: name, team, puntos, basketType: type };
+                DOM.elements['event-flow-message'].innerHTML = `CANASTA de <strong>${name}</strong> (${puntos} puntos). Selecciona al <strong>asistente</strong> (o clic en el anotador si no hay).`;
+            } else if ((type === 'basket-3' || type === 'basket-2' || type === 'basket-1') && step === 2) {
+                const { anotador, team, puntos, basketType } = state.eventFlow;
                 const asistente = name !== anotador ? name : null;
-                MatchLogic.addMatchEvent({ type: 'basket', anotador, asistente, team, puntos: 2 });
+                MatchLogic.addMatchEvent({ type: 'basket', anotador, asistente, team, puntos, basketType });
                 this.endEventFlow();
             } else {
                 MatchLogic.addMatchEvent({ type, player: name, team });

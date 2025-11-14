@@ -775,7 +775,8 @@
                 </div>
             </div>
              <div class="event-group">
-                  <button class="btn-event" data-event="goal">GOL ⚽</button><button class="btn-event" data-event="shot">DISPARO 💥</button>
+                  <button class="btn-event" data-event="goal">GOL ⚽</button><button class="btn-event" data-event="own-goal">GOL EN PROPIA 🚫⚽</button>
+                  <button class="btn-event" data-event="shot">DISPARO 💥</button>
                   <button class="btn-event" data-event="corner">CÓRNER ⛳</button><button class="btn-event" data-event="offside">FUERA DE JUEGO 🏳️</button>
                   <button class="btn-event" data-event="foul">FALTA ✋</button><button class="btn-event" data-event="yellow-card">AMARILLA 🟨</button>
                   <button class="btn-event" data-event="red-card">ROJA 🟥</button>
@@ -895,6 +896,7 @@
         },
         EVENT_ICONS: {
             'goal': '⚽',
+            'own-goal': '🚫⚽',
             'shot': '💥',
             'corner': '⛳',
             'offside': '🏳️',
@@ -913,7 +915,7 @@
             return {
                 localTeamName: 'Local', rivalTeamName: 'Rival', localPlayers: [], rivalDorsals: [],
                 playerStats: { local: {}, rival: {} }, initialPlayerState: null,
-                matchStats: { local: { corners: 0, offsides: 0 }, rival: { corners: 0, offsides: 0 } },
+                matchStats: { local: { corners: 0, offsides: 0, ownGoals: 0 }, rival: { corners: 0, offsides: 0, ownGoals: 0 } },
                 matchTimer: 0, timerStartTime: 0, timerBaseTime: 0, isMatchRunning: false,
                 currentHalf: 1, timerInterval: null, lastMinuteCheck: -1,
                 matchEvents: [], eventFlow: { active: false }, activeView: 'local',
@@ -1187,8 +1189,16 @@
             const calculateScore = (teamStats) => 
                 Object.values(teamStats).reduce((sum, p) => sum + p.goles, 0);
             
-            const localScore = calculateScore(state.playerStats.local);
-            const rivalScore = calculateScore(state.playerStats.rival);
+            // Los goles en propia del equipo contrario cuentan para este equipo
+            const localPlayerGoals = calculateScore(state.playerStats.local);
+            const rivalPlayerGoals = calculateScore(state.playerStats.rival);
+            const localOwnGoals = state.matchStats.local.ownGoals || 0;
+            const rivalOwnGoals = state.matchStats.rival.ownGoals || 0;
+            
+            // Si el rival se mete goles en propia, esos goles cuentan para el local
+            const localScore = localPlayerGoals + rivalOwnGoals;
+            // Si el local se mete goles en propia, esos goles cuentan para el rival
+            const rivalScore = rivalPlayerGoals + localOwnGoals;
             
             this.elements['local-score'].textContent = localScore;
             this.elements['rival-score'].textContent = rivalScore;
@@ -1461,6 +1471,10 @@
             switch (event.type) {
                 case 'goal':
                     return `GOL de <strong>${event.goleador}</strong>` + (event.asistente ? `. Asistencia de <strong>${event.asistente}</strong>` : '.');
+                case 'own-goal':
+                    const ownGoalTeam = event.team === 'local' ? state.localTeamName : state.rivalTeamName;
+                    const ownGoalOpposingTeam = event.team === 'local' ? state.rivalTeamName : state.localTeamName;
+                    return `GOL EN PROPIA de <strong>${event.player}</strong> (${ownGoalTeam}). Cuenta para <strong>${ownGoalOpposingTeam}</strong>.`;
                 case 'substitution':
                     return `Sustitución (${getTeamName(event.team)}): <span style="color: var(--color-success);">⬆️</span> <strong>${event.playerIn}</strong>, <span style="color: var(--color-danger);">⬇️</span> <strong>${event.playerOut}</strong>.`;
                 case 'shot':
@@ -1700,7 +1714,7 @@
                     }
                 });
             });
-            state.matchStats = { local: { corners: 0, offsides: 0 }, rival: { corners: 0, offsides: 0 } };
+            state.matchStats = { local: { corners: 0, offsides: 0, ownGoals: 0 }, rival: { corners: 0, offsides: 0, ownGoals: 0 } };
             
             // Si el partido no ha iniciado todavía, no procesar eventos
             const hasStarted = state.matchEvents.some(e => e.type === 'init_match');
@@ -1804,6 +1818,18 @@
                         }
                         if (event.asistente && teamPStats?.[event.asistente]) {
                             teamPStats[event.asistente].asistencias++;
+                        }
+                        break;
+                    case 'own-goal':
+                        // Gol en propia: el gol se suma al equipo contrario
+                        const opposingTeam = event.team === 'local' ? 'rival' : 'local';
+                        if (!state.matchStats[opposingTeam].ownGoals) {
+                            state.matchStats[opposingTeam].ownGoals = 0;
+                        }
+                        state.matchStats[opposingTeam].ownGoals++;
+                        // El jugador que se lo metió no suma gol, pero sí disparo
+                        if (playerStats) {
+                            playerStats.disparos++;
                         }
                         break;
                     case 'shot':
@@ -2079,6 +2105,7 @@
             DOM.elements['pitch-section'].scrollIntoView({ behavior: 'smooth', block: 'center' });
             let prompt = `Selecciona el jugador`;
             if (type === 'goal') prompt = "Selecciona al <strong>goleador</strong>";
+            else if (type === 'own-goal') prompt = "Selecciona al jugador que se lo ha metido en <strong>propia puerta</strong>";
             else if (type === 'shot') prompt = "Selecciona al <strong>rematador</strong>";
             else if (type === 'foul') prompt = "Selecciona al <strong>infractor</strong>";
             else if (type === 'yellow-card' || type === 'red-card') prompt = "Selecciona al jugador (campo o banquillo)";
@@ -2124,6 +2151,10 @@
                 const { goleador, team } = state.eventFlow;
                 const asistente = name !== goleador ? name : null;
                 MatchLogic.addMatchEvent({ type, goleador, asistente, team });
+                this.endEventFlow();
+            } else if (type === 'own-goal') {
+                // Gol en propia: solo seleccionar al jugador, el gol se suma al equipo contrario
+                MatchLogic.addMatchEvent({ type, player: name, team });
                 this.endEventFlow();
             } else {
                 MatchLogic.addMatchEvent({ type, player: name, team });
@@ -2203,6 +2234,7 @@
 
             const eventTypeMap = {
                 'goal': 'Gol',
+                'own-goal': 'Gol en Propia',
                 'shot': 'Disparo',
                 'foul': 'Falta',
                 'yellow-card': 'Tarjeta Amarilla',
@@ -2217,6 +2249,9 @@
                 case 'goal':
                     contentEl.innerHTML += createSelect('edit-goleador', 'Goleador:', allPlayers, eventToEdit.goleador);
                     contentEl.innerHTML += createSelect('edit-asistente', 'Asistente:', ['Sin Asistencia', ...allPlayers], eventToEdit.asistente || 'Sin Asistencia');
+                    break;
+                case 'own-goal':
+                    contentEl.innerHTML += createSelect('edit-player', 'Jugador que se lo metió:', allPlayers, eventToEdit.player);
                     break;
                 case 'substitution':
                     const teamForSub = state.localPlayers.includes(eventToEdit.playerIn || eventToEdit.playerOut) ? 'local' : 'rival';
