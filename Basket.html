@@ -15,7 +15,7 @@
             --color-danger: #dc3545;
             --color-warning: #ffc107;
             --color-text: #f8f9fa;
-            --color-pitch: #d2691e;
+            --color-pitch: #e8d5b7;
             --color-pitch-lines: rgba(255, 255, 255, 0.9);
         }
         
@@ -230,10 +230,10 @@
         #basketball-court {
             position: relative;
             width: 100%;
-            aspect-ratio: 100 / 50;
+            aspect-ratio: 280 / 150;
             background-color: var(--color-pitch);
             border: 3px solid var(--color-pitch-lines);
-            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.5);
+            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.3);
             overflow: hidden;
         }
         
@@ -272,28 +272,28 @@
             user-select: none;
             position: relative;
             touch-action: none;
-            width: 55px;
+            width: 75px;
         }
         
         .chip-circle {
-            width: 38px;
-            height: 38px;
-            font-size: 15px;
+            width: 55px;
+            height: 55px;
+            font-size: 20px;
             border-radius: 50%;
             color: white;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            border: 2px solid white;
+            border: 3px solid white;
             box-shadow: 0 3px 6px rgba(0, 0, 0, 0.5);
             transition: box-shadow 0.2s;
             position: relative;
         }
         
         .chip-label {
-            font-size: 10px;
-            margin-top: 4px;
+            font-size: 11px;
+            margin-top: 5px;
             font-weight: bold;
             text-shadow: 1px 1px 2px black;
             text-align: center;
@@ -562,30 +562,6 @@
             transition: width 0.5s ease;
         }
         
-        #substitution-windows-display {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            align-items: center;
-            gap: 5px;
-            background-color: rgba(0, 0, 0, 0.2);
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            font-size: 0.9em;
-            font-weight: bold;
-        }
-        
-        .sub-windows-half {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        #sub-windows-divider {
-            margin: 0 8px;
-        }
-        
         .window-box {
             display: inline-block;
             width: 20px;
@@ -669,17 +645,17 @@
             }
             
             .chip-circle {
-                width: 34px;
-                height: 34px;
-                font-size: 13px;
+                width: 45px;
+                height: 45px;
+                font-size: 16px;
             }
             
             .player-chip {
-                width: 48px;
+                width: 65px;
             }
             
             .chip-label {
-                font-size: 9px;
+                font-size: 10px;
             }
             
             #marcador {
@@ -734,83 +710,69 @@
             <h2>Pizarra Táctica</h2>
             <div id="event-flow-message" class="hidden"></div>
             <div id="basketball-court">
-                <div class="basketball-court-lines"><svg viewBox="0 0 100 50" preserveAspectRatio="xMidYMid meet">
-                    <!-- Fondo de la cancha -->
-                    <rect x="0" y="0" width="100" height="50" fill="var(--color-pitch)"/>
+                <div class="basketball-court-lines"><svg viewBox="0 0 280 150" preserveAspectRatio="xMidYMid meet">
+                    <!-- Fondo de la cancha (parquet suave) -->
+                    <rect x="0" y="0" width="280" height="150" fill="var(--color-pitch)"/>
                     
-                    <!-- Líneas exteriores (rectángulo completo) -->
-                    <rect x="0" y="0" width="100" height="50" stroke="var(--color-pitch-lines)" stroke-width="1" fill="none"/>
+                    <!-- Líneas exteriores de la cancha -->
+                    <rect x="0" y="0" width="280" height="150" stroke="var(--color-pitch-lines)" stroke-width="2" fill="none"/>
                     
                     <!-- Línea central (mitad de cancha) -->
-                    <line x1="50" y1="0" x2="50" y2="50" stroke="var(--color-pitch-lines)" stroke-width="1"/>
+                    <line x1="140" y1="0" x2="140" y2="150" stroke="var(--color-pitch-lines)" stroke-width="2"/>
                     
                     <!-- Círculo central -->
-                    <circle cx="50" cy="25" r="6" stroke="var(--color-pitch-lines)" stroke-width="1" fill="none"/>
-                    <circle cx="50" cy="25" r="0.6" fill="var(--color-pitch-lines)"/>
+                    <circle cx="140" cy="75" r="18" stroke="var(--color-pitch-lines)" stroke-width="2" fill="none"/>
+                    <circle cx="140" cy="75" r="2" fill="var(--color-pitch-lines)"/>
                     
-                    <!-- Zona izquierda (local) - Campo de ataque del equipo local -->
-                    <!-- Línea de fondo izquierda (ya incluida en el rectángulo exterior) -->
+                    <!-- ZONA IZQUIERDA (Equipo Local) -->
+                    <!-- Línea de tiros libres (paralela a la línea de fondo, a 5.8m del fondo) -->
+                    <line x1="0" y1="52.5" x2="58" y2="52.5" stroke="var(--color-pitch-lines)" stroke-width="2"/>
+                    <line x1="0" y1="97.5" x2="58" y2="97.5" stroke="var(--color-pitch-lines)" stroke-width="2"/>
                     
-                    <!-- Línea de tiros libres (paralela a la línea de fondo, a 5.8 unidades del fondo) -->
-                    <line x1="0" y1="17.5" x2="19" y2="17.5" stroke="var(--color-pitch-lines)" stroke-width="1"/>
-                    <line x1="0" y1="32.5" x2="19" y2="32.5" stroke="var(--color-pitch-lines)" stroke-width="1"/>
+                    <!-- Zona restringida (la "pintura" o "key") - rectángulo de 4.9m de ancho -->
+                    <rect x="0" y="52.5" width="58" height="45" stroke="var(--color-pitch-lines)" stroke-width="2" fill="none"/>
                     
-                    <!-- Zona restringida (la "pintura" o "key") - rectángulo -->
-                    <rect x="0" y="17.5" width="19" height="15" stroke="var(--color-pitch-lines)" stroke-width="1" fill="none"/>
-                    
-                    <!-- Círculo de tiros libres (semicírculo superior de la zona restringida) -->
-                    <path d="M 0 17.5 A 6 6 0 0 1 0 32.5" stroke="var(--color-pitch-lines)" stroke-width="1" fill="none"/>
+                    <!-- Círculo de tiros libres (semicírculo de radio 1.8m) -->
+                    <path d="M 0 52.5 A 18 18 0 0 1 0 97.5" stroke="var(--color-pitch-lines)" stroke-width="2" fill="none"/>
                     
                     <!-- Canasta izquierda (aro) -->
-                    <circle cx="5.8" cy="25" r="1.3" stroke="var(--color-pitch-lines)" stroke-width="1" fill="none"/>
+                    <circle cx="15" cy="75" r="4" stroke="var(--color-pitch-lines)" stroke-width="2" fill="none"/>
                     <!-- Línea desde la línea de fondo hasta el aro -->
-                    <line x1="0" y1="25" x2="5.8" y2="25" stroke="var(--color-pitch-lines)" stroke-width="1"/>
+                    <line x1="0" y1="75" x2="15" y2="75" stroke="var(--color-pitch-lines)" stroke-width="2"/>
                     
-                    <!-- Línea de 3 puntos (arco desde la línea de fondo) -->
-                    <path d="M 0 3.5 A 23.75 23.75 0 0 1 0 46.5" stroke="var(--color-pitch-lines)" stroke-width="1" fill="none"/>
+                    <!-- Línea de 3 puntos (arco de radio 6.75m desde el centro del aro) -->
+                    <path d="M 0 10.5 A 67.5 67.5 0 0 1 0 139.5" stroke="var(--color-pitch-lines)" stroke-width="2" fill="none"/>
                     <!-- Líneas rectas de 3 puntos (paralelas a las líneas laterales) -->
-                    <line x1="0" y1="3.5" x2="23.75" y2="3.5" stroke="var(--color-pitch-lines)" stroke-width="1"/>
-                    <line x1="0" y1="46.5" x2="23.75" y2="46.5" stroke="var(--color-pitch-lines)" stroke-width="1"/>
+                    <line x1="0" y1="10.5" x2="67.5" y2="10.5" stroke="var(--color-pitch-lines)" stroke-width="2"/>
+                    <line x1="0" y1="139.5" x2="67.5" y2="139.5" stroke="var(--color-pitch-lines)" stroke-width="2"/>
                     
-                    <!-- Zona derecha (rival) - Campo de ataque del equipo rival -->
-                    <!-- Línea de fondo derecha (ya incluida en el rectángulo exterior) -->
+                    <!-- ZONA DERECHA (Equipo Rival) -->
+                    <!-- Línea de tiros libres -->
+                    <line x1="280" y1="52.5" x2="222" y2="52.5" stroke="var(--color-pitch-lines)" stroke-width="2"/>
+                    <line x1="280" y1="97.5" x2="222" y2="97.5" stroke="var(--color-pitch-lines)" stroke-width="2"/>
                     
-                    <!-- Línea de tiros libres (paralela a la línea de fondo, a 5.8 unidades del fondo) -->
-                    <line x1="100" y1="17.5" x2="81" y2="17.5" stroke="var(--color-pitch-lines)" stroke-width="1"/>
-                    <line x1="100" y1="32.5" x2="81" y2="32.5" stroke="var(--color-pitch-lines)" stroke-width="1"/>
+                    <!-- Zona restringida (la "pintura" o "key") -->
+                    <rect x="222" y="52.5" width="58" height="45" stroke="var(--color-pitch-lines)" stroke-width="2" fill="none"/>
                     
-                    <!-- Zona restringida (la "pintura" o "key") - rectángulo -->
-                    <rect x="81" y="17.5" width="19" height="15" stroke="var(--color-pitch-lines)" stroke-width="1" fill="none"/>
-                    
-                    <!-- Círculo de tiros libres (semicírculo superior de la zona restringida) -->
-                    <path d="M 100 17.5 A 6 6 0 0 0 100 32.5" stroke="var(--color-pitch-lines)" stroke-width="1" fill="none"/>
+                    <!-- Círculo de tiros libres (semicírculo) -->
+                    <path d="M 280 52.5 A 18 18 0 0 0 280 97.5" stroke="var(--color-pitch-lines)" stroke-width="2" fill="none"/>
                     
                     <!-- Canasta derecha (aro) -->
-                    <circle cx="94.2" cy="25" r="1.3" stroke="var(--color-pitch-lines)" stroke-width="1" fill="none"/>
+                    <circle cx="265" cy="75" r="4" stroke="var(--color-pitch-lines)" stroke-width="2" fill="none"/>
                     <!-- Línea desde la línea de fondo hasta el aro -->
-                    <line x1="100" y1="25" x2="94.2" y2="25" stroke="var(--color-pitch-lines)" stroke-width="1"/>
+                    <line x1="280" y1="75" x2="265" y2="75" stroke="var(--color-pitch-lines)" stroke-width="2"/>
                     
-                    <!-- Línea de 3 puntos (arco desde la línea de fondo) -->
-                    <path d="M 100 3.5 A 23.75 23.75 0 0 0 100 46.5" stroke="var(--color-pitch-lines)" stroke-width="1" fill="none"/>
-                    <!-- Líneas rectas de 3 puntos (paralelas a las líneas laterales) -->
-                    <line x1="100" y1="3.5" x2="76.25" y2="3.5" stroke="var(--color-pitch-lines)" stroke-width="1"/>
-                    <line x1="100" y1="46.5" x2="76.25" y2="46.5" stroke="var(--color-pitch-lines)" stroke-width="1"/>
+                    <!-- Línea de 3 puntos (arco) -->
+                    <path d="M 280 10.5 A 67.5 67.5 0 0 0 280 139.5" stroke="var(--color-pitch-lines)" stroke-width="2" fill="none"/>
+                    <!-- Líneas rectas de 3 puntos -->
+                    <line x1="280" y1="10.5" x2="212.5" y2="10.5" stroke="var(--color-pitch-lines)" stroke-width="2"/>
+                    <line x1="280" y1="139.5" x2="212.5" y2="139.5" stroke="var(--color-pitch-lines)" stroke-width="2"/>
                 </svg></div>
             </div>
             <div id="bench-container"><div id="local-bench" class="bench"></div><div id="rival-bench" class="bench"></div></div>
         </section>
 
         <section id="game-controls" class="hidden">
-            <div id="substitution-windows-display">
-                <span>Ventanas (Local):</span>
-                <div id="sub-windows-first-half" class="sub-windows-half">
-                    <span style="margin-left: 5px;">1ªP:</span>
-                </div>
-                <span id="sub-windows-divider" class="hidden">|</span>
-                <div id="sub-windows-second-half" class="sub-windows-half hidden">
-                    <span style="margin-left: 5px;">2ªP:</span>
-                </div>
-            </div>
              <div class="event-group">
                   <button class="btn-event" data-event="basket-3">CANASTA 3PT 🏀</button>
                   <button class="btn-event" data-event="basket-2">CANASTA 2PT 🏀</button>
@@ -920,10 +882,7 @@
         QUARTER_DURATION_MINUTES: 10,
         QUARTER_DURATION_SECONDS: 10 * 60,
         MAX_QUARTERS: 4,
-        SUBSTITUTION_WINDOW_SECONDS: 25,
         MAX_PLAYERS_ON_PITCH: 5,
-        MAX_SUBSTITUTION_WINDOWS: 4,
-        MAX_SUBSTITUTION_WINDOWS_SECOND_HALF: 3,
         APP_STATE_KEY: 'basketballTacticoState_v1',
         TIMER_INTERVAL_MS: 1000,
         MAX_TIME_MINUTES: 120,
@@ -953,7 +912,6 @@
                 matchTimer: 0, timerStartTime: 0, timerBaseTime: 0, isMatchRunning: false,
                 currentQuarter: 1, timerInterval: null, lastMinuteCheck: -1,
                 matchEvents: [], eventFlow: { active: false },
-                substitutionWindows: { usedFirstHalf: 0, usedSecondHalf: 0 },
                 eliminatedPlayers: { local: [], rival: [] }
             };
         },
@@ -996,8 +954,6 @@
                 'btn-end-quarter', 'btn-start-next-quarter', 'btn-finish-game', 'btn-reset-match', 'btn-new-match', 
                 'btn-export-excel', 'local-name', 'rival-name-display', 'local-score', 'rival-score',
                 'local-stats-title', 'rival-stats-title', 'local-stats-table', 'rival-stats-table',
-                'substitution-windows-display',
-                'sub-windows-first-half', 'sub-windows-second-half', 'sub-windows-divider',
                 'time-editor-modal', 'time-editor-min', 'time-editor-sec',
                 'save-time-btn', 'cancel-time-btn', 'edit-event-modal', 'edit-event-title', 'edit-event-content',
                 'save-edit-btn', 'cancel-edit-btn',
@@ -1027,23 +983,15 @@
             this.renderTimeline();
             this.updateDocumentTitle();
             this.updateTeamView();
-            this.updateSubstitutionWindowsUI();
         },
         updateTimerDisplay() {
             const state = AppState.get();
             const mainTimerEl = this.elements['minuto-actual'];
-            const addedTimeEl = this.elements['added-time'];
-            
-            const quarterTimeLimit = state.currentQuarter * AppConfig.QUARTER_DURATION_SECONDS;
-            
-            if (state.matchTimer >= quarterTimeLimit) {
-                mainTimerEl.value = MatchLogic.formatTime(quarterTimeLimit);
-                const addedSeconds = state.matchTimer - quarterTimeLimit;
-                addedTimeEl.textContent = `+${MatchLogic.formatTime(addedSeconds)}`;
-                addedTimeEl.classList.remove('hidden');
+            // Timer regresivo: mostrar tiempo restante directamente
+            if (state.matchTimer <= 0) {
+                mainTimerEl.value = '00:00';
             } else {
                 mainTimerEl.value = MatchLogic.formatTime(state.matchTimer);
-                addedTimeEl.classList.add('hidden');
             }
         },
         setupBenchesAndPitch() {
@@ -1066,15 +1014,14 @@
         placeInitialFivePlayers() {
             const state = AppState.get();
             
-            // Posiciones iniciales del equipo LOCAL (lado izquierdo de la cancha, su campo de ataque)
-            // Formación básica: Base, Escolta, Alero, Ala-pívot, Pívot
-            // Todos los jugadores en el lado izquierdo (x < 50%)
+            // Posiciones iniciales del equipo LOCAL (lado izquierdo de la cancha)
+            // Formación en estrella: Base en el centro, otros 4 formando una estrella alrededor
             const localPositions = [
-                { left: '25%', top: '20%' },   // Base (centro del campo de ataque)
-                { left: '35%', top: '15%' },   // Escolta (derecha superior)
-                { left: '15%', top: '15%' },   // Alero (izquierda superior)
-                { left: '30%', top: '60%' },   // Ala-pívot (derecha inferior)
-                { left: '20%', top: '70%' }    // Pívot (izquierda inferior, cerca de la canasta)
+                { left: '20%', top: '50%' },   // Base (centro, punto central de la estrella)
+                { left: '12%', top: '30%' },   // Escolta (arriba-izquierda)
+                { left: '28%', top: '30%' },   // Alero (arriba-derecha)
+                { left: '12%', top: '70%' },   // Ala-pívot (abajo-izquierda)
+                { left: '28%', top: '70%' }    // Pívot (abajo-derecha)
             ];
             
             // Colocar 5 jugadores del equipo local en su lado de la cancha
@@ -1092,15 +1039,14 @@
                 }
             });
             
-            // Posiciones iniciales del equipo RIVAL (lado derecho de la cancha, su campo de ataque)
-            // Formación básica: Base, Escolta, Alero, Ala-pívot, Pívot
-            // Todos los jugadores en el lado derecho (x > 50%)
+            // Posiciones iniciales del equipo RIVAL (lado derecho de la cancha)
+            // Formación en estrella: Base en el centro, otros 4 formando una estrella alrededor
             const rivalPositions = [
-                { left: '75%', top: '20%' },   // Base (centro del campo de ataque)
-                { left: '65%', top: '15%' },   // Escolta (izquierda superior)
-                { left: '85%', top: '15%' },   // Alero (derecha superior)
-                { left: '70%', top: '60%' },   // Ala-pívot (izquierda inferior)
-                { left: '80%', top: '70%' }   // Pívot (derecha inferior, cerca de la canasta)
+                { left: '80%', top: '50%' },   // Base (centro, punto central de la estrella)
+                { left: '72%', top: '30%' },   // Escolta (arriba-izquierda)
+                { left: '88%', top: '30%' },   // Alero (arriba-derecha)
+                { left: '72%', top: '70%' },   // Ala-pívot (abajo-izquierda)
+                { left: '88%', top: '70%' }    // Pívot (abajo-derecha)
             ];
             
             // Colocar 5 jugadores del equipo rival en su lado de la cancha
@@ -1129,15 +1075,15 @@
 
             const circle = document.createElement('div');
             circle.className = 'chip-circle';
+            // Siempre mostrar el nombre/dorsal en el círculo
+            circle.textContent = name;
+            chip.appendChild(circle);
             
-            if (this.isNumeric(name)) {
-                circle.textContent = name;
-                chip.appendChild(circle);
-            } else {
+            // También mostrar el nombre debajo si no es numérico
+            if (!this.isNumeric(name)) {
                 const label = document.createElement('span');
                 label.className = 'chip-label';
                 label.textContent = name;
-                chip.appendChild(circle);
                 chip.appendChild(label);
             }
 
@@ -1466,72 +1412,6 @@
                 chip.style.display = 'flex';
             });
         },
-        calculateAvailableWindows() {
-            const state = AppState.get();
-            const { usedFirstHalf, usedSecondHalf } = state.substitutionWindows;
-            const firstHalfAvailable = Math.max(0, AppConfig.MAX_SUBSTITUTION_WINDOWS - usedFirstHalf);
-            
-            if (state.currentQuarter <= 2) {
-                return { firstHalf: firstHalfAvailable, secondHalf: 0 };
-            }
-            
-            const maxSecondHalf = Math.max(0, AppConfig.MAX_SUBSTITUTION_WINDOWS_SECOND_HALF - usedFirstHalf);
-            const secondHalfAvailable = Math.max(0, maxSecondHalf - usedSecondHalf);
-            return { firstHalf: firstHalfAvailable, secondHalf: secondHalfAvailable };
-        },
-        updateSubstitutionWindowsUI() {
-            const state = AppState.get();
-            const { usedFirstHalf, usedSecondHalf } = state.substitutionWindows;
-
-            const setupHalf = (container, usedCount, totalSlots, halfNumber) => {
-                container.querySelectorAll('.window-box').forEach(box => box.remove());
-                
-                for (let i = 1; i <= totalSlots; i++) {
-                    const box = document.createElement('span');
-                    box.className = 'window-box';
-                    
-                    if (i <= usedCount) {
-                        box.textContent = '✓';
-                        box.classList.add('used', 'can-undo');
-                        box.dataset.half = halfNumber;
-                        box.onclick = () => EventHandler.handleUndoSubstitutionWindow(halfNumber);
-                        box.title = 'Hacer clic para deshacer esta ventana';
-                    } else {
-                        box.textContent = '○';
-                    }
-                    container.appendChild(box);
-                }
-            };
-            
-            const firstHalfContainer = this.elements['sub-windows-first-half'];
-            const secondHalfContainer = this.elements['sub-windows-second-half'];
-            const divider = this.elements['sub-windows-divider'];
-            
-            if (state.currentQuarter <= 2) {
-                firstHalfContainer.classList.remove('hidden');
-                divider.classList.add('hidden');
-                secondHalfContainer.classList.add('hidden');
-                setupHalf(firstHalfContainer, usedFirstHalf, AppConfig.MAX_SUBSTITUTION_WINDOWS, 1);
-            } else {
-                const maxSecondHalf = Math.max(0, AppConfig.MAX_SUBSTITUTION_WINDOWS - usedFirstHalf);
-                
-                if (usedFirstHalf > 0) {
-                    firstHalfContainer.classList.remove('hidden');
-                    divider.classList.remove('hidden');
-                    setupHalf(firstHalfContainer, usedFirstHalf, usedFirstHalf, 1);
-                } else {
-                    firstHalfContainer.classList.add('hidden');
-                    divider.classList.add('hidden');
-                }
-                
-                if (maxSecondHalf > 0) {
-                    secondHalfContainer.classList.remove('hidden');
-                    setupHalf(secondHalfContainer, usedSecondHalf, maxSecondHalf, 2);
-                } else {
-                    secondHalfContainer.classList.add('hidden');
-                }
-            }
-        },
     };
 
     const MatchLogic = {
@@ -1605,9 +1485,8 @@
             const state = AppState.get();
             clearInterval(state.timerInterval);
             
-            // Variable para rastrear el último tiempo en que se hizo recálculo completo
             let lastFullRecalculation = state.matchTimer;
-            const FULL_RECALCULATION_INTERVAL = 60; // Recalcular completamente cada 60 segundos
+            const FULL_RECALCULATION_INTERVAL = 60;
             
             state.timerInterval = setInterval(() => {
                 if (!state.isMatchRunning) {
@@ -1618,24 +1497,21 @@
                 
                 const elapsedSeconds = Math.floor((Date.now() - state.timerStartTime) / 1000);
                 const previousTimer = state.matchTimer;
-                state.matchTimer = state.timerBaseTime + elapsedSeconds;
+                // Timer regresivo: cuenta hacia atrás desde timerBaseTime
+                state.matchTimer = Math.max(0, state.timerBaseTime - elapsedSeconds);
 
-                // Optimización: Usar actualización incremental cuando sea posible
-                const timeSinceFullRecalc = state.matchTimer - lastFullRecalculation;
-                const timeDelta = state.matchTimer - previousTimer;
+                const timeSinceFullRecalc = Math.abs(state.matchTimer - lastFullRecalculation);
+                const timeDelta = Math.abs(state.matchTimer - previousTimer);
                 
                 if (state.matchTimer !== previousTimer) {
-                    // Si ha pasado suficiente tiempo, hacer recálculo completo para asegurar precisión
                     if (timeSinceFullRecalc >= FULL_RECALCULATION_INTERVAL) {
                         this.rebuildAndRecalculateAllState();
                         lastFullRecalculation = state.matchTimer;
                     } else if (timeDelta > 0 && timeDelta <= 5) {
-                        // Actualización incremental para cambios pequeños (más eficiente)
                         this.adjustPlayerMinutes(timeDelta);
                         DOM.updateTimerDisplay();
                         DOM.updateStatsTables();
                     } else {
-                        // Si el cambio es grande o inesperado, recalcular completamente
                         this.rebuildAndRecalculateAllState();
                         lastFullRecalculation = state.matchTimer;
                     }
@@ -1643,18 +1519,17 @@
                     DOM.updateTimerDisplay();
                 }
                 
-                // Verificar si ha llegado el fin del cuarto o final
-                const quarterTimeLimit = state.currentQuarter * AppConfig.QUARTER_DURATION_SECONDS;
-                if (state.matchTimer >= quarterTimeLimit && state.currentQuarter < AppConfig.MAX_QUARTERS) {
-                    this.handleEndQuarter();
-                } else if (state.currentQuarter >= AppConfig.MAX_QUARTERS && state.matchTimer >= quarterTimeLimit) {
-                    this.handleFinishGame();
+                // Verificar si el tiempo llegó a 0 (fin del cuarto)
+                if (state.matchTimer <= 0) {
+                    if (state.currentQuarter < AppConfig.MAX_QUARTERS) {
+                        this.handleEndQuarter();
+                    } else {
+                        this.handleFinishGame();
+                    }
                 }
                 
                 DOM.updateDocumentTitle();
                 
-                // Guardar estado con menos frecuencia para mejor rendimiento
-                // Solo guardar cada 5 segundos o cuando sea crítico
                 if (state.matchTimer % 5 === 0 || !state.isMatchRunning) {
                     AppState.save();
                 }
@@ -1665,7 +1540,11 @@
             if (state.isMatchRunning) return;
             state.isMatchRunning = true;
             state.timerStartTime = Date.now();
-            state.timerBaseTime = state.matchTimer;
+            // Timer regresivo: si no hay tiempo base, iniciar desde la duración del cuarto
+            if (state.timerBaseTime === 0) {
+                state.timerBaseTime = AppConfig.QUARTER_DURATION_SECONDS;
+                state.matchTimer = AppConfig.QUARTER_DURATION_SECONDS;
+            }
             this._createTimerInterval();
             DOM.updateButtonStates();
             AppState.save();
@@ -1674,12 +1553,11 @@
             const state = AppState.get();
             if (!state.isMatchRunning) return;
             const elapsedSeconds = Math.floor((Date.now() - state.timerStartTime) / 1000);
-            state.matchTimer = state.timerBaseTime + elapsedSeconds;
+            // Timer regresivo: restar el tiempo transcurrido
+            state.matchTimer = Math.max(0, state.timerBaseTime - elapsedSeconds);
             state.isMatchRunning = false;
             clearInterval(state.timerInterval);
             state.timerInterval = null;
-            // CRÍTICO: Recalcular completamente al detener el timer
-            // Esto asegura que los minutos jugados sean precisos
             this.rebuildAndRecalculateAllState();
             DOM.updateButtonStates();
             AppState.save();
@@ -1706,7 +1584,7 @@
                     e.team === eventData.team &&
                     e.playerIn === eventData.playerIn &&
                     e.playerOut === eventData.playerOut &&
-                    Math.abs(e.timeInSeconds - state.matchTimer) < 2 // Mismo tiempo (2 segundos de margen)
+                    Math.abs(e.timeInSeconds - (AppConfig.QUARTER_DURATION_SECONDS - state.matchTimer)) < 2
                 );
                 if (duplicate) {
                     console.warn('Evento de sustitución duplicado detectado y omitido');
@@ -1714,7 +1592,9 @@
                 }
             }
             
-            const event = { id: Date.now(), timeInSeconds: state.matchTimer, ...eventData };
+            // Timer regresivo: convertir tiempo restante a tiempo transcurrido desde inicio del cuarto
+            const timeElapsed = AppConfig.QUARTER_DURATION_SECONDS - state.matchTimer;
+            const event = { id: Date.now(), timeInSeconds: timeElapsed, ...eventData };
             event.minute = Math.floor(event.timeInSeconds / 60);
             event.text = this.generateEventText(event);
             state.matchEvents.push(event); 
@@ -1797,10 +1677,11 @@
                 return;
             }
 
-            // NUEVA LÓGICA MEJORADA: Calcular minutos jugados de forma más precisa
+            // Timer regresivo: convertir tiempo restante a tiempo transcurrido
+            const timeElapsed = AppConfig.QUARTER_DURATION_SECONDS - state.matchTimer;
             // Filtrar y ordenar eventos válidos hasta el tiempo actual
             const validEvents = state.matchEvents
-                .filter(e => e.timeInSeconds >= 0 && e.timeInSeconds <= state.matchTimer)
+                .filter(e => e.timeInSeconds >= 0 && e.timeInSeconds <= timeElapsed)
                 .sort((a, b) => a.timeInSeconds - b.timeInSeconds);
             
             // Encontrar el evento de inicio del partido
@@ -1811,7 +1692,6 @@
             }
             
             let lastTime = initMatchEvent.timeInSeconds;
-            let lastLocalSubTime = 0;
             
             // Procesar cada evento en orden cronológico
             for (const event of validEvents) {
@@ -1848,9 +1728,6 @@
                 // Procesar el evento según su tipo
                 switch (event.type) {
                     case 'substitution':
-                        if (event.team === 'local' && (event.timeInSeconds - lastLocalSubTime) > AppConfig.SUBSTITUTION_WINDOW_SECONDS) {
-                            lastLocalSubTime = event.timeInSeconds;
-                        }
                         const statsOut = teamPStats?.[event.playerOut];
                         const statsIn = teamPStats?.[event.playerIn];
                         
@@ -1932,9 +1809,8 @@
                 lastTime = event.timeInSeconds;
             }
 
-            // CRÍTICO: Sumar el tiempo restante desde el último evento hasta el tiempo actual
-            // Esto incluye cualquier tiempo de descuento o tiempo adicional
-            const finalTimeDelta = state.matchTimer - lastTime;
+            // Timer regresivo: calcular tiempo transcurrido desde último evento
+            const finalTimeDelta = timeElapsed - lastTime;
             if (finalTimeDelta > 0) {
                 this.adjustPlayerMinutes(finalTimeDelta);
             }
@@ -2080,11 +1956,9 @@
         handleEndQuarter() {
             MatchLogic.stopTimer();
             const state = AppState.get();
-            const quarterTimeLimit = state.currentQuarter * AppConfig.QUARTER_DURATION_SECONDS;
-            if (state.matchTimer < quarterTimeLimit) {
-                state.matchTimer = quarterTimeLimit;
-            }
-            state.timerBaseTime = state.matchTimer;
+            // Timer regresivo: resetear a 0 al final del cuarto
+            state.matchTimer = 0;
+            state.timerBaseTime = 0;
             MatchLogic.addMatchEvent({ type: 'control', text: `Fin del ${state.currentQuarter}º cuarto.` });
             if (state.currentQuarter < AppConfig.MAX_QUARTERS) {
                 state.currentQuarter++;
@@ -2092,26 +1966,22 @@
             MatchLogic.rebuildAndRecalculateAllState();
         },
         handleStartNextQuarter() {
-            MatchLogic.addMatchEvent({ type: 'control', text: `Inicio del ${AppState.get().currentQuarter}º cuarto.` });
+            const state = AppState.get();
+            // Timer regresivo: resetear al inicio del nuevo cuarto
+            state.matchTimer = AppConfig.QUARTER_DURATION_SECONDS;
+            state.timerBaseTime = AppConfig.QUARTER_DURATION_SECONDS;
+            MatchLogic.addMatchEvent({ type: 'control', text: `Inicio del ${state.currentQuarter}º cuarto.` });
             MatchLogic.startTimer();
         },
         handleFinishGame() {
             MatchLogic.stopTimer();
             const state = AppState.get();
-            // Asegurar que el tiempo esté al menos en el tiempo completo
-            // Pero NO forzar si hay descuento - mantener el tiempo real jugado
-            const fullTimeLimit = AppConfig.MAX_QUARTERS * AppConfig.QUARTER_DURATION_SECONDS;
-            if (state.matchTimer < fullTimeLimit) {
-                state.matchTimer = fullTimeLimit;
-            }
-            // El timerBaseTime debe ser el tiempo real jugado (puede incluir descuento)
-            state.timerBaseTime = state.matchTimer;
+            // Timer regresivo: al final, el tiempo debe ser 0
+            state.matchTimer = 0;
+            state.timerBaseTime = 0;
             MatchLogic.addMatchEvent({ type: 'control', text: 'Final del partido.' });
             DOM.elements['btn-export-excel'].classList.remove('hidden');
-            // CRÍTICO: Recalcular todos los minutos jugados hasta el final
-            // Esto asegura que todos los jugadores tengan el tiempo correcto, incluyendo descuentos
             MatchLogic.rebuildAndRecalculateAllState();
-            // Forzar actualización de todas las tablas después del recálculo
             DOM.updateAll();
             AppState.save();
         },
@@ -2213,20 +2083,8 @@
 
                 if (!eventToDelete) return;
 
-                const shouldPreserveWindows = eventToDelete.type === 'substitution';
-                let preservedWindows = null;
-                if (shouldPreserveWindows) {
-                    preservedWindows = { ...state.substitutionWindows };
-                }
-
                 state.matchEvents = state.matchEvents.filter(e => e.id != eventId);
-                
                 MatchLogic.rebuildAndRecalculateAllState();
-
-                if (shouldPreserveWindows && preservedWindows) {
-                    state.substitutionWindows = preservedWindows;
-                    DOM.updateSubstitutionWindowsUI();
-                }
 
                 AppState.save();
             }
@@ -2333,23 +2191,13 @@
             };
             modal.classList.add('visible');
         },
-        handleUndoSubstitutionWindow(halfNumber) {
-            if (confirm("¿Estás seguro de que quieres deshacer el uso de esta ventana de cambio? Esto NO afectará a la cronología del partido.")) {
-                const state = AppState.get();
-                if (halfNumber == 1 && state.substitutionWindows.usedFirstHalf > 0) {
-                    state.substitutionWindows.usedFirstHalf--;
-                } else if (halfNumber == 2 && state.substitutionWindows.usedSecondHalf > 0) {
-                    state.substitutionWindows.usedSecondHalf--;
-                }
-                DOM.updateSubstitutionWindowsUI();
-                AppState.save();
-            }
-        },
         handleTimeClick() {
             const state = AppState.get();
             if (!state.isMatchRunning && state.matchEvents.some(e => e.type === 'init_match')) {
-                const mins = Math.floor(state.matchTimer / 60);
-                const secs = state.matchTimer % 60;
+                // Timer regresivo: mostrar tiempo restante
+                const timeRemaining = state.matchTimer;
+                const mins = Math.floor(timeRemaining / 60);
+                const secs = timeRemaining % 60;
                 DOM.elements['time-editor-min'].value = mins.toString().padStart(2,'0');
                 DOM.elements['time-editor-sec'].value = secs.toString().padStart(2,'0');
                 DOM.elements['time-editor-modal'].classList.add('visible');
@@ -2397,21 +2245,23 @@
                 const secInput = DOM.elements['time-editor-sec'];
                 const newMins = parseInt(minInput.value) || 0;
                 const newSecs = parseInt(secInput.value) || 0;
-                const newTotalSeconds = (newMins * 60) + newSecs;
+                // Timer regresivo: el usuario edita el tiempo restante
+                const timeRemaining = (newMins * 60) + newSecs;
+                const timeElapsed = AppConfig.QUARTER_DURATION_SECONDS - timeRemaining;
                 
                 const state = AppState.get();
                 const lastEventTime = state.matchEvents
                     .filter(e => e.type !== 'control')
                     .at(-1)?.timeInSeconds || 0;
                     
-                if (newTotalSeconds < lastEventTime) {
+                if (timeElapsed < lastEventTime) {
                     alert("El tiempo no puede ser anterior al último evento registrado.");
                     return;
                 }
                 
-                // Actualizar el tiempo del partido
-                state.matchTimer = newTotalSeconds;
-                state.timerBaseTime = newTotalSeconds;
+                // Timer regresivo: actualizar con tiempo restante
+                state.matchTimer = Math.max(0, Math.min(timeRemaining, AppConfig.QUARTER_DURATION_SECONDS));
+                state.timerBaseTime = state.matchTimer;
                 
                 // Si el partido estaba corriendo, actualizar el timerStartTime
                 // para que continúe desde el nuevo tiempo
@@ -2627,38 +2477,6 @@
                 }
                 const onPitchPlayerName = statsIn.onPitch ? playerInName : playerOutName;
                 const onBenchPlayerName = statsIn.onPitch ? playerOutName : playerInName;
-                
-                // Verificar y contar ventanas para el equipo local
-                if (team === 'local') {
-                    const localSubs = state.matchEvents.filter(e => e.type === 'substitution' && e.team === 'local');
-                    const lastLocalSub = localSubs[localSubs.length - 1];
-                    const isNewWindow = !lastLocalSub || (state.matchTimer - lastLocalSub.timeInSeconds) > AppConfig.SUBSTITUTION_WINDOW_SECONDS;
-                    
-                        if (isNewWindow) {
-                            const { usedFirstHalf, usedSecondHalf } = state.substitutionWindows;
-                            const totalUsed = usedFirstHalf + usedSecondHalf;
-                            
-                            if (totalUsed >= AppConfig.MAX_SUBSTITUTION_WINDOWS) {
-                                alert(`Has agotado las ${AppConfig.MAX_SUBSTITUTION_WINDOWS} ventanas de cambios del partido.`);
-                                return;
-                            }
-                            
-                            if (state.currentQuarter <= 2) {
-                                if (usedFirstHalf >= AppConfig.MAX_SUBSTITUTION_WINDOWS) {
-                                    alert(`Has agotado las ${AppConfig.MAX_SUBSTITUTION_WINDOWS} ventanas de cambios de la primera parte.`);
-                                    return;
-                                }
-                                state.substitutionWindows.usedFirstHalf++;
-                            } else {
-                                const maxSecondHalf = AppConfig.MAX_SUBSTITUTION_WINDOWS - usedFirstHalf;
-                                if (usedSecondHalf >= maxSecondHalf) {
-                                    alert(`Has agotado las ventanas de cambios para la 2ª parte. Disponibles: ${maxSecondHalf}`);
-                                    return;
-                                }
-                                state.substitutionWindows.usedSecondHalf++;
-                            }
-                        }
-                }
                 
                 MatchLogic.addMatchEvent({ type: 'substitution', playerIn: onBenchPlayerName, playerOut: onPitchPlayerName, team });
                 MatchLogic.rebuildAndRecalculateAllState();
