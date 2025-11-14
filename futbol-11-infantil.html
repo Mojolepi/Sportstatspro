@@ -2003,12 +2003,16 @@
         handleHalfTime() {
             MatchLogic.stopTimer();
             const state = AppState.get();
-            // Ajustar el tiempo al minuto 35 (descanso)
-            state.matchTimer = AppConfig.HALF_TIME_SECONDS;
-            state.timerBaseTime = AppConfig.HALF_TIME_SECONDS;
+            // NO forzar el tiempo a 35 minutos - mantener el tiempo real jugado (incluyendo descuento)
+            // Solo asegurarnos de que sea al menos el tiempo de la primera parte
+            if (state.matchTimer < AppConfig.HALF_TIME_SECONDS) {
+                state.matchTimer = AppConfig.HALF_TIME_SECONDS;
+            }
+            // El timerBaseTime debe ser el tiempo real jugado, no forzado a HALF_TIME_SECONDS
+            state.timerBaseTime = state.matchTimer;
             MatchLogic.addMatchEvent({ type: 'control', text: 'Descanso.' });
             state.currentHalf = 2;
-            // Recalcular todos los minutos jugados hasta el descanso
+            // Recalcular todos los minutos jugados hasta el descanso (incluyendo tiempo de descuento)
             MatchLogic.rebuildAndRecalculateAllState();
         },
         handleStartSecondHalf() {
@@ -2019,9 +2023,11 @@
             MatchLogic.stopTimer();
             const state = AppState.get();
             // Asegurar que el tiempo esté al menos en el tiempo completo
+            // Pero NO forzar si hay descuento - mantener el tiempo real jugado
             if (state.matchTimer < AppConfig.FULL_TIME_SECONDS) {
                 state.matchTimer = AppConfig.FULL_TIME_SECONDS;
             }
+            // El timerBaseTime debe ser el tiempo real jugado (puede incluir descuento)
             state.timerBaseTime = state.matchTimer;
             MatchLogic.addMatchEvent({ type: 'control', text: 'Final del partido.' });
             DOM.elements['btn-export-excel'].classList.remove('hidden');
