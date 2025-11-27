@@ -15,8 +15,13 @@
             --color-danger: #dc3545;
             --color-warning: #ffc107;
             --color-text: #f8f9fa;
-            --color-pitch: #e8d5b7;
-            --color-pitch-lines: rgba(255, 255, 255, 0.9);
+            --color-pitch: #d4a574;
+            --color-pitch-lines: rgba(255, 255, 255, 0.95);
+            /* Colores de la cancha */
+            --color-wood-light: #d6b586;
+            --color-wood-dark: #b89060;
+            --color-paint-zone: #b89060; /* Rojo zona FIBA */
+            --color-lines: #ffffff;
         }
         
         *,
@@ -230,16 +235,21 @@
         #basketball-court {
             position: relative;
             width: 100%;
-            aspect-ratio: 280 / 150;
-            background-color: var(--color-pitch);
-            border: 3px solid var(--color-pitch-lines);
-            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.3);
+            /* Aspect ratio de baloncesto aproximado */
+            aspect-ratio: 28 / 15; 
+            /* Fondo de seguridad por si falla el canvas */
+            background-color: #d6b586; 
+            border-radius: 8px;
             overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
         }
         
-        .basketball-court-lines svg {
+        #basketball-court-canvas {
             width: 100%;
             height: 100%;
+            cursor: default;
+            display: block;
+            border-radius: 8px;
         }
         
         
@@ -687,9 +697,9 @@
             <label for="rival-name">Nombre Rival:</label>
             <input type="text" id="rival-name" value="Equipo Rival">
             <label for="local-players">Jugadores Locales (Nombres o dorsales separados por coma):</label>
-            <textarea id="local-players" rows="3">ERIK, FRAN, JUANJO, DANY, RGUEZ, GAEL, CESAR, RUBIA, NICO, JOEL, JAVIER, RUIZ, ALEX, VICTOR, MARTIN, UNAI, HUGO</textarea>
+            <textarea id="local-players" rows="3">1,2,3,4,5,6,7,8,9,10,11</textarea>
             <label for="rival-dorsals">Dorsales Rivales (separados por coma):</label>
-            <textarea id="rival-dorsals" rows="3">1,2,3,4,5,6,7,8,9,10,11,12,13,14</textarea>
+            <textarea id="rival-dorsals" rows="3">1,2,3,4,5,6,7,8,9,10,11</textarea>
             <button id="start-config" class="btn-primary">Guardar y Preparar Pizarra</button>
         </section>
 
@@ -710,64 +720,7 @@
             <h2>Pizarra Táctica</h2>
             <div id="event-flow-message" class="hidden"></div>
             <div id="basketball-court">
-                <div class="basketball-court-lines"><svg viewBox="0 0 280 150" preserveAspectRatio="xMidYMid meet">
-                    <!-- Fondo de la cancha (parquet suave) -->
-                    <rect x="0" y="0" width="280" height="150" fill="var(--color-pitch)"/>
-                    
-                    <!-- Líneas exteriores de la cancha -->
-                    <rect x="0" y="0" width="280" height="150" stroke="var(--color-pitch-lines)" stroke-width="2" fill="none"/>
-                    
-                    <!-- Línea central (mitad de cancha) -->
-                    <line x1="140" y1="0" x2="140" y2="150" stroke="var(--color-pitch-lines)" stroke-width="2"/>
-                    
-                    <!-- Círculo central -->
-                    <circle cx="140" cy="75" r="18" stroke="var(--color-pitch-lines)" stroke-width="2" fill="none"/>
-                    <circle cx="140" cy="75" r="2" fill="var(--color-pitch-lines)"/>
-                    
-                    <!-- ZONA IZQUIERDA (Equipo Local) -->
-                    <!-- Línea de tiros libres (paralela a la línea de fondo, a 5.8m del fondo) -->
-                    <line x1="0" y1="52.5" x2="58" y2="52.5" stroke="var(--color-pitch-lines)" stroke-width="2"/>
-                    <line x1="0" y1="97.5" x2="58" y2="97.5" stroke="var(--color-pitch-lines)" stroke-width="2"/>
-                    
-                    <!-- Zona restringida (la "pintura" o "key") - rectángulo de 4.9m de ancho -->
-                    <rect x="0" y="52.5" width="58" height="45" stroke="var(--color-pitch-lines)" stroke-width="2" fill="none"/>
-                    
-                    <!-- Círculo de tiros libres (semicírculo de radio 1.8m) -->
-                    <path d="M 0 52.5 A 18 18 0 0 1 0 97.5" stroke="var(--color-pitch-lines)" stroke-width="2" fill="none"/>
-                    
-                    <!-- Canasta izquierda (aro) -->
-                    <circle cx="15" cy="75" r="4" stroke="var(--color-pitch-lines)" stroke-width="2" fill="none"/>
-                    <!-- Línea desde la línea de fondo hasta el aro -->
-                    <line x1="0" y1="75" x2="15" y2="75" stroke="var(--color-pitch-lines)" stroke-width="2"/>
-                    
-                    <!-- Línea de 3 puntos (arco de radio 6.75m desde el centro del aro) -->
-                    <path d="M 0 10.5 A 67.5 67.5 0 0 1 0 139.5" stroke="var(--color-pitch-lines)" stroke-width="2" fill="none"/>
-                    <!-- Líneas rectas de 3 puntos (paralelas a las líneas laterales) -->
-                    <line x1="0" y1="10.5" x2="67.5" y2="10.5" stroke="var(--color-pitch-lines)" stroke-width="2"/>
-                    <line x1="0" y1="139.5" x2="67.5" y2="139.5" stroke="var(--color-pitch-lines)" stroke-width="2"/>
-                    
-                    <!-- ZONA DERECHA (Equipo Rival) -->
-                    <!-- Línea de tiros libres -->
-                    <line x1="280" y1="52.5" x2="222" y2="52.5" stroke="var(--color-pitch-lines)" stroke-width="2"/>
-                    <line x1="280" y1="97.5" x2="222" y2="97.5" stroke="var(--color-pitch-lines)" stroke-width="2"/>
-                    
-                    <!-- Zona restringida (la "pintura" o "key") -->
-                    <rect x="222" y="52.5" width="58" height="45" stroke="var(--color-pitch-lines)" stroke-width="2" fill="none"/>
-                    
-                    <!-- Círculo de tiros libres (semicírculo) -->
-                    <path d="M 280 52.5 A 18 18 0 0 0 280 97.5" stroke="var(--color-pitch-lines)" stroke-width="2" fill="none"/>
-                    
-                    <!-- Canasta derecha (aro) -->
-                    <circle cx="265" cy="75" r="4" stroke="var(--color-pitch-lines)" stroke-width="2" fill="none"/>
-                    <!-- Línea desde la línea de fondo hasta el aro -->
-                    <line x1="280" y1="75" x2="265" y2="75" stroke="var(--color-pitch-lines)" stroke-width="2"/>
-                    
-                    <!-- Línea de 3 puntos (arco) -->
-                    <path d="M 280 10.5 A 67.5 67.5 0 0 0 280 139.5" stroke="var(--color-pitch-lines)" stroke-width="2" fill="none"/>
-                    <!-- Líneas rectas de 3 puntos -->
-                    <line x1="280" y1="10.5" x2="212.5" y2="10.5" stroke="var(--color-pitch-lines)" stroke-width="2"/>
-                    <line x1="280" y1="139.5" x2="212.5" y2="139.5" stroke="var(--color-pitch-lines)" stroke-width="2"/>
-                </svg></div>
+                <canvas id="basketball-court-canvas"></canvas>
             </div>
             <div id="bench-container"><div id="local-bench" class="bench"></div><div id="rival-bench" class="bench"></div></div>
         </section>
@@ -1079,8 +1032,9 @@
             circle.textContent = name;
             chip.appendChild(circle);
             
-            // También mostrar el nombre debajo si no es numérico
-            if (!this.isNumeric(name)) {
+            // Solo mostrar el nombre debajo para el equipo rival si no es numérico
+            // El equipo local solo muestra el dorsal (sin nombre debajo)
+            if (team === 'rival' && !this.isNumeric(name)) {
                 const label = document.createElement('span');
                 label.className = 'chip-label';
                 label.textContent = name;
@@ -2506,6 +2460,149 @@
         }
     };
 
+    // --- REEMPLAZO TOTAL DEL OBJETO CanvasDrawing ---
+    const CanvasDrawing = {
+        init() {
+            const canvas = document.getElementById('basketball-court-canvas');
+            if (!canvas) return;
+            
+            const container = canvas.parentElement;
+            // Usamos ResizeObserver para detectar cambios de tamaño del contenedor de forma moderna
+            const resizeObserver = new ResizeObserver(entries => {
+                for (let entry of entries) {
+                    const { width, height } = entry.contentRect;
+                    if (width > 0 && height > 0) {
+                        // Ajustamos el canvas al tamaño real de visualización para evitar borrosidad
+                        canvas.width = width * window.devicePixelRatio;
+                        canvas.height = height * window.devicePixelRatio;
+                        // Escalamos el contexto para que coincida con los píxeles del dispositivo
+                        canvas.getContext('2d').scale(window.devicePixelRatio, window.devicePixelRatio);
+                        this.dibujarCancha(canvas, width, height);
+                    }
+                }
+            });
+            resizeObserver.observe(container);
+        },
+        
+        dibujarCancha(canvas, w, h) {
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, w, h);
+            
+            // Fondo
+            ctx.fillStyle = '#d6b586'; ctx.fillRect(0, 0, w, h);
+            
+            // Escala (FIBA 28x15)
+            const margin = 0.05;
+            const rw = 28, rh = 15;
+            const scale = Math.min((w * (1 - margin * 2)) / rw, (h * (1 - margin * 2)) / rh);
+            const ox = (w - rw * scale) / 2;
+            const oy = (h - rh * scale) / 2;
+            
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(2, scale * 0.05);
+            ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+            
+            // Líneas exteriores
+            ctx.strokeRect(ox, oy, rw * scale, rh * scale);
+            // Línea central
+            ctx.beginPath(); ctx.moveTo(w/2, oy); ctx.lineTo(w/2, oy + rh * scale); ctx.stroke();
+            // Círculo central
+            ctx.beginPath(); ctx.arc(w/2, h/2, 1.8 * scale, 0, Math.PI*2); ctx.stroke();
+
+            const drawSide = (isLeft) => {
+                const dir = isLeft ? 1 : -1;
+                // Coordenadas base
+                const baselineX = isLeft ? ox : ox + rw * scale;
+                const hoopX = baselineX + (1.575 * scale * dir);
+                
+                // Zona (Rectángulo)
+                const keyW = 4.9 * scale;
+                const keyD = 5.8 * scale;
+                ctx.fillStyle = '#ad3926';
+                const kx = isLeft ? baselineX : baselineX - keyD;
+                ctx.fillRect(kx, h/2 - keyW/2, keyD, keyW);
+                ctx.strokeRect(kx, h/2 - keyW/2, keyD, keyW);
+                
+                // Semicírculo Tiro Libre
+                ctx.beginPath();
+                ctx.arc(baselineX + (5.8 * scale * dir), h/2, 1.8 * scale, -Math.PI/2, Math.PI/2, isLeft);
+                ctx.stroke();
+                
+                // --- LÍNEA DE 3 PUNTOS FIBA (CORREGIDA: Arco + Rectas) ---
+                const threeRad = 6.75 * scale;
+                // Distancia Y desde el centro de la cancha hasta la recta lateral
+                // Ancho cancha = 15m. Centro = 7.5m. Recta a 0.9m de la banda.
+                // Distancia desde centro = 7.5 - 0.9 = 6.6m
+                const maxDistY = (15 / 2 - 0.9) * scale;
+                
+                // Cálculo de la intersección del arco con la recta horizontal imaginaria (y = +/- maxDistY)
+                // x^2 + y^2 = r^2 -> x = sqrt(r^2 - y^2)
+                // dx es la distancia X desde el centro del aro hasta el punto de corte
+                const dx = Math.sqrt(Math.pow(threeRad, 2) - Math.pow(maxDistY, 2));
+                // Ángulo de corte relativo al eje X
+                const theta = Math.atan2(maxDistY, dx); 
+                
+                ctx.beginPath();
+                
+                if (isLeft) {
+                    // Lado Izquierdo
+                    // 1. Recta Superior: Desde banda (baselineX) hasta inicio del arco
+                    ctx.moveTo(baselineX, h/2 - maxDistY);
+                    ctx.lineTo(hoopX + dx, h/2 - maxDistY);
+                    
+                    // 2. Arco: Centro (hoopX, h/2). Desde ángulo -theta hasta +theta.
+                    // Sentido horario (false en canvas es horario, pero ángulos negativos suben en Y? No, Y crece abajo)
+                    // -theta es arriba, +theta es abajo.
+                    ctx.arc(hoopX, h/2, threeRad, -theta, theta, false);
+                    
+                    // 3. Recta Inferior: Desde fin arco hasta banda
+                    // El punto final del arco es (hoopX + dx, h/2 + maxDistY)
+                    ctx.lineTo(baselineX, h/2 + maxDistY);
+                } else {
+                    // Lado Derecho
+                    // 1. Recta Superior: Desde banda (baselineX) hasta inicio del arco
+                    // Ojo: hoopX está a la izquierda de baselineX. La recta va hacia la izquierda.
+                    ctx.moveTo(baselineX, h/2 - maxDistY);
+                    ctx.lineTo(hoopX - dx, h/2 - maxDistY);
+                    
+                    // 2. Arco: Centro (hoopX, h/2).
+                    // Top intersection: angulo PI - theta? No, PI + theta (porque -theta es arriba-derecha).
+                    // En el lado derecho, el arco va de "arriba-izquierda" a "abajo-izquierda".
+                    // Math.PI (180) es izquierda pura.
+                    // Ángulo superior: Math.PI + theta (No, Y es negativo arriba). Math.PI - theta?
+                    // Y negativo = Arriba. Math.sin(PI + alpha) = -sin(alpha).
+                    // Top Point Y = h/2 - maxDistY.
+                    // Vamos a usar coordenadas explícitas para evitar líos de ángulos.
+                    
+                    // Arco desde (hoopX - dx, h/2 - maxDistY) hasta (hoopX - dx, h/2 + maxDistY)
+                    // pasando por la izquierda.
+                    // Ángulo inicio: Math.PI - theta (Arriba Izquierda? No, atan2(-y, -x) -> -150 deg approx)
+                    // Math.atan2(-maxDistY, -dx) -> Ángulo negativo grande.
+                    // Ángulo fin: Math.atan2(maxDistY, -dx) -> Ángulo positivo grande.
+                    // Dibujar en sentido anti-horario (true) para que vaya por la izquierda.
+                    ctx.arc(hoopX, h/2, threeRad, Math.atan2(-maxDistY, -dx), Math.atan2(maxDistY, -dx), true);
+                    
+                    // 3. Recta Inferior
+                    ctx.lineTo(baselineX, h/2 + maxDistY);
+                }
+                ctx.stroke();
+
+                // Tablero y Aro
+                const boardX = baselineX + (1.2 * scale * dir);
+                ctx.beginPath();
+                ctx.moveTo(boardX, h/2 - 0.9 * scale); ctx.lineTo(boardX, h/2 + 0.9 * scale);
+                ctx.lineWidth *= 2; ctx.stroke(); ctx.lineWidth /= 2;
+                
+                ctx.beginPath();
+                ctx.arc(hoopX, h/2, 0.225 * scale, 0, Math.PI*2);
+                ctx.strokeStyle = '#ff6600'; ctx.stroke(); ctx.strokeStyle = '#fff';
+            };
+
+            // Dibujar ambas mitades
+            drawSide(true);
+            drawSide(false);
+        }
+    };
+
     document.addEventListener('DOMContentLoaded', () => {
         DragAndDrop.move = DragAndDrop.move.bind(DragAndDrop);
         DragAndDrop.end = DragAndDrop.end.bind(DragAndDrop);
@@ -2536,8 +2633,12 @@
         } else {
             AppState.init();
         }
+        
+        // Inicializar el canvas de la cancha cuando esté disponible
+        setTimeout(() => {
+            CanvasDrawing.init();
+        }, 100);
     });
 </script>
 </body>
-</html>
 </html>
