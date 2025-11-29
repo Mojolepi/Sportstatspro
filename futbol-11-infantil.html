@@ -265,6 +265,69 @@
             overflow: visible;
             padding-left: 120px;
             padding-right: 120px;
+            padding-bottom: 40px;
+            /* El padding-bottom se ajustará dinámicamente con el zoom */
+        }
+        
+        /* Marcador flotante pequeño (aparece cuando el marcador principal no es visible) */
+        #floating-scoreboard {
+            position: fixed;
+            top: 8px;
+            left: 8px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            padding: 5px 9px;
+            z-index: 9999;
+            display: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            opacity: 0;
+            transform: translateY(-5px);
+            pointer-events: none;
+        }
+        
+        #floating-scoreboard.visible {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        #floating-scoreboard .floating-marcador {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.6em;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 2px;
+            line-height: 1.2;
+        }
+        
+        #floating-scoreboard .floating-team {
+            font-size: 0.55em;
+            max-width: 50px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        #floating-scoreboard .floating-score {
+            font-size: 0.65em;
+            min-width: 25px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        #floating-scoreboard .floating-time {
+            font-size: 0.5em;
+            color: rgba(255, 255, 255, 0.85);
+            text-align: center;
+            margin-top: 1px;
+            padding-top: 2px;
+            border-top: 1px solid rgba(255, 255, 255, 0.15);
+            line-height: 1.2;
         }
         
         #event-flow-message {
@@ -517,11 +580,11 @@
         
         /* Tarjeta roja eliminada de aquí - ahora solo se muestra en .chip-cards (derecha) */
         
-        /* Tarjetas en vértice izquierdo (para no solaparse con goles) */
+        /* Tarjetas en vértice izquierdo superior (pegadas a la ficha) */
         .chip-cards {
             position: absolute;
-            top: -8px;
-            left: -8px;
+            top: -2px;
+            left: -2px;
             display: flex;
             flex-direction: column;
             gap: 2px;
@@ -968,6 +1031,32 @@
                 height: 35px;
                 font-size: 1em;
             }
+            
+            /* Ajustar marcador flotante en móvil */
+            #floating-scoreboard {
+                top: 5px;
+                left: 5px;
+                padding: 4px 7px;
+            }
+            
+            #floating-scoreboard .floating-marcador {
+                font-size: 0.55em;
+                gap: 4px;
+            }
+            
+            #floating-scoreboard .floating-team {
+                font-size: 0.5em;
+                max-width: 40px;
+            }
+            
+            #floating-scoreboard .floating-score {
+                font-size: 0.6em;
+                min-width: 20px;
+            }
+            
+            #floating-scoreboard .floating-time {
+                font-size: 0.45em;
+            }
         }
     </style>
 </head>
@@ -1004,6 +1093,16 @@
                 <span id="added-time" class="hidden"></span>
             </div>
         </header>
+
+        <!-- Marcador flotante pequeño (aparece cuando el marcador principal no es visible) -->
+        <div id="floating-scoreboard">
+            <div class="floating-marcador">
+                <span class="floating-team" id="floating-local-name"></span>
+                <span class="floating-score" id="floating-score">0 - 0</span>
+                <span class="floating-team" id="floating-rival-name"></span>
+            </div>
+            <div class="floating-time" id="floating-time">00:00</div>
+        </div>
 
         <section id="pitch-section" class="hidden">
             <h2>Pizarra Táctica</h2>
@@ -1277,14 +1376,22 @@
                 ? AppConfig.HALF_TIME_SECONDS 
                 : AppConfig.FULL_TIME_SECONDS;
             
+            let timeDisplay = '';
             if (state.matchTimer >= halfTimeLimit) {
                 mainTimerEl.value = MatchLogic.formatTime(halfTimeLimit);
                 const addedSeconds = state.matchTimer - halfTimeLimit;
                 addedTimeEl.textContent = `+${MatchLogic.formatTime(addedSeconds)}`;
                 addedTimeEl.classList.remove('hidden');
+                timeDisplay = `${MatchLogic.formatTime(halfTimeLimit)}+${MatchLogic.formatTime(addedSeconds)}`;
             } else {
                 mainTimerEl.value = MatchLogic.formatTime(state.matchTimer);
                 addedTimeEl.classList.add('hidden');
+                timeDisplay = MatchLogic.formatTime(state.matchTimer);
+            }
+            
+            // Actualizar también el marcador flotante
+            if (this.elements['floating-time']) {
+                this.elements['floating-time'].textContent = timeDisplay;
             }
         },
         setupBenchesAndPitch() {
@@ -1580,9 +1687,13 @@
                     chip.draggable = !stats.expulsado;
                     
                     // Actualizar minutos jugados (dentro del círculo, centrado)
+                    // Redondear hacia arriba como en las tablas
+                    // Mostrar desde 1 segundo (00:01) porque se redondea a 1'
                     const minutesBadge = chip.querySelector('.chip-minutes');
                     if (minutesBadge) {
-                        const minutes = Math.floor((stats.minutosJugados || 0) / 60);
+                        const totalSeconds = stats.minutosJugados || 0;
+                        // Si tiene al menos 1 segundo, redondear hacia arriba (1 segundo = 1 minuto)
+                        const minutes = totalSeconds >= 1 ? Math.ceil(totalSeconds / 60) : 0;
                         if (minutes > 0) {
                             minutesBadge.textContent = `${minutes}'`;
                             minutesBadge.style.display = 'block';
@@ -1729,6 +1840,17 @@
             
             this.elements['local-score'].textContent = localScore;
             this.elements['rival-score'].textContent = rivalScore;
+            
+            // Actualizar también el marcador flotante
+            if (this.elements['floating-score']) {
+                this.elements['floating-score'].textContent = `${localScore} - ${rivalScore}`;
+            }
+            if (this.elements['floating-local-name']) {
+                this.elements['floating-local-name'].textContent = state.localTeamName || '';
+            }
+            if (this.elements['floating-rival-name']) {
+                this.elements['floating-rival-name'].textContent = state.rivalTeamName || '';
+            }
         },
         updateButtonStates() {
             const state = AppState.get();
@@ -2088,6 +2210,8 @@
                         this.adjustPlayerMinutes(timeDelta);
                         DOM.updateTimerDisplay();
                         DOM.updateStatsTables();
+                        // Actualizar también los chips para mostrar los minutos actualizados
+                        DOM.updatePlayerChips();
                     } else {
                         // Si el cambio es grande o inesperado, recalcular completamente
                         this.rebuildAndRecalculateAllState();
@@ -2452,8 +2576,9 @@
                 const updateGameControlsMargin = () => {
                     if (pitchAndBenchesContainer && gameControls) {
                         const benchContainer = document.getElementById('bench-container');
+                        const pitchSection = document.getElementById('pitch-section');
                         
-                        if (benchContainer) {
+                        if (benchContainer && pitchSection) {
                             // Obtener las posiciones absolutas en el documento
                             const benchRect = benchContainer.getBoundingClientRect();
                             const gameControlsRect = gameControls.getBoundingClientRect();
@@ -2475,11 +2600,33 @@
                             
                             // Establecer el nuevo margen (asegurarse de que sea al menos el margen deseado)
                             gameControls.style.marginTop = `${Math.max(newMarginTop, desiredMargin)}px`;
+                            
+                            // Ajustar el padding-bottom de pitch-section para que el fondo se adapte al zoom
+                            const containerRect = pitchAndBenchesContainer.getBoundingClientRect();
+                            const pitchSectionRect = pitchSection.getBoundingClientRect();
+                            
+                            // Calcular la altura escalada del contenedor
+                            const scaledHeight = containerRect.height;
+                            // Calcular la posición del final del banquillo relativa al inicio de pitch-section
+                            const benchBottomRelative = benchRect.bottom - pitchSectionRect.top;
+                            
+                            // Calcular cuánto espacio adicional necesita el fondo
+                            // Agregar espacio extra para mantener la distancia con los botones
+                            const basePadding = 40; // Padding base más generoso
+                            const extraSpace = Math.max(0, scaledHeight - benchBottomRelative);
+                            const additionalPadding = extraSpace + 20; // Espacio adicional para mantener distancia
+                            
+                            // Establecer el padding-bottom para que el fondo cubra todo el contenido escalado
+                            pitchSection.style.paddingBottom = `${basePadding + additionalPadding}px`;
                         } else {
                             // Fallback: usar la altura del contenedor escalado
                             const containerRect = pitchAndBenchesContainer.getBoundingClientRect();
                             const scaledHeight = containerRect.height;
                             gameControls.style.marginTop = `${scaledHeight + 30}px`;
+                            
+                            if (pitchSection) {
+                                pitchSection.style.paddingBottom = `${40 + scaledHeight + 20}px`;
+                            }
                         }
                     }
                 };
@@ -2514,6 +2661,72 @@
                 // También actualizar cuando cambie el tamaño de la ventana
                 window.addEventListener('resize', () => {
                     setTimeout(updateGameControlsMargin, 100);
+                });
+            }
+            
+            // Configurar Intersection Observer para el marcador flotante
+            const appHeader = DOM.elements['app-header'];
+            const floatingScoreboard = DOM.elements['floating-scoreboard'];
+            
+            if (appHeader && floatingScoreboard) {
+                // Función para verificar si el marcador principal es visible
+                const checkHeaderVisibility = () => {
+                    if (!appHeader || appHeader.classList.contains('hidden')) {
+                        // Si el header está oculto, no mostrar el flotante
+                        floatingScoreboard.classList.remove('visible');
+                        return;
+                    }
+                    
+                    const rect = appHeader.getBoundingClientRect();
+                    const isVisible = rect.top >= 0 && rect.top < window.innerHeight && 
+                                     rect.bottom > 0 && rect.bottom <= window.innerHeight;
+                    
+                    if (isVisible) {
+                        // El marcador principal es visible, ocultar el flotante
+                        floatingScoreboard.classList.remove('visible');
+                    } else {
+                        // El marcador principal no es visible, mostrar el flotante
+                        floatingScoreboard.classList.add('visible');
+                    }
+                };
+                
+                // Usar Intersection Observer para detectar cuando el header sale de la vista
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            // El marcador principal es visible, ocultar el flotante
+                            floatingScoreboard.classList.remove('visible');
+                        } else {
+                            // El marcador principal no es visible, mostrar el flotante
+                            floatingScoreboard.classList.add('visible');
+                        }
+                    });
+                }, {
+                    threshold: 0, // Se considera visible si cualquier parte está en pantalla
+                    rootMargin: '0px'
+                });
+                
+                observer.observe(appHeader);
+                
+                // También verificar en eventos de scroll para mayor precisión
+                let scrollTimeout;
+                const handleScroll = () => {
+                    clearTimeout(scrollTimeout);
+                    scrollTimeout = setTimeout(() => {
+                        checkHeaderVisibility();
+                    }, 10);
+                };
+                
+                window.addEventListener('scroll', handleScroll, { passive: true });
+                document.addEventListener('scroll', handleScroll, { passive: true });
+                
+                // Verificar inicialmente y después de un pequeño delay
+                setTimeout(checkHeaderVisibility, 100);
+                setTimeout(checkHeaderVisibility, 500);
+                
+                // Verificar también cuando cambia el tamaño de la ventana
+                window.addEventListener('resize', () => {
+                    setTimeout(checkHeaderVisibility, 50);
                 });
             }
             this.addTimeEditorListeners();
