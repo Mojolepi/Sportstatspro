@@ -351,30 +351,101 @@
             transform: none !important;
         }
         
-        .has-yellow-card .chip-circle::before {
-            content: '🟨';
-            position: absolute;
-            top: -5px;
-            left: -5px;
-            font-size: 14px;
-            line-height: 1;
-            text-shadow: 0 0 3px black;
-            z-index: 1;
-        }
+        /* Tarjeta amarilla eliminada de aquí - ahora solo se muestra en .chip-cards (derecha) */
         .expulsado {
-            filter: grayscale(100%);
             cursor: not-allowed !important;
             opacity: 0.5;
         }
         
-        .expulsado .chip-circle::after {
-            content: '🟥';
+        /* Aplicar grayscale solo al círculo, no a las tarjetas */
+        .expulsado .chip-circle {
+            filter: grayscale(100%);
+        }
+        
+        /* Las tarjetas y otros elementos mantienen su color */
+        .expulsado .chip-cards,
+        .expulsado .chip-stats,
+        .expulsado .chip-minutes {
+            filter: none !important;
+        }
+        
+        /* Tarjeta roja eliminada de aquí - ahora solo se muestra en .chip-cards (derecha) */
+        
+        /* Minutos jugados en esquina izquierda arriba - diseño minimalista */
+        .chip-minutes {
             position: absolute;
-            top: -5px;
-            right: -5px;
+            top: -10px;
+            left: -6px;
+            color: rgba(255, 255, 255, 0.95);
+            font-size: 13px;
+            font-weight: 600;
+            z-index: 2;
+            display: none;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8), 0 0 1px rgba(0, 0, 0, 0.9);
+            background: none;
+            padding: 0;
+            border: none;
+        }
+        
+        /* Tarjetas en vértice derecho */
+        .chip-cards {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            z-index: 2;
+        }
+        
+        .chip-yellow-card,
+        .chip-red-card {
             font-size: 14px;
             line-height: 1;
-            text-shadow: 0 0 3px black;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8), 0 0 1px rgba(0, 0, 0, 0.9);
+            filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+            background: none;
+            padding: 0;
+        }
+        
+        /* Asegurar que las tarjetas mantengan su color incluso cuando el chip está en gris */
+        .expulsado .chip-yellow-card {
+            filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6)) !important;
+            /* Mantener el color amarillo del emoji */
+        }
+        
+        .expulsado .chip-red-card {
+            filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6)) !important;
+            /* Mantener el color rojo del emoji */
+        }
+        
+        /* Goles y asistencias a la derecha de la ficha, alineados con el centro del círculo */
+        .chip-stats {
+            position: absolute;
+            right: -45px;
+            top: 0;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 3px;
+            z-index: 2;
+            white-space: nowrap;
+            pointer-events: none;
+            /* Centrar verticalmente con el círculo (que tiene 38px de altura) */
+            height: 38px;
+            line-height: 38px;
+        }
+        
+        .chip-goals,
+        .chip-assists {
+            font-size: 14px;
+            line-height: 1;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8), 0 0 1px rgba(0, 0, 0, 0.9);
+            filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+            background: none;
+            padding: 0;
+            border: none;
         }
         
         table {
@@ -881,7 +952,7 @@
         TIMER_INTERVAL_MS: 1000,
         MAX_TIME_MINUTES: 120,
         MAX_TIME_SECONDS: 59,
-        LONG_PRESS_DELAY_MS: 1000,
+        LONG_PRESS_DELAY_MS: 1200,
         TIMELINE_PRESS_DELAY_MS: 500,
         DRAG_THRESHOLD_PX: 5,
         FORMATIONS: {
@@ -1042,6 +1113,11 @@
             chip.dataset.name = name;
             chip.dataset.team = team;
 
+            // Contenedor para minutos jugados (esquina izquierda)
+            const minutesBadge = document.createElement('div');
+            minutesBadge.className = 'chip-minutes';
+            chip.appendChild(minutesBadge);
+
             const circle = document.createElement('div');
             circle.className = 'chip-circle';
             
@@ -1055,59 +1131,210 @@
                 chip.appendChild(circle);
                 chip.appendChild(label);
             }
+            
+            // Contenedor para tarjetas (vértice derecho)
+            const cardsContainer = document.createElement('div');
+            cardsContainer.className = 'chip-cards';
+            chip.appendChild(cardsContainer);
+            
+            // Contenedor para goles y asistencias (abajo a la derecha)
+            const statsContainer = document.createElement('div');
+            statsContainer.className = 'chip-stats';
+            chip.appendChild(statsContainer);
 
-            chip.addEventListener('pointerdown', DragAndDrop.start.bind(DragAndDrop));
+            let longPressTimer = null;
+            let isDeleting = false;
+            let startX = 0;
+            let startY = 0;
+            let hasMoved = false;
+            
+            // Event listener para long press (eliminación) - se ejecuta primero
+            chip.addEventListener('pointerdown', (e) => {
+                const state = AppState.get();
+                
+                // Solo permitir eliminación antes de iniciar el partido y si está en el banquillo
+                if (state.matchEvents.length > 0 || chip.classList.contains('chip-on-pitch')) {
+                    return; // Permitir que el drag normal funcione
+                }
+                
+                if (isDeleting) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                }
+                
+                // Guardar posición inicial
+                startX = e.clientX;
+                startY = e.clientY;
+                hasMoved = false;
+                
+                // Iniciar el timer para el long press
+                longPressTimer = setTimeout(() => {
+                    // Solo mostrar modal si no se ha movido
+                    if (!hasMoved && !isDeleting) {
+                        isDeleting = true;
+                        // Cancelar cualquier arrastre
+                        if (DragAndDrop.draggedElement === chip) {
+                            document.removeEventListener('pointermove', DragAndDrop.move);
+                            document.removeEventListener('pointerup', DragAndDrop.end);
+                            DragAndDrop.draggedElement = null;
+                            DragAndDrop.isDragging = false;
+                            chip.classList.remove('dragging');
+                            chip.style.cssText = '';
+                        }
+                        this.showDeletePlayerModal(name, team, chip);
+                    }
+                }, AppConfig.LONG_PRESS_DELAY_MS);
+            }, true); // Capture phase para ejecutarse primero
+            
+            // Detectar movimiento para cancelar long press
+            chip.addEventListener('pointermove', (e) => {
+                if (longPressTimer && !isDeleting) {
+                    const deltaX = Math.abs(e.clientX - startX);
+                    const deltaY = Math.abs(e.clientY - startY);
+                    // Si se movió más de 5 píxeles, cancelar long press
+                    if (deltaX > 5 || deltaY > 5) {
+                        hasMoved = true;
+                        clearTimeout(longPressTimer);
+                        longPressTimer = null;
+                    }
+                }
+            });
+            
+            // Event listener para drag and drop (solo si no es eliminación)
+            chip.addEventListener('pointerdown', (e) => {
+                if (isDeleting) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                }
+                // Solo iniciar drag si no es un long press en proceso
+                if (!longPressTimer || hasMoved) {
+                    DragAndDrop.start.call(DragAndDrop, e);
+                }
+            });
+            
             chip.addEventListener('click', () => {
                 if (AppState.get().eventFlow.active) EventHandler.processEventSelection(chip);
             });
             
-            let longPressTimer;
-            chip.addEventListener('pointerdown', (e) => {
-                const state = AppState.get();
-                if (state.matchEvents.length > 0) {
-                    return;
+            chip.addEventListener('pointerup', (e) => {
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
                 }
-                if (chip.classList.contains('chip-on-pitch')) {
-                    return;
+                hasMoved = false;
+                // Resetear isDeleting después de un delay
+                if (isDeleting) {
+                    setTimeout(() => {
+                        isDeleting = false;
+                    }, 200);
                 }
-                
-                longPressTimer = setTimeout(() => {
-                    this.showDeletePlayerModal(name, team, chip);
-                }, AppConfig.LONG_PRESS_DELAY_MS);
             });
             
-            chip.addEventListener('pointerup', () => {
-                clearTimeout(longPressTimer);
+            chip.addEventListener('pointerleave', (e) => {
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+                hasMoved = false;
             });
             
-            chip.addEventListener('pointerleave', () => {
-                clearTimeout(longPressTimer);
+            chip.addEventListener('pointercancel', (e) => {
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+                hasMoved = false;
             });
             
             return chip;
         },
         showDeletePlayerModal(playerName, team, chip) {
             const state = AppState.get();
+            
+            // Si este chip está siendo arrastrado, cancelar el arrastre primero
+            if (DragAndDrop.draggedElement === chip) {
+                document.removeEventListener('pointermove', DragAndDrop.move);
+                document.removeEventListener('pointerup', DragAndDrop.end);
+                DragAndDrop.draggedElement = null;
+                DragAndDrop.isDragging = false;
+                chip.classList.remove('dragging');
+                chip.style.cssText = '';
+            }
+            
             const teamName = team === 'local' ? state.localTeamName : state.rivalTeamName;
-            const confirmMessage = `¿Eliminar a ${playerName} del equipo ${teamName}?\n\nEsta acción no se puede deshacer.`;
+            const confirmMessage = `¿Desea eliminar este jugador?\n\n${playerName} del equipo ${teamName}\n\nEsta acción no se puede deshacer.`;
             
             if (confirm(confirmMessage)) {
+                // Eliminar directamente sin necesidad de otro paso
                 this.deletePlayer(playerName, team, chip);
             }
         },
         deletePlayer(playerName, team, chip) {
             const state = AppState.get();
             
+            // Si este chip está siendo arrastrado, limpiar el estado de arrastre primero
+            if (DragAndDrop.draggedElement === chip) {
+                // Cancelar cualquier evento de pointer pendiente
+                document.removeEventListener('pointermove', DragAndDrop.move);
+                document.removeEventListener('pointerup', DragAndDrop.end);
+                // Limpiar el estado de arrastre completamente
+                DragAndDrop.draggedElement = null;
+                DragAndDrop.isDragging = false;
+            }
+            
+            // Remover la clase dragging si existe y resetear estilos
+            chip.classList.remove('dragging');
+            chip.style.cssText = '';
+            chip.style.display = 'none';
+            
             // Inicializar lista de jugadores eliminados si no existe
             if (!state.eliminatedPlayers) {
                 state.eliminatedPlayers = { local: [], rival: [] };
             }
             
-            state.eliminatedPlayers[team].push(playerName);
-            delete state.playerStats[team][playerName];
-            chip.remove();
-            this.updateStatsTables();
+            // Marcar como eliminado
+            if (!state.eliminatedPlayers[team].includes(playerName)) {
+                state.eliminatedPlayers[team].push(playerName);
+            }
+            
+            // Eliminar de las estadísticas
+            if (state.playerStats[team] && state.playerStats[team][playerName]) {
+                delete state.playerStats[team][playerName];
+            }
+            
+            // Eliminar del estado inicial si existe
+            if (state.initialPlayerState && state.initialPlayerState[team] && state.initialPlayerState[team][playerName]) {
+                delete state.initialPlayerState[team][playerName];
+            }
+            
+            // Eliminar el chip del DOM inmediatamente - buscar en todos los contenedores posibles
+            const allChips = document.querySelectorAll('.player-chip');
+            allChips.forEach(c => {
+                if (c.dataset.name === playerName && c.dataset.team === team) {
+                    if (c.parentNode) {
+                        c.parentNode.removeChild(c);
+                    }
+                }
+            });
+            
+            // También eliminar el chip específico si aún existe
+            if (chip && chip.parentNode) {
+                try {
+                    chip.parentNode.removeChild(chip);
+                } catch (e) {
+                    // El chip ya fue eliminado
+                }
+            }
+            
+            // Guardar el estado antes de actualizar la UI
             AppState.save();
+            
+            // Forzar actualización completa de la UI
+            this.updateStatsTables();
+            this.updatePlayerChips();
+            
             const teamName = team === 'local' ? state.localTeamName : state.rivalTeamName;
             alert(`${playerName} ha sido eliminado del equipo ${teamName}.`);
         },
@@ -1140,10 +1367,96 @@
                     }
                     
                     // Actualizar estado visual del chip
-                    const hasYellow = stats.amarillas === 1 && !stats.expulsado;
-                    chip.classList.toggle('has-yellow-card', hasYellow);
+                    // NO usar has-yellow-card para evitar mostrar tarjeta duplicada a la izquierda
                     chip.classList.toggle('expulsado', stats.expulsado);
                     chip.draggable = !stats.expulsado;
+                    
+                    // Actualizar minutos jugados (esquina izquierda)
+                    const minutesBadge = chip.querySelector('.chip-minutes');
+                    if (minutesBadge) {
+                        const minutes = Math.floor((stats.minutosJugados || 0) / 60);
+                        if (minutes > 0) {
+                            minutesBadge.textContent = `${minutes}'`;
+                            minutesBadge.style.display = 'block';
+                        } else {
+                            minutesBadge.style.display = 'none';
+                        }
+                    }
+                    
+                    // Actualizar tarjetas (vértice derecho)
+                    const cardsContainer = chip.querySelector('.chip-cards');
+                    if (cardsContainer) {
+                        cardsContainer.innerHTML = '';
+                        
+                        // Si está expulsado, mostrar tarjetas según el motivo
+                        if (stats.expulsado) {
+                            // Expulsado por doble amarilla (2 amarillas y sin roja directa)
+                            if (stats.amarillas >= 2 && stats.rojas === 0) {
+                                // Mostrar 2 tarjetas amarillas
+                                for (let i = 0; i < 2; i++) {
+                                    const yellowCard = document.createElement('span');
+                                    yellowCard.className = 'chip-yellow-card';
+                                    yellowCard.textContent = '🟨';
+                                    cardsContainer.appendChild(yellowCard);
+                                }
+                            }
+                            // Expulsado por roja directa
+                            else if (stats.rojas > 0) {
+                                const redCard = document.createElement('span');
+                                redCard.className = 'chip-red-card';
+                                redCard.textContent = '🟥';
+                                cardsContainer.appendChild(redCard);
+                            }
+                        } else {
+                            // No está expulsado, mostrar tarjetas normalmente
+                            // Tarjetas amarillas
+                            if (stats.amarillas > 0) {
+                                const yellowCard = document.createElement('span');
+                                yellowCard.className = 'chip-yellow-card';
+                                yellowCard.textContent = '🟨';
+                                if (stats.amarillas > 1) {
+                                    yellowCard.textContent += stats.amarillas;
+                                }
+                                cardsContainer.appendChild(yellowCard);
+                            }
+                            // Tarjetas rojas (si tiene roja pero no está expulsado - caso raro)
+                            if (stats.rojas > 0) {
+                                const redCard = document.createElement('span');
+                                redCard.className = 'chip-red-card';
+                                redCard.textContent = '🟥';
+                                if (stats.rojas > 1) {
+                                    redCard.textContent += stats.rojas;
+                                }
+                                cardsContainer.appendChild(redCard);
+                            }
+                        }
+                    }
+                    
+                    // Actualizar goles y asistencias (abajo a la derecha)
+                    const statsContainer = chip.querySelector('.chip-stats');
+                    if (statsContainer) {
+                        statsContainer.innerHTML = '';
+                        // Mostrar goles
+                        if (stats.goles > 0) {
+                            const goalsBadge = document.createElement('span');
+                            goalsBadge.className = 'chip-goals';
+                            goalsBadge.textContent = '⚽'.repeat(Math.min(stats.goles, 5));
+                            if (stats.goles > 5) {
+                                goalsBadge.textContent += stats.goles;
+                            }
+                            statsContainer.appendChild(goalsBadge);
+                        }
+                        // Mostrar asistencias
+                        if (stats.asistencias > 0) {
+                            const assistsBadge = document.createElement('span');
+                            assistsBadge.className = 'chip-assists';
+                            assistsBadge.textContent = '👟'.repeat(Math.min(stats.asistencias, 5));
+                            if (stats.asistencias > 5) {
+                                assistsBadge.textContent += stats.asistencias;
+                            }
+                            statsContainer.appendChild(assistsBadge);
+                        }
+                    }
 
                     // Determinar el contenedor objetivo
                     const targetParent = stats.onPitch 
@@ -2090,9 +2403,43 @@
             }
         },
         handleNewMatch() {
-            if (confirm("¿Empezar un partido nuevo?")) {
+            if (confirm("¿Empezar un partido nuevo? Se borrará el partido actual y volverás a la pantalla de configuración.")) {
+                // Detener el timer si está corriendo
+                MatchLogic.stopTimer();
+                
+                // Limpiar todo el estado
                 localStorage.removeItem(AppConfig.APP_STATE_KEY);
-                location.reload();
+                AppState.init();
+                
+                // Ocultar todas las secciones del partido
+                if (DOM.elements['pitch-section']) DOM.elements['pitch-section'].classList.add('hidden');
+                if (DOM.elements['game-controls']) DOM.elements['game-controls'].classList.add('hidden');
+                if (DOM.elements['timeline-section']) DOM.elements['timeline-section'].classList.add('hidden');
+                if (DOM.elements['match-stats-section']) DOM.elements['match-stats-section'].classList.add('hidden');
+                if (DOM.elements['stats-section']) DOM.elements['stats-section'].classList.add('hidden');
+                if (DOM.elements['app-header']) DOM.elements['app-header'].classList.add('hidden');
+                
+                // Mostrar la sección de configuración
+                if (DOM.elements['config-section']) DOM.elements['config-section'].classList.remove('hidden');
+                
+                // Limpiar el canvas de la cancha si existe
+                const canvas = document.querySelector('#futsal-pitch canvas');
+                if (canvas) {
+                    const ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                }
+                
+                // Limpiar los bancos
+                if (DOM.elements['local-bench']) DOM.elements['local-bench'].innerHTML = '';
+                if (DOM.elements['rival-bench']) DOM.elements['rival-bench'].innerHTML = '';
+                
+                // Limpiar el campo
+                if (DOM.elements['futsal-pitch']) {
+                    DOM.elements['futsal-pitch'].querySelectorAll('.player-chip').forEach(chip => chip.remove());
+                }
+                
+                // Scroll al inicio de la página
+                window.scrollTo(0, 0);
             }
         },
         handleEventButtonClick(e) {
