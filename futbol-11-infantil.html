@@ -227,6 +227,10 @@
             cursor: crosshair !important;
         }
         
+        #pitch-section {
+            position: relative;
+        }
+        
         #futsal-pitch {
             position: relative;
             width: 100%;
@@ -234,6 +238,42 @@
             background-color: var(--color-pitch);
             border: 3px solid var(--color-pitch-lines);
             box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.5);
+            transform-origin: center center;
+            transition: transform 0.2s ease;
+        }
+        
+        #zoom-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 100;
+            display: flex;
+            gap: 5px;
+        }
+        
+        .btn-zoom {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: 2px solid white;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            transition: background 0.2s;
+        }
+        
+        .btn-zoom:hover {
+            background: rgba(0, 0, 0, 0.9);
+        }
+        
+        .btn-zoom:active {
+            transform: scale(0.95);
         }
         
         .soccer-pitch-lines svg {
@@ -419,16 +459,16 @@
             /* Mantener el color rojo del emoji */
         }
         
-        /* Goles y asistencias a la derecha de la ficha, alineados con el centro del círculo */
+        /* Goles y asistencias a la derecha de la ficha, pegados a ella */
         .chip-stats {
             position: absolute;
-            right: -45px;
+            right: -8px;
             top: 0;
             display: flex;
             flex-direction: row;
             align-items: center;
             justify-content: flex-start;
-            gap: 3px;
+            gap: 2px;
             z-index: 2;
             white-space: nowrap;
             pointer-events: none;
@@ -827,6 +867,10 @@
                 <button id="btn-view-local" class="btn-view local active"></button>
                 <button id="btn-view-rival" class="btn-view rival"></button>
             </div>
+            <div id="zoom-controls" style="position: absolute; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px;">
+                <button id="btn-zoom-out" class="btn-zoom" style="width: 35px; height: 35px; border-radius: 50%; background: rgba(0, 0, 0, 0.7); color: white; border: 2px solid white; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;">−</button>
+                <button id="btn-zoom-in" class="btn-zoom" style="width: 35px; height: 35px; border-radius: 50%; background: rgba(0, 0, 0, 0.7); color: white; border: 2px solid white; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;">+</button>
+            </div>
             <div id="event-flow-message" class="hidden"></div>
             <div id="futsal-pitch">
                 <div class="soccer-pitch-lines"><svg viewBox="0 0 105 68" preserveAspectRatio="xMidYMid meet"><rect x="0" y="0" width="105" height="68" stroke="var(--color-pitch-lines)" stroke-width="0.3" fill="none"/><line x1="52.5" y1="0" x2="52.5" y2="68" stroke="var(--color-pitch-lines)" stroke-width="0.3"/><circle cx="52.5" cy="34" r="9.15" stroke="var(--color-pitch-lines)" stroke-width="0.3" fill="none"/><circle cx="52.5" cy="34" r="0.4" fill="var(--color-pitch-lines)"/><rect x="0" y="13.84" width="16.5" height="40.32" stroke="var(--color-pitch-lines)" stroke-width="0.3" fill="none"/><rect x="0" y="24.84" width="5.5" height="18.32" stroke="var(--color-pitch-lines)" stroke-width="0.3" fill="none"/><circle cx="11" cy="34" r="0.4" fill="var(--color-pitch-lines)"/><path d="M 16.5 26.69 A 9.15 9.15 0 0 1 16.5 41.31" stroke="var(--color-pitch-lines)" stroke-width="0.3" fill="none"/><rect x="88.5" y="13.84" width="16.5" height="40.32" stroke="var(--color-pitch-lines)" stroke-width="0.3" fill="none"/><rect x="99.5" y="24.84" width="5.5" height="18.32" stroke="var(--color-pitch-lines)" stroke-width="0.3" fill="none"/><circle cx="94" cy="34" r="0.4" fill="var(--color-pitch-lines)"/><path d="M 88.5 26.69 A 9.15 9.15 0 0 0 88.5 41.31" stroke="var(--color-pitch-lines)" stroke-width="0.3" fill="none"/><path d="M 0 1 A 1 1 0 0 1 1 0" stroke="var(--color-pitch-lines)" stroke-width="0.3" fill="none"/><path d="M 104 0 A 1 1 0 0 1 105 1" stroke="var(--color-pitch-lines)" stroke-width="0.3" fill="none"/><path d="M 0 67 A 1 1 0 0 0 1 68" stroke="var(--color-pitch-lines)" stroke-width="0.3" fill="none"/><path d="M 104 68 A 1 1 0 0 0 105 67" stroke="var(--color-pitch-lines)" stroke-width="0.3" fill="none"/></svg></div>
@@ -1030,7 +1074,8 @@
                 'local-players', 'rival-dorsals', 'start-config', 'btn-home', 'btn-toggle-timer', 'minuto-actual', 'added-time',
                 'futsal-pitch', 'local-bench', 'rival-bench', 'event-timeline', 'formation-modal',
                 'formation-modal-title', 'formation-buttons', 'skip-formation', 'event-flow-message',
-                'btn-half-time', 'btn-start-second', 'btn-finish-game', 'btn-reset-match', 'btn-new-match', 
+                'btn-half-time', 'btn-start-second', 'btn-finish-game', 'btn-reset-match', 'btn-new-match',
+                'btn-zoom-in', 'btn-zoom-out', 
                 'btn-export-excel', 'local-name', 'rival-name-display', 'local-score', 'rival-score',
                 'local-stats-title', 'rival-stats-title', 'local-stats-table', 'rival-stats-table',
                 'btn-view-local', 'btn-view-rival', 'substitution-windows-display',
@@ -1148,8 +1193,8 @@
             let startY = 0;
             let hasMoved = false;
             
-            // Event listener para long press (eliminación) - se ejecuta primero
-            chip.addEventListener('pointerdown', (e) => {
+            // Función para manejar el inicio del long press (compatible con móviles)
+            const handleLongPressStart = (e) => {
                 const state = AppState.get();
                 
                 // Solo permitir eliminación antes de iniciar el partido y si está en el banquillo
@@ -1163,9 +1208,13 @@
                     return;
                 }
                 
+                // Obtener coordenadas (compatible con touch y mouse)
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                
                 // Guardar posición inicial
-                startX = e.clientX;
-                startY = e.clientY;
+                startX = clientX;
+                startY = clientY;
                 hasMoved = false;
                 
                 // Iniciar el timer para el long press
@@ -1177,6 +1226,8 @@
                         if (DragAndDrop.draggedElement === chip) {
                             document.removeEventListener('pointermove', DragAndDrop.move);
                             document.removeEventListener('pointerup', DragAndDrop.end);
+                            document.removeEventListener('touchmove', DragAndDrop.move);
+                            document.removeEventListener('touchend', DragAndDrop.end);
                             DragAndDrop.draggedElement = null;
                             DragAndDrop.isDragging = false;
                             chip.classList.remove('dragging');
@@ -1185,13 +1236,15 @@
                         this.showDeletePlayerModal(name, team, chip);
                     }
                 }, AppConfig.LONG_PRESS_DELAY_MS);
-            }, true); // Capture phase para ejecutarse primero
+            };
             
-            // Detectar movimiento para cancelar long press
-            chip.addEventListener('pointermove', (e) => {
+            // Función para detectar movimiento (compatible con móviles)
+            const handleLongPressMove = (e) => {
                 if (longPressTimer && !isDeleting) {
-                    const deltaX = Math.abs(e.clientX - startX);
-                    const deltaY = Math.abs(e.clientY - startY);
+                    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                    const deltaX = Math.abs(clientX - startX);
+                    const deltaY = Math.abs(clientY - startY);
                     // Si se movió más de 5 píxeles, cancelar long press
                     if (deltaX > 5 || deltaY > 5) {
                         hasMoved = true;
@@ -1199,7 +1252,15 @@
                         longPressTimer = null;
                     }
                 }
-            });
+            };
+            
+            // Event listeners para pointer (desktop) y touch (móvil)
+            chip.addEventListener('pointerdown', handleLongPressStart, true);
+            chip.addEventListener('touchstart', handleLongPressStart, true);
+            
+            // Detectar movimiento para cancelar long press
+            chip.addEventListener('pointermove', handleLongPressMove);
+            chip.addEventListener('touchmove', handleLongPressMove);
             
             // Event listener para drag and drop (solo si no es eliminación)
             chip.addEventListener('pointerdown', (e) => {
@@ -1218,7 +1279,8 @@
                 if (AppState.get().eventFlow.active) EventHandler.processEventSelection(chip);
             });
             
-            chip.addEventListener('pointerup', (e) => {
+            // Función para limpiar el long press
+            const handleLongPressEnd = () => {
                 if (longPressTimer) {
                     clearTimeout(longPressTimer);
                     longPressTimer = null;
@@ -1230,23 +1292,14 @@
                         isDeleting = false;
                     }, 200);
                 }
-            });
+            };
             
-            chip.addEventListener('pointerleave', (e) => {
-                if (longPressTimer) {
-                    clearTimeout(longPressTimer);
-                    longPressTimer = null;
-                }
-                hasMoved = false;
-            });
-            
-            chip.addEventListener('pointercancel', (e) => {
-                if (longPressTimer) {
-                    clearTimeout(longPressTimer);
-                    longPressTimer = null;
-                }
-                hasMoved = false;
-            });
+            // Event listeners para finalizar (compatible con móviles)
+            chip.addEventListener('pointerup', handleLongPressEnd);
+            chip.addEventListener('touchend', handleLongPressEnd);
+            chip.addEventListener('pointerleave', handleLongPressEnd);
+            chip.addEventListener('pointercancel', handleLongPressEnd);
+            chip.addEventListener('touchcancel', handleLongPressEnd);
             
             return chip;
         },
@@ -2222,6 +2275,24 @@
             DOM.elements['btn-view-local'].addEventListener('click', () => this.handleViewToggle('local'));
             DOM.elements['btn-view-rival'].addEventListener('click', () => this.handleViewToggle('rival'));
             DOM.elements['minuto-actual'].addEventListener('click', () => this.handleTimeClick());
+            
+            // Controles de zoom
+            if (DOM.elements['btn-zoom-in'] && DOM.elements['btn-zoom-out']) {
+                let currentZoom = 1;
+                const minZoom = 0.5;
+                const maxZoom = 2;
+                const zoomStep = 0.1;
+                
+                DOM.elements['btn-zoom-in'].addEventListener('click', () => {
+                    currentZoom = Math.min(currentZoom + zoomStep, maxZoom);
+                    DOM.elements['futsal-pitch'].style.transform = `scale(${currentZoom})`;
+                });
+                
+                DOM.elements['btn-zoom-out'].addEventListener('click', () => {
+                    currentZoom = Math.max(currentZoom - zoomStep, minZoom);
+                    DOM.elements['futsal-pitch'].style.transform = `scale(${currentZoom})`;
+                });
+            }
             this.addTimeEditorListeners();
             DOM.elements['cancel-edit-btn'].addEventListener('click', () => DOM.elements['edit-event-modal'].classList.remove('visible'));
             document.addEventListener('visibilitychange', () => this.handleVisibilityChange());
