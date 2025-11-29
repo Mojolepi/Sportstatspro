@@ -60,13 +60,9 @@
         #app-header {
             display: block;
             text-align: center;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            background: var(--color-background);
+            position: relative;
             padding: 10px;
             margin-bottom: 15px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         }
         
         #app-header.hidden {
@@ -186,9 +182,55 @@
         }
         
         .btn-event {
-            background-color: transparent;
+            background-color: rgba(255, 193, 7, 0.2);
             color: var(--color-warning);
             border: 2px solid var(--color-warning);
+            font-size: 1.2em;
+            padding: 0;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        
+        .btn-event:hover {
+            background-color: rgba(255, 193, 7, 0.4);
+            transform: scale(1.1);
+        }
+        
+        .btn-event:active {
+            transform: scale(0.95);
+        }
+        
+        /* Contenedores de botones detrás de las porterías */
+        .event-buttons-container {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            z-index: 5;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #event-buttons-left {
+            left: -50px;
+        }
+        
+        #event-buttons-right {
+            right: -50px;
+        }
+        
+        /* Asegurar que los botones se escalen con el zoom del contenedor */
+        #pitch-and-benches-container {
+            position: relative;
         }
         
         .control-group,
@@ -220,6 +262,9 @@
         }
         #pitch-section {
             position: relative;
+            overflow: visible;
+            padding-left: 120px;
+            padding-right: 120px;
         }
         
         #event-flow-message {
@@ -245,18 +290,19 @@
             cursor: crosshair !important;
         }
         
-        #pitch-section {
-            position: relative;
-        }
-        
         #pitch-and-benches-container {
             transform-origin: center top;
             transition: transform 0.2s ease;
+            margin-bottom: 0;
+            /* Asegurar que el contenedor no se solape con elementos siguientes */
+            display: block;
         }
         
         #futsal-pitch {
             position: relative;
-            width: 100%;
+            width: 75%;
+            max-width: 800px;
+            margin: 0 auto;
             aspect-ratio: 105 / 68;
             background-color: var(--color-pitch);
             border: 3px solid var(--color-pitch-lines);
@@ -328,6 +374,15 @@
             display: block;
             margin-top: 15px;
             gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        /* Asegurar que game-controls siempre quede debajo del banquillo */
+        #game-controls {
+            margin-top: 30px;
+            clear: both;
+            position: relative;
+            z-index: 1;
         }
         
         .bench {
@@ -354,6 +409,8 @@
             position: relative;
             touch-action: none;
             width: 55px;
+            /* Asegurar que los elementos absolutos dentro se posicionen relativos al chip */
+            contain: layout style;
         }
         
         .chip-circle {
@@ -370,6 +427,26 @@
             box-shadow: 0 3px 6px rgba(0, 0, 0, 0.5);
             transition: box-shadow 0.2s;
             position: relative;
+        }
+        
+        /* Minutos dentro del círculo, centrados */
+        .chip-circle .chip-minutes {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: rgba(255, 255, 255, 1);
+            font-size: 11px;
+            font-weight: 700;
+            z-index: 3;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9), 0 0 2px rgba(0, 0, 0, 1);
+            background: rgba(0, 0, 0, 0.4);
+            padding: 2px 4px;
+            border-radius: 4px;
+            border: none;
+            display: none;
+            pointer-events: none;
+            line-height: 1;
         }
         
         .chip-label {
@@ -393,13 +470,21 @@
         }
 
         .chip-on-bench {
-            position: static;
+            position: relative;
         }
         
         .chip-on-pitch {
             position: absolute;
             z-index: 10;
             transform: translate(-50%, -50%);
+        }
+        
+        /* Asegurar que los símbolos siempre se posicionen relativos al chip */
+        .chip-on-bench .chip-cards,
+        .chip-on-bench .chip-stats,
+        .chip-on-pitch .chip-cards,
+        .chip-on-pitch .chip-stats {
+            position: absolute;
         }
         
         .dragging {
@@ -426,33 +511,17 @@
         /* Las tarjetas y otros elementos mantienen su color */
         .expulsado .chip-cards,
         .expulsado .chip-stats,
-        .expulsado .chip-minutes {
+        .expulsado .chip-circle .chip-minutes {
             filter: none !important;
         }
         
         /* Tarjeta roja eliminada de aquí - ahora solo se muestra en .chip-cards (derecha) */
         
-        /* Minutos jugados en esquina izquierda arriba - diseño minimalista */
-        .chip-minutes {
-            position: absolute;
-            top: -10px;
-            left: -6px;
-            color: rgba(255, 255, 255, 0.95);
-            font-size: 13px;
-            font-weight: 600;
-            z-index: 2;
-            display: none;
-            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8), 0 0 1px rgba(0, 0, 0, 0.9);
-            background: none;
-            padding: 0;
-            border: none;
-        }
-        
-        /* Tarjetas en vértice derecho */
+        /* Tarjetas en vértice izquierdo (para no solaparse con goles) */
         .chip-cards {
             position: absolute;
             top: -8px;
-            right: -8px;
+            left: -8px;
             display: flex;
             flex-direction: column;
             gap: 2px;
@@ -483,17 +552,25 @@
         /* Goles y asistencias a la derecha de la ficha, en columna vertical */
         .chip-stats {
             position: absolute;
-            right: -25px;
-            top: 50%;
-            transform: translateY(-50%);
+            right: -5px;
+            top: -5px;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            align-items: flex-end;
+            justify-content: flex-start;
             gap: 2px;
             z-index: 2;
             white-space: nowrap;
             pointer-events: none;
+        }
+        
+        .chip-goals-container,
+        .chip-assists-container {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 0;
+            flex-wrap: nowrap;
         }
         
         .chip-goals,
@@ -505,6 +582,13 @@
             background: none;
             padding: 0;
             border: none;
+            margin-left: -8px;
+            position: relative;
+        }
+        
+        .chip-goals:first-child,
+        .chip-assists:first-child {
+            margin-left: 0;
         }
         
         table {
@@ -865,6 +949,25 @@
             .event-group {
                 grid-template-columns: 1fr 1fr;
             }
+            
+            #pitch-section {
+                padding-left: 70px;
+                padding-right: 70px;
+            }
+            
+            #event-buttons-left {
+                left: -45px;
+            }
+            
+            #event-buttons-right {
+                right: -45px;
+            }
+            
+            .btn-event {
+                width: 35px;
+                height: 35px;
+                font-size: 1em;
+            }
         }
     </style>
 </head>
@@ -915,6 +1018,20 @@
             <div id="event-flow-message" class="hidden"></div>
             <div id="pitch-and-benches-container">
                 <div id="futsal-pitch">
+                    <!-- Botones de eventos detrás de portería izquierda -->
+                    <div id="event-buttons-left" class="event-buttons-container">
+                        <button class="btn-event" data-event="goal" data-label="GOL">⚽</button>
+                        <button class="btn-event" data-event="shot" data-label="DISPARO">💥</button>
+                        <button class="btn-event" data-event="foul" data-label="FALTA">✋</button>
+                        <button class="btn-event" data-event="yellow-card" data-label="AMARILLA">🟨</button>
+                    </div>
+                    <!-- Botones de eventos detrás de portería derecha -->
+                    <div id="event-buttons-right" class="event-buttons-container">
+                        <button class="btn-event" data-event="own-goal" data-label="GOL EN PROPIA">🚫⚽</button>
+                        <button class="btn-event" data-event="corner" data-label="CÓRNER">⛳</button>
+                        <button class="btn-event" data-event="offside" data-label="FUERA DE JUEGO">🏳️</button>
+                        <button class="btn-event" data-event="red-card" data-label="ROJA">🟥</button>
+                    </div>
                     <div class="soccer-pitch-lines"><svg viewBox="0 0 105 68" preserveAspectRatio="xMidYMid meet"><rect x="0" y="0" width="105" height="68" stroke="var(--color-pitch-lines)" stroke-width="0.3" fill="none"/><line x1="52.5" y1="0" x2="52.5" y2="68" stroke="var(--color-pitch-lines)" stroke-width="0.3"/><circle cx="52.5" cy="34" r="9.15" stroke="var(--color-pitch-lines)" stroke-width="0.3" fill="none"/><circle cx="52.5" cy="34" r="0.4" fill="var(--color-pitch-lines)"/><rect x="0" y="13.84" width="16.5" height="40.32" stroke="var(--color-pitch-lines)" stroke-width="0.3" fill="none"/><rect x="0" y="24.84" width="5.5" height="18.32" stroke="var(--color-pitch-lines)" stroke-width="0.3" fill="none"/><circle cx="11" cy="34" r="0.4" fill="var(--color-pitch-lines)"/><path d="M 16.5 26.69 A 9.15 9.15 0 0 1 16.5 41.31" stroke="var(--color-pitch-lines)" stroke-width="0.3" fill="none"/><rect x="88.5" y="13.84" width="16.5" height="40.32" stroke="var(--color-pitch-lines)" stroke-width="0.3" fill="none"/><rect x="99.5" y="24.84" width="5.5" height="18.32" stroke="var(--color-pitch-lines)" stroke-width="0.3" fill="none"/><circle cx="94" cy="34" r="0.4" fill="var(--color-pitch-lines)"/><path d="M 88.5 26.69 A 9.15 9.15 0 0 0 88.5 41.31" stroke="var(--color-pitch-lines)" stroke-width="0.3" fill="none"/><path d="M 0 1 A 1 1 0 0 1 1 0" stroke="var(--color-pitch-lines)" stroke-width="0.3" fill="none"/><path d="M 104 0 A 1 1 0 0 1 105 1" stroke="var(--color-pitch-lines)" stroke-width="0.3" fill="none"/><path d="M 0 67 A 1 1 0 0 0 1 68" stroke="var(--color-pitch-lines)" stroke-width="0.3" fill="none"/><path d="M 104 68 A 1 1 0 0 0 105 67" stroke="var(--color-pitch-lines)" stroke-width="0.3" fill="none"/></svg></div>
                 </div>
                 <div id="bench-container"><div id="local-bench" class="bench"></div><div id="rival-bench" class="bench"></div></div>
@@ -932,13 +1049,7 @@
                     <span style="margin-left: 5px;">2ªP:</span>
                 </div>
             </div>
-             <div class="event-group">
-                  <button class="btn-event" data-event="goal">GOL ⚽</button><button class="btn-event" data-event="own-goal">GOL EN PROPIA 🚫⚽</button>
-                  <button class="btn-event" data-event="shot">DISPARO 💥</button>
-                  <button class="btn-event" data-event="corner">CÓRNER ⛳</button><button class="btn-event" data-event="offside">FUERA DE JUEGO 🏳️</button>
-                  <button class="btn-event" data-event="foul">FALTA ✋</button><button class="btn-event" data-event="yellow-card">AMARILLA 🟨</button>
-                  <button class="btn-event" data-event="red-card">ROJA 🟥</button>
-             </div>
+             <!-- Botones de eventos movidos detrás de las porterías en el campo -->
             <div class="control-group">
                 <button id="btn-half-time" class="btn-secondary" disabled>Descanso</button><button id="btn-start-second" class="btn-secondary" disabled>Inicio 2ª</button>
                 <button id="btn-finish-game" class="btn-danger" disabled>Finalizar</button>
@@ -1202,13 +1313,13 @@
             chip.dataset.name = name;
             chip.dataset.team = team;
 
-            // Contenedor para minutos jugados (esquina izquierda)
-            const minutesBadge = document.createElement('div');
-            minutesBadge.className = 'chip-minutes';
-            chip.appendChild(minutesBadge);
-
             const circle = document.createElement('div');
             circle.className = 'chip-circle';
+            
+            // Contenedor para minutos jugados (dentro del círculo, centrado)
+            const minutesBadge = document.createElement('div');
+            minutesBadge.className = 'chip-minutes';
+            circle.appendChild(minutesBadge);
             
             if (this.isNumeric(name)) {
                 circle.textContent = name;
@@ -1221,7 +1332,7 @@
                 chip.appendChild(label);
             }
             
-            // Contenedor para tarjetas (vértice derecho)
+            // Contenedor para tarjetas (vértice izquierdo)
             const cardsContainer = document.createElement('div');
             cardsContainer.className = 'chip-cards';
             chip.appendChild(cardsContainer);
@@ -1468,7 +1579,7 @@
                     chip.classList.toggle('expulsado', stats.expulsado);
                     chip.draggable = !stats.expulsado;
                     
-                    // Actualizar minutos jugados (esquina izquierda)
+                    // Actualizar minutos jugados (dentro del círculo, centrado)
                     const minutesBadge = chip.querySelector('.chip-minutes');
                     if (minutesBadge) {
                         const minutes = Math.floor((stats.minutosJugados || 0) / 60);
@@ -1480,7 +1591,7 @@
                         }
                     }
                     
-                    // Actualizar tarjetas (vértice derecho)
+                    // Actualizar tarjetas (vértice izquierdo)
                     const cardsContainer = chip.querySelector('.chip-cards');
                     if (cardsContainer) {
                         cardsContainer.innerHTML = '';
@@ -1529,29 +1640,35 @@
                         }
                     }
                     
-                    // Actualizar goles y asistencias (abajo a la derecha)
+                    // Actualizar goles y asistencias (arriba a la derecha, solapados)
                     const statsContainer = chip.querySelector('.chip-stats');
                     if (statsContainer) {
                         statsContainer.innerHTML = '';
-                        // Mostrar goles
+                        
+                        // Contenedor para goles (arriba)
                         if (stats.goles > 0) {
-                            const goalsBadge = document.createElement('span');
-                            goalsBadge.className = 'chip-goals';
-                            goalsBadge.textContent = '⚽'.repeat(Math.min(stats.goles, 5));
-                            if (stats.goles > 5) {
-                                goalsBadge.textContent += stats.goles;
+                            const goalsContainer = document.createElement('div');
+                            goalsContainer.className = 'chip-goals-container';
+                            for (let i = 0; i < stats.goles; i++) {
+                                const goalsBadge = document.createElement('span');
+                                goalsBadge.className = 'chip-goals';
+                                goalsBadge.textContent = '⚽';
+                                goalsContainer.appendChild(goalsBadge);
                             }
-                            statsContainer.appendChild(goalsBadge);
+                            statsContainer.appendChild(goalsContainer);
                         }
-                        // Mostrar asistencias
+                        
+                        // Contenedor para asistencias (debajo de goles)
                         if (stats.asistencias > 0) {
-                            const assistsBadge = document.createElement('span');
-                            assistsBadge.className = 'chip-assists';
-                            assistsBadge.textContent = '👟'.repeat(Math.min(stats.asistencias, 5));
-                            if (stats.asistencias > 5) {
-                                assistsBadge.textContent += stats.asistencias;
+                            const assistsContainer = document.createElement('div');
+                            assistsContainer.className = 'chip-assists-container';
+                            for (let i = 0; i < stats.asistencias; i++) {
+                                const assistsBadge = document.createElement('span');
+                                assistsBadge.className = 'chip-assists';
+                                assistsBadge.textContent = '👟';
+                                assistsContainer.appendChild(assistsBadge);
                             }
-                            statsContainer.appendChild(assistsBadge);
+                            statsContainer.appendChild(assistsContainer);
                         }
                     }
 
@@ -2308,7 +2425,9 @@
             DOM.cacheElements();
             DOM.elements['start-config'].addEventListener('click', () => this.handleStartConfig());
             DOM.elements['btn-home'].addEventListener('click', () => window.location.href = 'index.html');
-            DOM.elements.eventButtons.forEach(b => b.addEventListener('click', (e) => this.handleEventButtonClick(e)));
+            DOM.elements.eventButtons.forEach(b => {
+                b.addEventListener('click', (e) => this.handleEventButtonClick(e));
+            });
             DOM.elements['btn-half-time'].addEventListener('click', () => this.handleHalfTime());
             DOM.elements['btn-start-second'].addEventListener('click', () => this.handleStartSecondHalf());
             DOM.elements['btn-finish-game'].addEventListener('click', () => this.handleFinishGame());
@@ -2328,11 +2447,51 @@
                 const zoomStep = 0.1;
                 
                 const pitchAndBenchesContainer = document.getElementById('pitch-and-benches-container');
+                const gameControls = DOM.elements['game-controls'];
+                
+                const updateGameControlsMargin = () => {
+                    if (pitchAndBenchesContainer && gameControls) {
+                        const benchContainer = document.getElementById('bench-container');
+                        
+                        if (benchContainer) {
+                            // Obtener las posiciones absolutas en el documento
+                            const benchRect = benchContainer.getBoundingClientRect();
+                            const gameControlsRect = gameControls.getBoundingClientRect();
+                            
+                            // Calcular la distancia actual entre el final del banquillo y el inicio de game-controls
+                            const currentDistance = gameControlsRect.top - benchRect.bottom;
+                            
+                            // Distancia fija deseada (30px)
+                            const desiredMargin = 30;
+                            
+                            // Calcular cuánto ajustar el margen
+                            const marginDifference = desiredMargin - currentDistance;
+                            
+                            // Obtener el margen actual de game-controls
+                            const currentMarginTop = parseFloat(window.getComputedStyle(gameControls).marginTop) || 0;
+                            
+                            // Calcular el nuevo margen
+                            const newMarginTop = currentMarginTop + marginDifference;
+                            
+                            // Establecer el nuevo margen (asegurarse de que sea al menos el margen deseado)
+                            gameControls.style.marginTop = `${Math.max(newMarginTop, desiredMargin)}px`;
+                        } else {
+                            // Fallback: usar la altura del contenedor escalado
+                            const containerRect = pitchAndBenchesContainer.getBoundingClientRect();
+                            const scaledHeight = containerRect.height;
+                            gameControls.style.marginTop = `${scaledHeight + 30}px`;
+                        }
+                    }
+                };
                 
                 DOM.elements['btn-zoom-in'].addEventListener('click', () => {
                     currentZoom = Math.min(currentZoom + zoomStep, maxZoom);
                     if (pitchAndBenchesContainer) {
                         pitchAndBenchesContainer.style.transform = `scale(${currentZoom})`;
+                        // Actualizar margen después de que se aplique la transformación
+                        requestAnimationFrame(() => {
+                            setTimeout(updateGameControlsMargin, 10);
+                        });
                     }
                 });
                 
@@ -2340,7 +2499,21 @@
                     currentZoom = Math.max(currentZoom - zoomStep, minZoom);
                     if (pitchAndBenchesContainer) {
                         pitchAndBenchesContainer.style.transform = `scale(${currentZoom})`;
+                        // Actualizar margen después de que se aplique la transformación
+                        requestAnimationFrame(() => {
+                            setTimeout(updateGameControlsMargin, 10);
+                        });
                     }
+                });
+                
+                // Actualizar margen inicial después de que se cargue el DOM
+                setTimeout(() => {
+                    updateGameControlsMargin();
+                }, 200);
+                
+                // También actualizar cuando cambie el tamaño de la ventana
+                window.addEventListener('resize', () => {
+                    setTimeout(updateGameControlsMargin, 100);
                 });
             }
             this.addTimeEditorListeners();
