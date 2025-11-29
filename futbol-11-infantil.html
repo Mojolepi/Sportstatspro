@@ -58,8 +58,19 @@
             margin-bottom: 15px;
         }
         #app-header {
-            display: none;
+            display: block;
             text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: var(--color-background);
+            padding: 10px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        #app-header.hidden {
+            display: none;
         }
         
         #marcador {
@@ -88,6 +99,13 @@
         
         .team-info.rival {
             justify-content: flex-start;
+        }
+        
+        .score-display {
+            font-size: 1.2em;
+            font-weight: bold;
+            min-width: 100px;
+            text-align: center;
         }
         
         #tiempo {
@@ -814,12 +832,34 @@
                 font-size: 9px;
             }
             
+            #app-header {
+                padding: 8px;
+                margin-bottom: 10px;
+            }
+            
             #marcador {
                 font-size: 1.5em;
+                padding: 8px 15px;
+                gap: 10px;
             }
             
             .team-info {
                 font-size: 0.7em;
+            }
+            
+            .score-display {
+                font-size: 1em;
+                min-width: 80px;
+            }
+            
+            #tiempo {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            
+            #btn-toggle-timer {
+                font-size: 0.9em;
+                padding: 10px 15px;
             }
             
             .event-group {
@@ -1093,6 +1133,7 @@
         },
         showMatchUI() {
             this.elements['config-section'].classList.add('hidden');
+            this.elements['app-header'].classList.remove('hidden');
             this.elements['app-header'].style.display = 'block';
             ['pitch-section', 'game-controls', 'timeline-section', 'match-stats-section', 'stats-section']
                 .forEach(id => this.elements[id].classList.remove('hidden'));
