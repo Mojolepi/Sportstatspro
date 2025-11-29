@@ -440,7 +440,7 @@
         
         .chip-yellow-card,
         .chip-red-card {
-            font-size: 14px;
+            font-size: 12px;
             line-height: 1;
             text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8), 0 0 1px rgba(0, 0, 0, 0.9);
             filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
@@ -459,27 +459,25 @@
             /* Mantener el color rojo del emoji */
         }
         
-        /* Goles y asistencias a la derecha de la ficha, pegados a ella */
+        /* Goles y asistencias a la derecha de la ficha, en columna vertical */
         .chip-stats {
             position: absolute;
-            right: -8px;
-            top: 0;
+            right: -25px;
+            top: 50%;
+            transform: translateY(-50%);
             display: flex;
-            flex-direction: row;
+            flex-direction: column;
             align-items: center;
-            justify-content: flex-start;
+            justify-content: center;
             gap: 2px;
             z-index: 2;
             white-space: nowrap;
             pointer-events: none;
-            /* Centrar verticalmente con el círculo (que tiene 38px de altura) */
-            height: 38px;
-            line-height: 38px;
         }
         
         .chip-goals,
         .chip-assists {
-            font-size: 14px;
+            font-size: 12px;
             line-height: 1;
             text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8), 0 0 1px rgba(0, 0, 0, 0.9);
             filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
