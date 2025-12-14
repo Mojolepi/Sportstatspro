@@ -59,67 +59,43 @@
         }
         #app-header {
             display: block;
-            text-align: center;
             position: relative;
-            padding: 10px;
-            margin-bottom: 15px;
+            padding: 5px 0;
+            margin-bottom: 5px;
         }
         
         #app-header.hidden {
             display: none;
         }
         
-        #marcador {
-            font-size: 2em;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 15px;
-            background: rgba(0, 0, 0, 0.2);
-            padding: 10px 20px;
-            border-radius: 8px;
-        }
-        
-        .team-info {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 0.8em;
-        }
-        
-        .team-info.local {
-            justify-content: flex-end;
-        }
-        
-        .team-info.rival {
-            justify-content: flex-start;
-        }
-        
-        .score-display {
-            font-size: 1.2em;
-            font-weight: bold;
-            min-width: 100px;
-            text-align: center;
-        }
-        
         #tiempo {
             display: flex;
+            flex-direction: row;
             align-items: center;
-            justify-content: center;
-            margin-top: 15px;
+            justify-content: flex-start;
+            margin: 0;
             gap: 10px;
+            padding-left: 0;
+            padding-top: 2px;
+            position: relative;
         }
+        
+        #btn-toggle-timer {
+            position: relative;
+            left: auto;
+        }
+        
         #minuto-actual {
-            font-size: 1.3em;
+            font-size: 0.9em;
             font-weight: bold;
             background: #111;
             border: 1px solid #555;
-            padding: 8px 12px;
+            padding: 6px 10px;
             border-radius: 6px;
-            width: 90px;
+            width: 70px;
             text-align: center;
+            margin: 0;
+            margin-top: 3px;
         }
         
         #minuto-actual.editable:hover {
@@ -134,6 +110,23 @@
             margin-left: -5px;
         }
         
+        .match-score-display {
+            font-size: 0.9em;
+            font-weight: bold;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 3px;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .match-score-display span {
+            white-space: nowrap;
+        }
+        
         button {
             padding: 12px 18px;
             border: none;
@@ -143,6 +136,39 @@
             font-weight: bold;
             transition: all 0.2s ease;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        
+        #btn-toggle-timer {
+            width: auto;
+            height: auto;
+            padding: 0;
+            border: none !important;
+            border-radius: 0;
+            background: transparent !important;
+            box-shadow: none !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            min-width: 45px;
+            min-height: 45px;
+            color: white !important;
+        }
+        
+        #btn-toggle-timer:hover:not(:disabled) {
+            transform: scale(1.15);
+            box-shadow: none !important;
+            background: transparent !important;
+            opacity: 0.9;
+        }
+        
+        #btn-toggle-timer:active:not(:disabled) {
+            transform: scale(0.95);
+        }
+        
+        #btn-toggle-timer:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
         }
         
         button:hover:not(:disabled) {
@@ -207,6 +233,29 @@
             transform: scale(0.95);
         }
         
+        /* Estilo especial para el botón de gol en propia */
+        .btn-own-goal {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            position: relative;
+        }
+        
+        .btn-own-goal .own-goal-icon {
+            position: relative;
+            z-index: 2;
+            margin-right: -12px;
+            font-size: 1.1em;
+            transform: translateX(2px);
+        }
+        
+        .btn-own-goal .own-goal-ball {
+            position: relative;
+            z-index: 1;
+            font-size: 1.1em;
+        }
+        
         /* Contenedores de botones detrás de las porterías */
         .event-buttons-container {
             position: absolute;
@@ -221,11 +270,45 @@
         }
         
         #event-buttons-left {
-            left: -50px;
+            left: -45px;
         }
         
         #event-buttons-right {
-            right: -50px;
+            right: -45px;
+        }
+        
+        .btn-team-toggle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: 2px solid white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            transition: all 0.2s;
+            margin-bottom: 6px;
+            padding: 0;
+        }
+        
+        .btn-team-toggle:hover {
+            background: rgba(0, 0, 0, 0.9);
+            transform: scale(1.1);
+        }
+        
+        .btn-team-toggle.active {
+            background: linear-gradient(145deg, var(--color-primary), #0056b3);
+            box-shadow: 0 0 8px var(--color-primary);
+        }
+        
+        .btn-team-toggle.rival.active {
+            background: linear-gradient(145deg, var(--color-danger), #a71d2a);
+            box-shadow: 0 0 8px var(--color-danger);
         }
         
         /* Asegurar que los botones se escalen con el zoom del contenedor */
@@ -263,71 +346,10 @@
         #pitch-section {
             position: relative;
             overflow: visible;
-            padding-left: 120px;
-            padding-right: 120px;
-            padding-bottom: 40px;
-            /* El padding-bottom se ajustará dinámicamente con el zoom */
-        }
-        
-        /* Marcador flotante pequeño (aparece cuando el marcador principal no es visible) */
-        #floating-scoreboard {
-            position: fixed;
-            top: 8px;
-            left: 8px;
-            background: rgba(0, 0, 0, 0.8);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 6px;
-            padding: 5px 9px;
-            z-index: 9999;
-            display: none;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(4px);
-            transition: opacity 0.2s ease, transform 0.2s ease;
-            opacity: 0;
-            transform: translateY(-5px);
-            pointer-events: none;
-        }
-        
-        #floating-scoreboard.visible {
-            display: block;
-            opacity: 1;
-            transform: translateY(0);
-        }
-        
-        #floating-scoreboard .floating-marcador {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.6em;
-            font-weight: bold;
-            color: white;
-            margin-bottom: 2px;
-            line-height: 1.2;
-        }
-        
-        #floating-scoreboard .floating-team {
-            font-size: 0.55em;
-            max-width: 50px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        
-        #floating-scoreboard .floating-score {
-            font-size: 0.65em;
-            min-width: 25px;
-            text-align: center;
-            font-weight: bold;
-        }
-        
-        #floating-scoreboard .floating-time {
-            font-size: 0.5em;
-            color: rgba(255, 255, 255, 0.85);
-            text-align: center;
-            margin-top: 1px;
-            padding-top: 2px;
-            border-top: 1px solid rgba(255, 255, 255, 0.15);
-            line-height: 1.2;
+            padding: 20px;
+            padding-top: 5px;
+            width: 100%;
+            box-sizing: border-box;
         }
         
         #event-flow-message {
@@ -354,17 +376,15 @@
         }
         
         #pitch-and-benches-container {
-            transform-origin: center top;
-            transition: transform 0.2s ease;
+            width: 100%;
             margin-bottom: 0;
-            /* Asegurar que el contenedor no se solape con elementos siguientes */
             display: block;
         }
         
         #futsal-pitch {
             position: relative;
-            width: 75%;
-            max-width: 800px;
+            width: 85%;
+            max-width: 85%;
             margin: 0 auto;
             aspect-ratio: 105 / 68;
             background-color: var(--color-pitch);
@@ -372,65 +392,9 @@
             box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.5);
         }
         
-        #zoom-controls {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            z-index: 100;
-            display: flex;
-            gap: 5px;
-        }
-        
-        .btn-zoom {
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            border: 2px solid white;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            user-select: none;
-            transition: background 0.2s;
-        }
-        
-        .btn-zoom:hover {
-            background: rgba(0, 0, 0, 0.9);
-        }
-        
-        .btn-zoom:active {
-            transform: scale(0.95);
-        }
-        
         .soccer-pitch-lines svg {
             width: 100%;
             height: 100%;
-        }
-        
-        #view-toggle-buttons {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        
-        .btn-view {
-            flex: 1;
-            padding: 10px;
-            font-size: 0.9em;
-        }
-        
-        .btn-view.local.active {
-            background: linear-gradient(145deg, var(--color-primary), #0056b3);
-            box-shadow: 0 0 8px var(--color-primary);
-        }
-        
-        .btn-view.rival.active {
-            background: linear-gradient(145deg, var(--color-danger), #a71d2a);
-            box-shadow: 0 0 8px var(--color-danger);
         }
         
         #bench-container {
@@ -980,33 +944,43 @@
             }
             
             #app-header {
-                padding: 8px;
-                margin-bottom: 10px;
-            }
-            
-            #marcador {
-                font-size: 1.5em;
-                padding: 8px 15px;
-                gap: 10px;
-            }
-            
-            .team-info {
-                font-size: 0.7em;
-            }
-            
-            .score-display {
-                font-size: 1em;
-                min-width: 80px;
+                padding: 5px 0;
+                margin-bottom: 3px;
             }
             
             #tiempo {
+                flex-direction: row;
                 flex-wrap: wrap;
-                gap: 8px;
+                gap: 10px;
+                padding-left: 0;
             }
             
             #btn-toggle-timer {
-                font-size: 0.9em;
-                padding: 10px 15px;
+                width: auto;
+                height: auto;
+                font-size: 1.5em;
+                min-width: 40px;
+                min-height: 40px;
+                position: relative;
+                left: auto;
+            }
+            
+            #minuto-actual {
+                font-size: 0.8em;
+                width: 60px;
+                padding: 5px 8px;
+                margin: 0;
+            }
+            
+            .match-score-display {
+                font-size: 0.8em;
+                gap: 4px;
+                left: 50%;
+                transform: translateX(-50%);
+            }
+            
+            #pitch-section {
+                padding-top: 3px;
             }
             
             .event-group {
@@ -1014,16 +988,22 @@
             }
             
             #pitch-section {
-                padding-left: 70px;
-                padding-right: 70px;
+                padding: 15px;
             }
             
             #event-buttons-left {
-                left: -45px;
+                left: -40px;
             }
             
             #event-buttons-right {
-                right: -45px;
+                right: -40px;
+            }
+            
+            .btn-team-toggle {
+                width: 35px;
+                height: 35px;
+                font-size: 14px;
+                margin-bottom: 5px;
             }
             
             .btn-event {
@@ -1032,31 +1012,11 @@
                 font-size: 1em;
             }
             
-            /* Ajustar marcador flotante en móvil */
-            #floating-scoreboard {
-                top: 5px;
-                left: 5px;
-                padding: 4px 7px;
+            #futsal-pitch {
+                width: 90%;
+                max-width: 90%;
             }
             
-            #floating-scoreboard .floating-marcador {
-                font-size: 0.55em;
-                gap: 4px;
-            }
-            
-            #floating-scoreboard .floating-team {
-                font-size: 0.5em;
-                max-width: 40px;
-            }
-            
-            #floating-scoreboard .floating-score {
-                font-size: 0.6em;
-                min-width: 20px;
-            }
-            
-            #floating-scoreboard .floating-time {
-                font-size: 0.45em;
-            }
         }
     </style>
 </head>
@@ -1082,43 +1042,27 @@
         </section>
 
         <header id="app-header">
-            <div id="marcador">
-                <div class="team-info local"><span id="local-name"></span></div>
-                <div class="score-display"><span id="local-score">0</span> - <span id="rival-score">0</span></div>
-                <div class="team-info rival"><span id="rival-name-display"></span></div>
-            </div>
             <div id="tiempo">
-                <button id="btn-toggle-timer" class="btn-primary" disabled>Ajusta Alineaciones</button>
+                <button id="btn-toggle-timer" class="btn-primary" disabled>▶️</button>
                 <input type="text" id="minuto-actual" value="00:00" readonly>
                 <span id="added-time" class="hidden"></span>
+                <span id="match-score" class="match-score-display">
+                    <span id="local-team-name-display"></span>
+                    <span id="local-score-display">0</span>
+                    <span>-</span>
+                    <span id="rival-score-display">0</span>
+                    <span id="rival-team-name-display"></span>
+                </span>
             </div>
         </header>
 
-        <!-- Marcador flotante pequeño (aparece cuando el marcador principal no es visible) -->
-        <div id="floating-scoreboard">
-            <div class="floating-marcador">
-                <span class="floating-team" id="floating-local-name"></span>
-                <span class="floating-score" id="floating-score">0 - 0</span>
-                <span class="floating-team" id="floating-rival-name"></span>
-            </div>
-            <div class="floating-time" id="floating-time">00:00</div>
-        </div>
-
         <section id="pitch-section" class="hidden">
-            <h2>Pizarra Táctica</h2>
-            <div id="view-toggle-buttons">
-                <button id="btn-view-local" class="btn-view local active"></button>
-                <button id="btn-view-rival" class="btn-view rival"></button>
-            </div>
-            <div id="zoom-controls" style="position: absolute; top: 10px; right: 10px; z-index: 100; display: flex; gap: 5px;">
-                <button id="btn-zoom-out" class="btn-zoom" style="width: 35px; height: 35px; border-radius: 50%; background: rgba(0, 0, 0, 0.7); color: white; border: 2px solid white; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;">−</button>
-                <button id="btn-zoom-in" class="btn-zoom" style="width: 35px; height: 35px; border-radius: 50%; background: rgba(0, 0, 0, 0.7); color: white; border: 2px solid white; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;">+</button>
-            </div>
             <div id="event-flow-message" class="hidden"></div>
             <div id="pitch-and-benches-container">
                 <div id="futsal-pitch">
                     <!-- Botones de eventos detrás de portería izquierda -->
                     <div id="event-buttons-left" class="event-buttons-container">
+                        <button id="btn-view-local" class="btn-team-toggle local active">L</button>
                         <button class="btn-event" data-event="goal" data-label="GOL">⚽</button>
                         <button class="btn-event" data-event="shot" data-label="DISPARO">💥</button>
                         <button class="btn-event" data-event="foul" data-label="FALTA">✋</button>
@@ -1126,7 +1070,11 @@
                     </div>
                     <!-- Botones de eventos detrás de portería derecha -->
                     <div id="event-buttons-right" class="event-buttons-container">
-                        <button class="btn-event" data-event="own-goal" data-label="GOL EN PROPIA">🚫⚽</button>
+                        <button id="btn-view-rival" class="btn-team-toggle rival">V</button>
+                        <button class="btn-event btn-own-goal" data-event="own-goal" data-label="GOL EN PROPIA">
+                            <span class="own-goal-icon">🚫</span>
+                            <span class="own-goal-ball">⚽</span>
+                        </button>
                         <button class="btn-event" data-event="corner" data-label="CÓRNER">⛳</button>
                         <button class="btn-event" data-event="offside" data-label="FUERA DE JUEGO">🏳️</button>
                         <button class="btn-event" data-event="red-card" data-label="ROJA">🟥</button>
@@ -1215,6 +1163,14 @@
                         <button id="cancel-time-btn" class="btn-secondary">Cancelar</button>
                     </div>
                 </div>
+            </div>
+        </div>
+        
+        <div id="substitution-modal" class="modal">
+            <div class="modal-content">
+                <h3 id="substitution-modal-title">Selecciona jugador para sustituir</h3>
+                <div id="substitution-players-list"></div>
+                <button id="cancel-substitution-btn" class="btn-secondary" style="margin-top: 15px;">Cancelar</button>
             </div>
         </div>
         
@@ -1328,15 +1284,16 @@
                 'futsal-pitch', 'local-bench', 'rival-bench', 'event-timeline', 'formation-modal',
                 'formation-modal-title', 'formation-buttons', 'skip-formation', 'event-flow-message',
                 'btn-half-time', 'btn-start-second', 'btn-finish-game', 'btn-reset-match', 'btn-new-match',
-                'btn-zoom-in', 'btn-zoom-out', 
-                'btn-export-excel', 'local-name', 'rival-name-display', 'local-score', 'rival-score',
+                'btn-export-excel',
                 'local-stats-title', 'rival-stats-title', 'local-stats-table', 'rival-stats-table',
+                'local-team-name-display', 'rival-team-name-display', 'local-score-display', 'rival-score-display',
                 'btn-view-local', 'btn-view-rival', 'substitution-windows-display',
                 'sub-windows-first-half', 'sub-windows-second-half', 'sub-windows-divider',
                 'time-editor-modal', 'time-editor-min', 'time-editor-sec',
                 'save-time-btn', 'cancel-time-btn', 'edit-event-modal', 'edit-event-title', 'edit-event-content',
                 'save-edit-btn', 'cancel-edit-btn',
-                'timeline-context-menu', 'context-edit-btn', 'context-delete-btn'
+                'timeline-context-menu', 'context-edit-btn', 'context-delete-btn',
+                'substitution-modal', 'substitution-modal-title', 'substitution-players-list', 'cancel-substitution-btn'
             ];
             ids.forEach(id => this.elements[id] = document.getElementById(id));
             this.elements.eventButtons = document.querySelectorAll('.btn-event');
@@ -1350,12 +1307,12 @@
         },
         updateAll() {
             const state = AppState.get();
-            this.elements['local-name'].textContent = state.localTeamName;
-            this.elements['rival-name-display'].textContent = state.rivalTeamName;
+            if (this.elements['local-name']) this.elements['local-name'].textContent = state.localTeamName;
+            if (this.elements['rival-name-display']) this.elements['rival-name-display'].textContent = state.rivalTeamName;
+            if (this.elements['local-team-name-display']) this.elements['local-team-name-display'].textContent = state.localTeamName;
+            if (this.elements['rival-team-name-display']) this.elements['rival-team-name-display'].textContent = state.rivalTeamName;
             this.elements['local-stats-title'].textContent = state.localTeamName;
             this.elements['rival-stats-title'].textContent = state.rivalTeamName;
-            this.elements['btn-view-local'].textContent = state.localTeamName;
-            this.elements['btn-view-rival'].textContent = state.rivalTeamName;
             this.updateTimerDisplay();
             this.updateButtonStates();
             this.updateScoreboard();
@@ -1389,10 +1346,6 @@
                 timeDisplay = MatchLogic.formatTime(state.matchTimer);
             }
             
-            // Actualizar también el marcador flotante
-            if (this.elements['floating-time']) {
-                this.elements['floating-time'].textContent = timeDisplay;
-            }
         },
         setupBenchesAndPitch() {
             const state = AppState.get();
@@ -1454,6 +1407,9 @@
             let startX = 0;
             let startY = 0;
             let hasMoved = false;
+            let clickStartTime = 0;
+            let clickStartX = 0;
+            let clickStartY = 0;
             
             // Función para manejar el inicio del long press (compatible con móviles)
             const handleLongPressStart = (e) => {
@@ -1537,8 +1493,31 @@
                 }
             });
             
-            chip.addEventListener('click', () => {
-                if (AppState.get().eventFlow.active) EventHandler.processEventSelection(chip);
+            chip.addEventListener('pointerdown', (e) => {
+                clickStartTime = Date.now();
+                clickStartX = e.clientX;
+                clickStartY = e.clientY;
+            }, true);
+            
+            chip.addEventListener('click', (e) => {
+                const state = AppState.get();
+                // Si hay un flujo de eventos activo, procesar la selección
+                if (state.eventFlow.active) {
+                    EventHandler.processEventSelection(chip);
+                    return;
+                }
+                // Verificar que fue un click simple (no drag)
+                const clickDuration = Date.now() - clickStartTime;
+                const clickDistance = Math.sqrt(
+                    Math.pow(e.clientX - clickStartX, 2) + Math.pow(e.clientY - clickStartY, 2)
+                );
+                const isSimpleClick = clickDuration < 300 && clickDistance < 10 && !DragAndDrop.isDragging && !DragAndDrop.draggedElement;
+                
+                // Si es un click simple y el jugador está en el campo, mostrar modal de sustitución
+                if (isSimpleClick && chip.classList.contains('chip-on-pitch') && !chip.classList.contains('expulsado')) {
+                    e.stopPropagation();
+                    DOM.showSubstitutionModal(chip);
+                }
             });
             
             // Función para limpiar el long press
@@ -1564,6 +1543,78 @@
             chip.addEventListener('touchcancel', handleLongPressEnd);
             
             return chip;
+        },
+        showSubstitutionModal(playerOutChip) {
+            const state = AppState.get();
+            const team = playerOutChip.dataset.team;
+            const playerOutName = playerOutChip.dataset.name;
+            const teamName = team === 'local' ? state.localTeamName : state.rivalTeamName;
+            
+            // Obtener jugadores del banquillo del mismo equipo
+            const benchPlayers = Object.entries(state.playerStats[team])
+                .filter(([name, stats]) => !stats.onPitch && name !== playerOutName && !stats.expulsado)
+                .map(([name, stats]) => ({
+                    name,
+                    stats,
+                    minutesPlayed: stats.minutosJugados || 0
+                }))
+                .sort((a, b) => b.minutesPlayed - a.minutesPlayed);
+            
+            if (benchPlayers.length === 0) {
+                alert(`No hay jugadores disponibles en el banquillo de ${teamName} para sustituir.`);
+                return;
+            }
+            
+            // Actualizar título del modal
+            this.elements['substitution-modal-title'].textContent = `Sustituir a ${playerOutName} (${teamName})`;
+            
+            // Limpiar y llenar la lista
+            const listContainer = this.elements['substitution-players-list'];
+            listContainer.innerHTML = '';
+            
+            benchPlayers.forEach(({ name, minutesPlayed }) => {
+                const playerItem = document.createElement('div');
+                playerItem.className = 'substitution-player-item';
+                playerItem.style.cssText = 'padding: 12px; margin: 5px 0; background: #333; border: 1px solid #555; border-radius: 6px; cursor: pointer; transition: background 0.2s;';
+                playerItem.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: bold;">${name}</span>
+                        <span style="color: #888; font-size: 0.9em;">${MatchLogic.formatMinutesRoundedUp(minutesPlayed)}'</span>
+                    </div>
+                `;
+                playerItem.addEventListener('click', () => {
+                    this.handleSubstitutionFromModal(playerOutChip, name, team);
+                });
+                playerItem.addEventListener('mouseenter', () => {
+                    playerItem.style.background = '#444';
+                });
+                playerItem.addEventListener('mouseleave', () => {
+                    playerItem.style.background = '#333';
+                });
+                listContainer.appendChild(playerItem);
+            });
+            
+            // Mostrar modal
+            this.elements['substitution-modal'].classList.add('visible');
+        },
+        handleSubstitutionFromModal(playerOutChip, playerInName, team) {
+            const state = AppState.get();
+            const playerOutName = playerOutChip.dataset.name;
+            
+            // Buscar el chip del jugador que entra
+            const playerInChip = Array.from(document.querySelectorAll('.player-chip'))
+                .find(chip => chip.dataset.name === playerInName && chip.dataset.team === team);
+            
+            if (!playerInChip) {
+                alert('No se encontró el jugador seleccionado.');
+                return;
+            }
+            
+            // Cerrar modal
+            this.elements['substitution-modal'].classList.remove('visible');
+            
+            // Realizar la sustitución usando la función existente
+            DragAndDrop.handlePlayerSwap(playerInChip, playerOutChip);
         },
         showDeletePlayerModal(playerName, team, chip) {
             const state = AppState.get();
@@ -1764,6 +1815,7 @@
                                 const goalsBadge = document.createElement('span');
                                 goalsBadge.className = 'chip-goals';
                                 goalsBadge.textContent = '⚽';
+                                // Agregar al final para que los nuevos aparezcan a la derecha
                                 goalsContainer.appendChild(goalsBadge);
                             }
                             statsContainer.appendChild(goalsContainer);
@@ -1777,6 +1829,7 @@
                                 const assistsBadge = document.createElement('span');
                                 assistsBadge.className = 'chip-assists';
                                 assistsBadge.textContent = '👟';
+                                // Agregar al final para que los nuevos aparezcan a la derecha
                                 assistsContainer.appendChild(assistsBadge);
                             }
                             statsContainer.appendChild(assistsContainer);
@@ -1799,12 +1852,22 @@
                     
                     // Actualizar posición si está en el campo
                     if (stats.onPitch && stats.position) {
+                        // Asegurar que el chip esté en el campo
+                        const pitch = this.elements['futsal-pitch'];
+                        if (chip.parentElement !== pitch) {
+                            pitch.appendChild(chip);
+                        }
                         Object.assign(chip.style, stats.position, {
                             transform: 'translate(-50%, -50%)',
                             display: ''
                         });
                     } else {
+                        // Si está en el banquillo, limpiar posición y mover al banquillo correcto
                         chip.style.cssText = '';
+                        const bench = this.elements[`${team}-bench`];
+                        if (bench && chip.parentElement !== bench) {
+                            bench.appendChild(chip);
+                        }
                     }
                 });
             });
@@ -1838,19 +1901,11 @@
             // Si el local se mete goles en propia, esos goles cuentan para el rival
             const rivalScore = rivalPlayerGoals + localOwnGoals;
             
-            this.elements['local-score'].textContent = localScore;
-            this.elements['rival-score'].textContent = rivalScore;
+            if (this.elements['local-score']) this.elements['local-score'].textContent = localScore;
+            if (this.elements['rival-score']) this.elements['rival-score'].textContent = rivalScore;
+            if (this.elements['local-score-display']) this.elements['local-score-display'].textContent = localScore;
+            if (this.elements['rival-score-display']) this.elements['rival-score-display'].textContent = rivalScore;
             
-            // Actualizar también el marcador flotante
-            if (this.elements['floating-score']) {
-                this.elements['floating-score'].textContent = `${localScore} - ${rivalScore}`;
-            }
-            if (this.elements['floating-local-name']) {
-                this.elements['floating-local-name'].textContent = state.localTeamName || '';
-            }
-            if (this.elements['floating-rival-name']) {
-                this.elements['floating-rival-name'].textContent = state.rivalTeamName || '';
-            }
         },
         updateButtonStates() {
             const state = AppState.get();
@@ -1859,19 +1914,19 @@
             const timerButton = this.elements['btn-toggle-timer'];
 
             if (!started) {
-                timerButton.textContent = "INICIAR PARTIDO";
+                timerButton.textContent = "▶️";
                 timerButton.className = "btn-primary";
                 timerButton.disabled = !MatchLogic.checkStartingConditions();
             } else if (finished) {
-                timerButton.textContent = "Partido Finalizado";
+                timerButton.textContent = "⏹️";
                 timerButton.className = "btn-secondary";
                 timerButton.disabled = true;
             } else if (state.isMatchRunning) {
-                timerButton.textContent = "Pausar ⏸️";
+                timerButton.textContent = "⏸️";
                 timerButton.className = "btn-warning";
                 timerButton.disabled = false;
             } else {
-                timerButton.textContent = "Reanudar ▶️";
+                timerButton.textContent = "▶️";
                 timerButton.className = "btn-primary";
                 timerButton.disabled = false;
             }
@@ -1992,7 +2047,9 @@
         updateDocumentTitle() {
             const state = AppState.get();
             const time = MatchLogic.formatTime(state.matchTimer);
-            const score = `${state.localTeamName} ${this.elements['local-score'].textContent}-${this.elements['rival-score'].textContent} ${state.rivalTeamName}`;
+            const localScoreText = this.elements['local-score'] ? this.elements['local-score'].textContent : '0';
+            const rivalScoreText = this.elements['rival-score'] ? this.elements['rival-score'].textContent : '0';
+            const score = `${state.localTeamName} ${localScoreText}-${rivalScoreText} ${state.rivalTeamName}`;
             
             let prefix = 'Preparación';
             const hasFinal = state.matchEvents.some(e => e.text.includes('Final'));
@@ -2563,174 +2620,9 @@
             DOM.elements['btn-view-rival'].addEventListener('click', () => this.handleViewToggle('rival'));
             DOM.elements['minuto-actual'].addEventListener('click', () => this.handleTimeClick());
             
-            // Controles de zoom
-            if (DOM.elements['btn-zoom-in'] && DOM.elements['btn-zoom-out']) {
-                let currentZoom = 1;
-                const minZoom = 0.5;
-                const maxZoom = 2;
-                const zoomStep = 0.1;
-                
-                const pitchAndBenchesContainer = document.getElementById('pitch-and-benches-container');
-                const gameControls = DOM.elements['game-controls'];
-                
-                const updateGameControlsMargin = () => {
-                    if (pitchAndBenchesContainer && gameControls) {
-                        const benchContainer = document.getElementById('bench-container');
-                        const pitchSection = document.getElementById('pitch-section');
-                        
-                        if (benchContainer && pitchSection) {
-                            // Obtener las posiciones absolutas en el documento
-                            const benchRect = benchContainer.getBoundingClientRect();
-                            const gameControlsRect = gameControls.getBoundingClientRect();
-                            
-                            // Calcular la distancia actual entre el final del banquillo y el inicio de game-controls
-                            const currentDistance = gameControlsRect.top - benchRect.bottom;
-                            
-                            // Distancia fija deseada (30px)
-                            const desiredMargin = 30;
-                            
-                            // Calcular cuánto ajustar el margen
-                            const marginDifference = desiredMargin - currentDistance;
-                            
-                            // Obtener el margen actual de game-controls
-                            const currentMarginTop = parseFloat(window.getComputedStyle(gameControls).marginTop) || 0;
-                            
-                            // Calcular el nuevo margen
-                            const newMarginTop = currentMarginTop + marginDifference;
-                            
-                            // Establecer el nuevo margen (asegurarse de que sea al menos el margen deseado)
-                            gameControls.style.marginTop = `${Math.max(newMarginTop, desiredMargin)}px`;
-                            
-                            // Ajustar el padding-bottom de pitch-section para que el fondo se adapte al zoom
-                            const containerRect = pitchAndBenchesContainer.getBoundingClientRect();
-                            const pitchSectionRect = pitchSection.getBoundingClientRect();
-                            
-                            // Calcular la altura escalada del contenedor
-                            const scaledHeight = containerRect.height;
-                            // Calcular la posición del final del banquillo relativa al inicio de pitch-section
-                            const benchBottomRelative = benchRect.bottom - pitchSectionRect.top;
-                            
-                            // Calcular cuánto espacio adicional necesita el fondo
-                            // Agregar espacio extra para mantener la distancia con los botones
-                            const basePadding = 40; // Padding base más generoso
-                            const extraSpace = Math.max(0, scaledHeight - benchBottomRelative);
-                            const additionalPadding = extraSpace + 20; // Espacio adicional para mantener distancia
-                            
-                            // Establecer el padding-bottom para que el fondo cubra todo el contenido escalado
-                            pitchSection.style.paddingBottom = `${basePadding + additionalPadding}px`;
-                        } else {
-                            // Fallback: usar la altura del contenedor escalado
-                            const containerRect = pitchAndBenchesContainer.getBoundingClientRect();
-                            const scaledHeight = containerRect.height;
-                            gameControls.style.marginTop = `${scaledHeight + 30}px`;
-                            
-                            if (pitchSection) {
-                                pitchSection.style.paddingBottom = `${40 + scaledHeight + 20}px`;
-                            }
-                        }
-                    }
-                };
-                
-                DOM.elements['btn-zoom-in'].addEventListener('click', () => {
-                    currentZoom = Math.min(currentZoom + zoomStep, maxZoom);
-                    if (pitchAndBenchesContainer) {
-                        pitchAndBenchesContainer.style.transform = `scale(${currentZoom})`;
-                        // Actualizar margen después de que se aplique la transformación
-                        requestAnimationFrame(() => {
-                            setTimeout(updateGameControlsMargin, 10);
-                        });
-                    }
-                });
-                
-                DOM.elements['btn-zoom-out'].addEventListener('click', () => {
-                    currentZoom = Math.max(currentZoom - zoomStep, minZoom);
-                    if (pitchAndBenchesContainer) {
-                        pitchAndBenchesContainer.style.transform = `scale(${currentZoom})`;
-                        // Actualizar margen después de que se aplique la transformación
-                        requestAnimationFrame(() => {
-                            setTimeout(updateGameControlsMargin, 10);
-                        });
-                    }
-                });
-                
-                // Actualizar margen inicial después de que se cargue el DOM
-                setTimeout(() => {
-                    updateGameControlsMargin();
-                }, 200);
-                
-                // También actualizar cuando cambie el tamaño de la ventana
-                window.addEventListener('resize', () => {
-                    setTimeout(updateGameControlsMargin, 100);
-                });
-            }
-            
-            // Configurar Intersection Observer para el marcador flotante
-            const appHeader = DOM.elements['app-header'];
-            const floatingScoreboard = DOM.elements['floating-scoreboard'];
-            
-            if (appHeader && floatingScoreboard) {
-                // Función para verificar si el marcador principal es visible
-                const checkHeaderVisibility = () => {
-                    if (!appHeader || appHeader.classList.contains('hidden')) {
-                        // Si el header está oculto, no mostrar el flotante
-                        floatingScoreboard.classList.remove('visible');
-                        return;
-                    }
-                    
-                    const rect = appHeader.getBoundingClientRect();
-                    const isVisible = rect.top >= 0 && rect.top < window.innerHeight && 
-                                     rect.bottom > 0 && rect.bottom <= window.innerHeight;
-                    
-                    if (isVisible) {
-                        // El marcador principal es visible, ocultar el flotante
-                        floatingScoreboard.classList.remove('visible');
-                    } else {
-                        // El marcador principal no es visible, mostrar el flotante
-                        floatingScoreboard.classList.add('visible');
-                    }
-                };
-                
-                // Usar Intersection Observer para detectar cuando el header sale de la vista
-                const observer = new IntersectionObserver((entries) => {
-                    entries.forEach(entry => {
-                        if (entry.isIntersecting) {
-                            // El marcador principal es visible, ocultar el flotante
-                            floatingScoreboard.classList.remove('visible');
-                        } else {
-                            // El marcador principal no es visible, mostrar el flotante
-                            floatingScoreboard.classList.add('visible');
-                        }
-                    });
-                }, {
-                    threshold: 0, // Se considera visible si cualquier parte está en pantalla
-                    rootMargin: '0px'
-                });
-                
-                observer.observe(appHeader);
-                
-                // También verificar en eventos de scroll para mayor precisión
-                let scrollTimeout;
-                const handleScroll = () => {
-                    clearTimeout(scrollTimeout);
-                    scrollTimeout = setTimeout(() => {
-                        checkHeaderVisibility();
-                    }, 10);
-                };
-                
-                window.addEventListener('scroll', handleScroll, { passive: true });
-                document.addEventListener('scroll', handleScroll, { passive: true });
-                
-                // Verificar inicialmente y después de un pequeño delay
-                setTimeout(checkHeaderVisibility, 100);
-                setTimeout(checkHeaderVisibility, 500);
-                
-                // Verificar también cuando cambia el tamaño de la ventana
-                window.addEventListener('resize', () => {
-                    setTimeout(checkHeaderVisibility, 50);
-                });
-            }
             this.addTimeEditorListeners();
             DOM.elements['cancel-edit-btn'].addEventListener('click', () => DOM.elements['edit-event-modal'].classList.remove('visible'));
+            DOM.elements['cancel-substitution-btn'].addEventListener('click', () => DOM.elements['substitution-modal'].classList.remove('visible'));
             document.addEventListener('visibilitychange', () => this.handleVisibilityChange());
             
             document.addEventListener('click', (e) => {
@@ -3427,35 +3319,39 @@
                 state.initialPlayerState = JSON.parse(JSON.stringify(state.playerStats));
             } else if (statsIn.onPitch !== statsOut.onPitch) {
                 // Durante el partido: intercambio de posiciones en sustituciones
-                // Preservar las posiciones que el usuario ha movido
-                const posIn = statsIn.position ? {...statsIn.position} : null;
-                const posOut = statsOut.position ? {...statsOut.position} : null;
+                // Determinar quién está en el campo y quién en el banquillo
+                const onPitchPlayerName = statsIn.onPitch ? playerInName : playerOutName;
+                const onBenchPlayerName = statsIn.onPitch ? playerOutName : playerInName;
+                const onPitchStats = statsIn.onPitch ? statsIn : statsOut;
+                const onBenchStats = statsIn.onPitch ? statsOut : statsIn;
                 
-                // Intercambiar posiciones si ambas existen
-                if (posIn && posOut) {
-                    statsIn.position = posOut;
-                    statsOut.position = posIn;
-                } else if (posOut) {
-                    // Si solo el que sale tiene posición, dársela al que entra
-                    statsIn.position = posOut;
-                } else if (posIn) {
-                    // Si solo el que entra tiene posición, dársela al que sale
-                    statsOut.position = posIn;
+                // Guardar la posición del jugador que está en el campo
+                const pitchPosition = onPitchStats.position ? {...onPitchStats.position} : null;
+                
+                // El jugador del banquillo toma la posición del del campo
+                if (pitchPosition) {
+                    onBenchStats.position = pitchPosition;
                 }
+                // El jugador del campo pierde su posición (va al banquillo)
+                onPitchStats.position = null;
+                
+                // Intercambiar estados onPitch
+                onPitchStats.onPitch = false;
+                onBenchStats.onPitch = true;
                 
                 // Actualizar initialPlayerState para preservar las nuevas posiciones
                 if (state.initialPlayerState) {
                     const initialStatsIn = state.initialPlayerState[team]?.[playerInName];
                     const initialStatsOut = state.initialPlayerState[team]?.[playerOutName];
-                    if (initialStatsIn && statsIn.position) {
-                        initialStatsIn.position = {...statsIn.position};
+                    if (initialStatsIn) {
+                        initialStatsIn.position = statsIn.position ? {...statsIn.position} : null;
+                        initialStatsIn.onPitch = statsIn.onPitch;
                     }
-                    if (initialStatsOut && statsOut.position) {
-                        initialStatsOut.position = {...statsOut.position};
+                    if (initialStatsOut) {
+                        initialStatsOut.position = statsOut.position ? {...statsOut.position} : null;
+                        initialStatsOut.onPitch = statsOut.onPitch;
                     }
                 }
-                const onPitchPlayerName = statsIn.onPitch ? playerInName : playerOutName;
-                const onBenchPlayerName = statsIn.onPitch ? playerOutName : playerInName;
                 
                 // Verificar y contar ventanas para el equipo local
                 if (team === 'local') {
@@ -3490,6 +3386,9 @@
                 }
                 
                 MatchLogic.addMatchEvent({ type: 'substitution', playerIn: onBenchPlayerName, playerOut: onPitchPlayerName, team });
+                
+                // Forzar actualización de los chips para evitar solapamientos
+                DOM.updatePlayerChips();
                 MatchLogic.rebuildAndRecalculateAllState();
             } else if (statsIn.onPitch && statsOut.onPitch) {
                 // Intercambio de posiciones entre dos jugadores en el campo
