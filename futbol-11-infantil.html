@@ -127,6 +127,43 @@
             white-space: nowrap;
         }
         
+        .zoom-controls-header {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .btn-zoom-header {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: 2px solid white;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            transition: all 0.2s;
+            padding: 0;
+        }
+        
+        .btn-zoom-header:hover {
+            background: rgba(0, 0, 0, 0.9);
+            transform: scale(1.1);
+        }
+        
+        .btn-zoom-header:active {
+            transform: scale(0.95);
+        }
+        
         button {
             padding: 12px 18px;
             border: none;
@@ -379,6 +416,8 @@
             width: 100%;
             margin-bottom: 0;
             display: block;
+            transform-origin: center top;
+            transition: transform 0.2s ease;
         }
         
         #futsal-pitch {
@@ -979,6 +1018,16 @@
                 transform: translateX(-50%);
             }
             
+            .zoom-controls-header {
+                gap: 6px;
+            }
+            
+            .btn-zoom-header {
+                width: 30px;
+                height: 30px;
+                font-size: 18px;
+            }
+            
             #pitch-section {
                 padding-top: 3px;
             }
@@ -1053,6 +1102,10 @@
                     <span id="rival-score-display">0</span>
                     <span id="rival-team-name-display"></span>
                 </span>
+                <div id="zoom-controls-header" class="zoom-controls-header">
+                    <button id="btn-zoom-out-header" class="btn-zoom-header" title="Alejar">−</button>
+                    <button id="btn-zoom-in-header" class="btn-zoom-header" title="Acercar">+</button>
+                </div>
             </div>
         </header>
 
@@ -1293,7 +1346,8 @@
                 'save-time-btn', 'cancel-time-btn', 'edit-event-modal', 'edit-event-title', 'edit-event-content',
                 'save-edit-btn', 'cancel-edit-btn',
                 'timeline-context-menu', 'context-edit-btn', 'context-delete-btn',
-                'substitution-modal', 'substitution-modal-title', 'substitution-players-list', 'cancel-substitution-btn'
+                'substitution-modal', 'substitution-modal-title', 'substitution-players-list', 'cancel-substitution-btn',
+                'btn-zoom-in-header', 'btn-zoom-out-header', 'zoom-controls-header'
             ];
             ids.forEach(id => this.elements[id] = document.getElementById(id));
             this.elements.eventButtons = document.querySelectorAll('.btn-event');
@@ -1738,19 +1792,14 @@
                     chip.draggable = !stats.expulsado;
                     
                     // Actualizar minutos jugados (dentro del círculo, centrado)
-                    // Redondear hacia arriba como en las tablas
-                    // Mostrar desde 1 segundo (00:01) porque se redondea a 1'
+                    // Mostrar siempre los minutos para que se actualicen en tiempo real (tanto en campo como banquillo)
                     const minutesBadge = chip.querySelector('.chip-minutes');
                     if (minutesBadge) {
                         const totalSeconds = stats.minutosJugados || 0;
-                        // Si tiene al menos 1 segundo, redondear hacia arriba (1 segundo = 1 minuto)
+                        // Redondear hacia arriba: si tiene al menos 1 segundo, mostrar 1 minuto
                         const minutes = totalSeconds >= 1 ? Math.ceil(totalSeconds / 60) : 0;
-                        if (minutes > 0) {
-                            minutesBadge.textContent = `${minutes}'`;
-                            minutesBadge.style.display = 'block';
-                        } else {
-                            minutesBadge.style.display = 'none';
-                        }
+                        minutesBadge.textContent = minutes > 0 ? `${minutes}'` : '';
+                        minutesBadge.style.display = minutes > 0 ? 'block' : 'none';
                     }
                     
                     // Actualizar tarjetas (vértice izquierdo)
@@ -2620,9 +2669,67 @@
             DOM.elements['btn-view-rival'].addEventListener('click', () => this.handleViewToggle('rival'));
             DOM.elements['minuto-actual'].addEventListener('click', () => this.handleTimeClick());
             
+            // Controles de zoom
+            if (DOM.elements['btn-zoom-in-header'] && DOM.elements['btn-zoom-out-header']) {
+                let currentZoom = 1;
+                const minZoom = 0.5;
+                const maxZoom = 2;
+                const zoomStep = 0.1;
+                
+                const pitchAndBenchesContainer = document.getElementById('pitch-and-benches-container');
+                
+                const updateZoom = () => {
+                    if (pitchAndBenchesContainer) {
+                        pitchAndBenchesContainer.style.transform = `scale(${currentZoom})`;
+                    }
+                };
+                
+                DOM.elements['btn-zoom-in-header'].addEventListener('click', () => {
+                    currentZoom = Math.min(currentZoom + zoomStep, maxZoom);
+                    updateZoom();
+                });
+                
+                DOM.elements['btn-zoom-out-header'].addEventListener('click', () => {
+                    currentZoom = Math.max(currentZoom - zoomStep, minZoom);
+                    updateZoom();
+                });
+                
+                // Inicializar zoom
+                updateZoom();
+            }
+            
             this.addTimeEditorListeners();
             DOM.elements['cancel-edit-btn'].addEventListener('click', () => DOM.elements['edit-event-modal'].classList.remove('visible'));
             DOM.elements['cancel-substitution-btn'].addEventListener('click', () => DOM.elements['substitution-modal'].classList.remove('visible'));
+            
+            // Controles de zoom
+            if (DOM.elements['btn-zoom-in-header'] && DOM.elements['btn-zoom-out-header']) {
+                let currentZoom = 1;
+                const minZoom = 0.5;
+                const maxZoom = 2;
+                const zoomStep = 0.1;
+                
+                const pitchAndBenchesContainer = document.getElementById('pitch-and-benches-container');
+                
+                const updateZoom = () => {
+                    if (pitchAndBenchesContainer) {
+                        pitchAndBenchesContainer.style.transform = `scale(${currentZoom})`;
+                    }
+                };
+                
+                DOM.elements['btn-zoom-in-header'].addEventListener('click', () => {
+                    currentZoom = Math.min(currentZoom + zoomStep, maxZoom);
+                    updateZoom();
+                });
+                
+                DOM.elements['btn-zoom-out-header'].addEventListener('click', () => {
+                    currentZoom = Math.max(currentZoom - zoomStep, minZoom);
+                    updateZoom();
+                });
+                
+                // Inicializar zoom
+                updateZoom();
+            }
             document.addEventListener('visibilitychange', () => this.handleVisibilityChange());
             
             document.addEventListener('click', (e) => {
