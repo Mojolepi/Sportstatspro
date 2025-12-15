@@ -391,21 +391,37 @@
         
         #event-flow-message {
             position: absolute;
-            top: 10px;
+            top: 80px;
             left: 50%;
-            width: 90%;
-            max-width: 400px;
+            width: auto;
+            max-width: 240px;
+            min-width: 160px;
             transform: translateX(-50%);
-            background-color: rgba(0, 0, 0, 0.9);
+            background-color: rgba(0, 0, 0, 0.92);
             color: white;
-            padding: 12px 22px;
-            border-radius: 25px;
+            padding: 4px 10px;
+            border-radius: 12px;
             z-index: 1001;
-            font-size: 1em;
+            font-size: 0.7em;
             border: 1px solid var(--color-primary);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
             text-align: center;
             cursor: pointer;
+            pointer-events: auto;
+            line-height: 1.2;
+            word-wrap: break-word;
+        }
+        
+        #event-flow-message strong {
+            font-weight: 600;
+        }
+        
+        #event-flow-message small {
+            display: block;
+            font-size: 0.65em;
+            margin-top: 2px;
+            opacity: 0.7;
+            font-weight: normal;
         }
         
         .selecting-mode {
@@ -1359,6 +1375,32 @@
             ['pitch-section', 'game-controls', 'timeline-section', 'match-stats-section', 'stats-section']
                 .forEach(id => this.elements[id].classList.remove('hidden'));
         },
+        centerField() {
+            // Función para centrar el campo de fútbol en el centro de la pantalla
+            const pitchElement = this.elements['futsal-pitch'];
+            if (!pitchElement) return;
+            
+            // Esperar un momento para asegurar que el DOM esté completamente renderizado
+            requestAnimationFrame(() => {
+                // Obtener la posición y dimensiones del campo
+                const pitchRect = pitchElement.getBoundingClientRect();
+                const pitchCenterY = pitchRect.top + pitchRect.height / 2;
+                
+                // Calcular el centro de la ventana visible
+                const windowCenterY = window.innerHeight / 2;
+                
+                // Calcular cuánto necesitamos hacer scroll
+                const currentScrollY = window.scrollY || window.pageYOffset;
+                const scrollOffset = pitchCenterY - windowCenterY;
+                const targetScrollY = currentScrollY + scrollOffset;
+                
+                // Hacer scroll suave al centro del campo
+                window.scrollTo({
+                    top: Math.max(0, targetScrollY),
+                    behavior: 'smooth'
+                });
+            });
+        },
         updateAll() {
             const state = AppState.get();
             if (this.elements['local-name']) this.elements['local-name'].textContent = state.localTeamName;
@@ -1798,8 +1840,8 @@
                         const totalSeconds = stats.minutosJugados || 0;
                         // Redondear hacia arriba: si tiene al menos 1 segundo, mostrar 1 minuto
                         const minutes = totalSeconds >= 1 ? Math.ceil(totalSeconds / 60) : 0;
-                        minutesBadge.textContent = minutes > 0 ? `${minutes}'` : '';
-                        minutesBadge.style.display = minutes > 0 ? 'block' : 'none';
+                        minutesBadge.textContent = `${minutes}'`;
+                        minutesBadge.style.display = 'block';
                     }
                     
                     // Actualizar tarjetas (vértice izquierdo)
@@ -2956,19 +2998,46 @@
                 this.startPlayerEventFlow(type);
             }
         },
+        positionEventMessage() {
+            // Posicionar el mensaje justo en el borde superior del campo
+            const messageEl = DOM.elements['event-flow-message'];
+            const pitchEl = DOM.elements['futsal-pitch'];
+            if (!messageEl || !pitchEl) return;
+            
+            // Obtener la posición del campo
+            const pitchRect = pitchEl.getBoundingClientRect();
+            const pitchSectionRect = DOM.elements['pitch-section'].getBoundingClientRect();
+            
+            // Calcular la posición: justo en el borde superior del campo
+            // El mensaje debe estar centrado horizontalmente y en el borde superior del campo
+            const topOffset = pitchRect.top - pitchSectionRect.top;
+            
+            // Asegurar que no esté demasiado arriba (evitar marcador)
+            const minTop = 60; // Mínimo para evitar el marcador
+            const finalTop = Math.max(minTop, topOffset);
+            
+            messageEl.style.top = `${finalTop}px`;
+        },
         startPlayerEventFlow(type) {
             const state = AppState.get();
             state.eventFlow = { active: true, type, step: 1 };
             document.querySelector('main').classList.add('selecting-mode');
-            DOM.elements['pitch-section'].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Centrar el campo correctamente en el centro de la pantalla
+            setTimeout(() => {
+                DOM.centerField();
+            }, 100);
             let prompt = `Selecciona el jugador`;
             if (type === 'goal') prompt = "Selecciona al <strong>goleador</strong>";
             else if (type === 'own-goal') prompt = "Selecciona al jugador que se lo ha metido en <strong>propia puerta</strong>";
             else if (type === 'shot') prompt = "Selecciona al <strong>rematador</strong>";
             else if (type === 'foul') prompt = "Selecciona al <strong>infractor</strong>";
             else if (type === 'yellow-card' || type === 'red-card') prompt = "Selecciona al jugador (campo o banquillo)";
-            DOM.elements['event-flow-message'].innerHTML = `${prompt} <small>(clic aquí para cancelar)</small>`;
+            DOM.elements['event-flow-message'].innerHTML = `${prompt} <small>(cancelar)</small>`;
             DOM.elements['event-flow-message'].classList.remove('hidden');
+            // Posicionar el mensaje dinámicamente
+            setTimeout(() => {
+                DOM.positionEventMessage();
+            }, 150);
             DOM.elements['event-flow-message'].onclick = () => this.endEventFlow(true);
         },
         startTeamEventFlow(type) {
@@ -3004,7 +3073,11 @@
             
             if (type === 'goal' && step === 1) {
                 state.eventFlow = { ...state.eventFlow, step: 2, goleador: name, team };
-                DOM.elements['event-flow-message'].innerHTML = `GOL de <strong>${name}</strong>. Selecciona al <strong>asistente</strong> (o clic en el goleador si no hay).`;
+                DOM.elements['event-flow-message'].innerHTML = `GOL de <strong>${name}</strong>. Selecciona al <strong>asistente</strong> (o clic en el goleador si no hay). <small>(cancelar)</small>`;
+                // Reposicionar el mensaje
+                setTimeout(() => {
+                    DOM.positionEventMessage();
+                }, 50);
             } else if (type === 'goal' && step === 2) {
                 const { goleador, team } = state.eventFlow;
                 const asistente = name !== goleador ? name : null;
@@ -3442,21 +3515,23 @@
                 // El jugador del campo pierde su posición (va al banquillo)
                 onPitchStats.position = null;
                 
-                // Intercambiar estados onPitch
+                // Intercambiar estados onPitch (solo en playerStats para UI inmediata)
                 onPitchStats.onPitch = false;
                 onBenchStats.onPitch = true;
                 
-                // Actualizar initialPlayerState para preservar las nuevas posiciones
+                // Actualizar initialPlayerState SOLO para preservar las nuevas posiciones
+                // NO actualizar onPitch aquí porque será manejado por el evento de sustitución
+                // al recalcular el estado. Esto evita que se intercambien los minutos incorrectamente.
                 if (state.initialPlayerState) {
                     const initialStatsIn = state.initialPlayerState[team]?.[playerInName];
                     const initialStatsOut = state.initialPlayerState[team]?.[playerOutName];
                     if (initialStatsIn) {
                         initialStatsIn.position = statsIn.position ? {...statsIn.position} : null;
-                        initialStatsIn.onPitch = statsIn.onPitch;
+                        // NO actualizar onPitch aquí - será manejado por el evento de sustitución
                     }
                     if (initialStatsOut) {
                         initialStatsOut.position = statsOut.position ? {...statsOut.position} : null;
-                        initialStatsOut.onPitch = statsOut.onPitch;
+                        // NO actualizar onPitch aquí - será manejado por el evento de sustitución
                     }
                 }
                 
