@@ -59,9 +59,14 @@
         }
         #app-header {
             display: block;
-            position: relative;
-            padding: 5px 0;
-            margin-bottom: 5px;
+            position: sticky;
+            top: 0;
+            z-index: 2000;
+            padding: 8px 0;
+            margin-bottom: 10px;
+            background: rgba(26, 26, 26, 0.88);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         }
         
         #app-header.hidden {
@@ -70,14 +75,26 @@
         
         #tiempo {
             display: flex;
-            flex-direction: row;
             align-items: center;
-            justify-content: flex-start;
+            justify-content: space-between;
             margin: 0;
             gap: 10px;
             padding-left: 0;
             padding-top: 2px;
             position: relative;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-center {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            min-width: 0;
         }
         
         #btn-toggle-timer {
@@ -117,10 +134,12 @@
             display: flex;
             align-items: center;
             gap: 5px;
-            margin-top: 3px;
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
+            margin: 0;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(0, 0, 0, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
         }
         
         .match-score-display span {
@@ -128,10 +147,7 @@
         }
         
         .zoom-controls-header {
-            position: absolute;
-            right: 0;
-            top: 50%;
-            transform: translateY(-50%);
+            position: static;
             display: flex;
             gap: 8px;
             align-items: center;
@@ -664,13 +680,13 @@
             background: none;
             padding: 0;
             border: none;
-            margin-left: -8px;
+            margin-right: -8px;
             position: relative;
         }
         
-        .chip-goals:first-child,
-        .chip-assists:first-child {
-            margin-left: 0;
+        .chip-goals:last-child,
+        .chip-assists:last-child {
+            margin-right: 0;
         }
         
         table {
@@ -1004,10 +1020,24 @@
             }
             
             #tiempo {
-                flex-direction: row;
                 flex-wrap: wrap;
                 gap: 10px;
                 padding-left: 0;
+            }
+
+            .header-left {
+                order: 1;
+            }
+
+            .zoom-controls-header {
+                order: 2;
+            }
+
+            .header-center {
+                order: 3;
+                width: 100%;
+                justify-content: center;
+                margin-top: 6px;
             }
             
             #btn-toggle-timer {
@@ -1030,8 +1060,6 @@
             .match-score-display {
                 font-size: 0.8em;
                 gap: 4px;
-                left: 50%;
-                transform: translateX(-50%);
             }
             
             .zoom-controls-header {
@@ -1096,28 +1124,32 @@
                 </button>
             </div>
             <label for="local-name-input">Nombre Equipo Local:</label>
-            <input type="text" id="local-name-input" value="Equipo Local">
+            <input type="text" id="local-name-input" value="LOCAL">
             <label for="rival-name">Nombre Rival:</label>
-            <input type="text" id="rival-name" value="Equipo Rival">
+            <input type="text" id="rival-name" value="VISITANTE">
             <label for="local-players">Jugadores Locales (Nombres o dorsales separados por coma):</label>
-            <textarea id="local-players" rows="3">ERIK, FRAN, JUANJO, DANY, RGUEZ, GAEL, CESAR, RUBIA, NICO, JOEL, JAVIER, RUIZ, ALEX, VICTOR, MARTIN, UNAI, HUGO</textarea>
+            <textarea id="local-players" rows="3">ERIK, FRAN, DANY, RGUEZ, GAEL, CESAR, RUBIA, NICO, JOEL, JAVIER, RUIZ, ILLAN, VICTOR, MARTIN, UNAI, HUGO</textarea>
             <label for="rival-dorsals">Dorsales Rivales (separados por coma):</label>
             <textarea id="rival-dorsals" rows="3">1,2,3,4,5,6,7,8,9,10,11,12,13,14</textarea>
             <button id="start-config" class="btn-primary">Guardar y Preparar Pizarra</button>
         </section>
 
-        <header id="app-header">
+        <header id="app-header" class="hidden">
             <div id="tiempo">
-                <button id="btn-toggle-timer" class="btn-primary" disabled>▶️</button>
-                <input type="text" id="minuto-actual" value="00:00" readonly>
-                <span id="added-time" class="hidden"></span>
-                <span id="match-score" class="match-score-display">
-                    <span id="local-team-name-display"></span>
-                    <span id="local-score-display">0</span>
-                    <span>-</span>
-                    <span id="rival-score-display">0</span>
-                    <span id="rival-team-name-display"></span>
-                </span>
+                <div class="header-left">
+                    <button id="btn-toggle-timer" class="btn-primary" disabled>▶️</button>
+                    <input type="text" id="minuto-actual" value="00:00" readonly>
+                    <span id="added-time" class="hidden"></span>
+                </div>
+                <div class="header-center">
+                    <span id="match-score" class="match-score-display">
+                        <span id="local-team-name-display"></span>
+                        <span id="local-score-display">0</span>
+                        <span>-</span>
+                        <span id="rival-score-display">0</span>
+                        <span id="rival-team-name-display"></span>
+                    </span>
+                </div>
                 <div id="zoom-controls-header" class="zoom-controls-header">
                     <button id="btn-zoom-out-header" class="btn-zoom-header" title="Alejar">−</button>
                     <button id="btn-zoom-in-header" class="btn-zoom-header" title="Acercar">+</button>
@@ -1306,7 +1338,7 @@
         _state: {},
         getInitial() {
             return {
-                localTeamName: 'Local', rivalTeamName: 'Rival', localPlayers: [], rivalDorsals: [],
+                localTeamName: 'LOCAL', rivalTeamName: 'VISITANTE', localPlayers: [], rivalDorsals: [],
                 playerStats: { local: {}, rival: {} }, initialPlayerState: null,
                 matchStats: { local: { corners: 0, offsides: 0, ownGoals: 0 }, rival: { corners: 0, offsides: 0, ownGoals: 0 } },
                 matchTimer: 0, timerStartTime: 0, timerBaseTime: 0, isMatchRunning: false,
@@ -1327,6 +1359,33 @@
                 if (!this._state.eliminatedPlayers) {
                     this._state.eliminatedPlayers = { local: [], rival: [] };
                 }
+                
+                // CRÍTICO: Asegurar que initialPlayerState tenga todas las posiciones actuales
+                // Esto previene que se pierdan posiciones al recargar
+                if (this._state.initialPlayerState && this._state.playerStats) {
+                    Object.keys(this._state.playerStats).forEach(team => {
+                        if (!this._state.initialPlayerState[team]) {
+                            this._state.initialPlayerState[team] = {};
+                        }
+                        Object.keys(this._state.playerStats[team] || {}).forEach(playerName => {
+                            const playerStats = this._state.playerStats[team][playerName];
+                            if (playerStats && playerStats.position) {
+                                // Si el jugador tiene posición en playerStats, asegurar que también esté en initialPlayerState
+                                if (!this._state.initialPlayerState[team][playerName]) {
+                                    this._state.initialPlayerState[team][playerName] = {};
+                                }
+                                if (!this._state.initialPlayerState[team][playerName].position) {
+                                    this._state.initialPlayerState[team][playerName].position = { ...playerStats.position };
+                                }
+                                // También preservar onPitch
+                                if (playerStats.onPitch !== undefined) {
+                                    this._state.initialPlayerState[team][playerName].onPitch = playerStats.onPitch;
+                                }
+                            }
+                        });
+                    });
+                }
+                
                 return true;
             } catch (e) {
                 console.error("Error al cargar estado, reseteando.", e);
@@ -1948,16 +2007,47 @@
                         if (chip.parentElement !== pitch) {
                             pitch.appendChild(chip);
                         }
-                        Object.assign(chip.style, stats.position, {
+                        // CRÍTICO: Aplicar la posición de forma robusta
+                        // Asegurar que la posición tenga los valores correctos
+                        const position = {
+                            left: stats.position.left || '50%',
+                            top: stats.position.top || '50%',
                             transform: 'translate(-50%, -50%)',
-                            display: ''
-                        });
+                            display: '',
+                            position: 'absolute'
+                        };
+                        Object.assign(chip.style, position);
+                        
+                        // Verificar que la posición se aplicó correctamente
+                        // Si no, intentar restaurarla desde initialPlayerState
+                        if (!chip.style.left || chip.style.left === 'auto') {
+                            const state = AppState.get();
+                            if (state.initialPlayerState && 
+                                state.initialPlayerState[team] && 
+                                state.initialPlayerState[team][playerName] &&
+                                state.initialPlayerState[team][playerName].position) {
+                                const initialPos = state.initialPlayerState[team][playerName].position;
+                                Object.assign(chip.style, {
+                                    left: initialPos.left || '50%',
+                                    top: initialPos.top || '50%',
+                                    transform: 'translate(-50%, -50%)',
+                                    display: '',
+                                    position: 'absolute'
+                                });
+                                // Restaurar la posición en playerStats también
+                                stats.position = { ...initialPos };
+                            }
+                        }
                     } else {
                         // Si está en el banquillo, limpiar posición y mover al banquillo correcto
                         chip.style.cssText = '';
                         const bench = this.elements[`${team}-bench`];
                         if (bench && chip.parentElement !== bench) {
                             bench.appendChild(chip);
+                        }
+                        // Asegurar que la posición esté en null cuando está en el banquillo
+                        if (stats.position) {
+                            stats.position = null;
                         }
                     }
                 });
@@ -2291,8 +2381,8 @@
         },
         initializeNewMatch() {
             const state = AppState.get();
-            state.localTeamName = DOM.elements['local-name-input'].value.trim() || 'Local';
-            state.rivalTeamName = DOM.elements['rival-name'].value.trim() || 'Rival';
+            state.localTeamName = DOM.elements['local-name-input'].value.trim() || 'LOCAL';
+            state.rivalTeamName = DOM.elements['rival-name'].value.trim() || 'VISITANTE';
             
             if (!state.eliminatedPlayers) {
                 state.eliminatedPlayers = { local: [], rival: [] };
@@ -2458,36 +2548,35 @@
             state.matchEvents.sort((a, b) => a.timeInSeconds - b.timeInSeconds);
             AppState.save();
         },
-        rebuildAndRecalculateAllState() {
+       rebuildAndRecalculateAllState() {
             const state = AppState.get();
             if (!state.initialPlayerState) return;
 
-            // IMPORTANTE: Guardar las posiciones actuales que el usuario ha movido
-            // antes de restaurar desde initialPlayerState
+            // 1. GUARDAR LAS POSICIONES Y ESTADOS ACTUALES REALES DE LA PIZARRA
             const currentPositions = {};
+            const currentOnPitch = {};
+            
             Object.keys(state.playerStats).forEach(team => {
                 currentPositions[team] = {};
+                currentOnPitch[team] = {};
                 Object.keys(state.playerStats[team]).forEach(playerName => {
                     const player = state.playerStats[team][playerName];
                     if (player.position) {
                         currentPositions[team][playerName] = { ...player.position };
                     }
+                    currentOnPitch[team][playerName] = player.onPitch;
                 });
             });
 
-            // Restaurar el estado inicial de los jugadores
+            // 2. RESTAURAR AL ESTADO INICIAL PARA REPRODUCIR EVENTOS
             state.playerStats = JSON.parse(JSON.stringify(state.initialPlayerState));
             
             if (state.eliminatedPlayers) {
-                state.eliminatedPlayers.local.forEach(playerName => {
-                    delete state.playerStats.local[playerName];
-                });
-                state.eliminatedPlayers.rival.forEach(playerName => {
-                    delete state.playerStats.rival[playerName];
-                });
+                state.eliminatedPlayers.local.forEach(playerName => delete state.playerStats.local[playerName]);
+                state.eliminatedPlayers.rival.forEach(playerName => delete state.playerStats.rival[playerName]);
             }
             
-            // Resetear todas las estadísticas excepto onPitch y position
+            // Resetear estadísticas para recalcularlas
             const resetPlayerStats = {
                 goles: 0, asistencias: 0, disparos: 0, faltas: 0,
                 amarillas: 0, rojas: 0, expulsado: false, minutosJugados: 0
@@ -2495,181 +2584,135 @@
             
             for (const team of Object.values(state.playerStats)) {
                 for (const player of Object.values(team)) {
-                    // Preservar onPitch y position del estado inicial
-                    const preservedOnPitch = player.onPitch;
-                    const preservedPosition = player.position ? { ...player.position } : null;
                     Object.assign(player, resetPlayerStats);
-                    player.onPitch = preservedOnPitch;
-                    player.position = preservedPosition;
                 }
             }
             
-            // CRÍTICO: Restaurar las posiciones actuales que el usuario ha movido
-            // Esto asegura que las fichas se mantengan donde el usuario las colocó
+            state.matchStats = { local: { corners: 0, offsides: 0, ownGoals: 0 }, rival: { corners: 0, offsides: 0, ownGoals: 0 } };
+            
+            // 3. REPRODUCIR EVENTOS (Solo para recalcular estadísticas y minutos correctamente)
+            const hasStarted = state.matchEvents.some(e => e.type === 'init_match');
+            if (hasStarted) {
+                const validEvents = state.matchEvents
+                    .filter(e => e.timeInSeconds >= 0 && e.timeInSeconds <= state.matchTimer)
+                    .sort((a, b) => a.timeInSeconds - b.timeInSeconds);
+                
+                const initMatchEvent = validEvents.find(e => e.type === 'init_match');
+                
+                if (initMatchEvent) {
+                    let lastTime = initMatchEvent.timeInSeconds;
+                    
+                    for (const event of validEvents) {
+                        if (event.type === 'control' || (event.type === 'init_match' && event !== initMatchEvent)) {
+                            const timeDelta = event.timeInSeconds - lastTime;
+                            if (timeDelta > 0) this.adjustPlayerMinutes(timeDelta);
+                            lastTime = event.timeInSeconds;
+                            continue;
+                        }
+                        
+                        if (event.timeInSeconds < lastTime) continue;
+                        
+                        const timeDelta = event.timeInSeconds - lastTime;
+                        if (timeDelta > 0) this.adjustPlayerMinutes(timeDelta);
+
+                        const teamPStats = state.playerStats[event.team];
+                        const playerStats = teamPStats?.[event.player];
+                        const matchTeamStats = state.matchStats[event.team];
+                        
+                        switch (event.type) {
+                            case 'substitution':
+                                // Actualizamos en el campo solo para el cálculo temporal de minutos
+                                this.setPlayerOnBench(event.playerOut, event.team);
+                                this.setPlayerOnPitch(event.playerIn, event.team, null);
+                                break;
+                            case 'red-card':
+                                if (playerStats) {
+                                    playerStats.rojas++;
+                                    playerStats.expulsado = true;
+                                    this.setPlayerOnBench(event.player, event.team);
+                                }
+                                break;
+                            case 'yellow-card':
+                                if (playerStats) {
+                                    playerStats.amarillas++;
+                                    if (playerStats.amarillas >= 2) {
+                                        playerStats.expulsado = true;
+                                        this.setPlayerOnBench(event.player, event.team);
+                                    }
+                                }
+                                break;
+                            case 'goal':
+                                const goleadorStats = teamPStats?.[event.goleador];
+                                if (goleadorStats) {
+                                    goleadorStats.goles++;
+                                    goleadorStats.disparos++;
+                                }
+                                if (event.asistente && teamPStats?.[event.asistente]) {
+                                    teamPStats[event.asistente].asistencias++;
+                                }
+                                break;
+                            case 'own-goal':
+                                if (!state.matchStats[event.team]) state.matchStats[event.team] = { corners: 0, offsides: 0, ownGoals: 0 };
+                                if (!state.matchStats[event.team].ownGoals) state.matchStats[event.team].ownGoals = 0;
+                                state.matchStats[event.team].ownGoals++;
+                                if (playerStats) playerStats.disparos++;
+                                break;
+                            case 'shot':
+                            case 'foul':
+                                if (playerStats) {
+                                    if (event.type === 'shot') playerStats.disparos++;
+                                    else playerStats.faltas++;
+                                }
+                                break;
+                            case 'corner':
+                            case 'offside':
+                                if (matchTeamStats) {
+                                    if (event.type === 'corner') matchTeamStats.corners++;
+                                    else matchTeamStats.offsides++;
+                                }
+                                break;
+                        }
+                        lastTime = event.timeInSeconds;
+                    }
+
+                    const finalTimeDelta = state.matchTimer - lastTime;
+                    if (finalTimeDelta > 0) {
+                        this.adjustPlayerMinutes(finalTimeDelta);
+                    }
+                }
+            }
+            
+            state.lastMinuteCheck = Math.floor(state.matchTimer / 60);
+
+            // 4. CRÍTICO: RESTAURAR LAS POSICIONES AL FINAL DEL TODO
             Object.keys(currentPositions).forEach(team => {
                 Object.keys(currentPositions[team]).forEach(playerName => {
                     if (state.playerStats[team] && state.playerStats[team][playerName]) {
-                        state.playerStats[team][playerName].position = currentPositions[team][playerName];
+                        if (currentPositions[team][playerName]) {
+                            state.playerStats[team][playerName].position = currentPositions[team][playerName];
+                        } else {
+                            state.playerStats[team][playerName].position = null;
+                        }
+                        
+                        if (currentOnPitch[team][playerName] !== undefined) {
+                            state.playerStats[team][playerName].onPitch = currentOnPitch[team][playerName];
+                        }
                     }
                 });
             });
-            state.matchStats = { local: { corners: 0, offsides: 0, ownGoals: 0 }, rival: { corners: 0, offsides: 0, ownGoals: 0 } };
-            
-            // Si el partido no ha iniciado todavía, no procesar eventos
-            const hasStarted = state.matchEvents.some(e => e.type === 'init_match');
-            if (!hasStarted) {
-                DOM.updateAll();
-                return;
+
+            // Sincronizar initialPlayerState para evitar bugs al refrescar la página
+            if (state.initialPlayerState) {
+                Object.keys(currentPositions).forEach(team => {
+                    Object.keys(currentPositions[team]).forEach(playerName => {
+                        if (state.initialPlayerState[team] && state.initialPlayerState[team][playerName]) {
+                            state.initialPlayerState[team][playerName].position = currentPositions[team][playerName] ? { ...currentPositions[team][playerName] } : null;
+                            state.initialPlayerState[team][playerName].onPitch = currentOnPitch[team][playerName];
+                        }
+                    });
+                });
             }
 
-            // NUEVA LÓGICA MEJORADA: Calcular minutos jugados de forma más precisa
-            // Filtrar y ordenar eventos válidos hasta el tiempo actual
-            const validEvents = state.matchEvents
-                .filter(e => e.timeInSeconds >= 0 && e.timeInSeconds <= state.matchTimer)
-                .sort((a, b) => a.timeInSeconds - b.timeInSeconds);
-            
-            // Encontrar el evento de inicio del partido
-            const initMatchEvent = validEvents.find(e => e.type === 'init_match');
-            if (!initMatchEvent) {
-                DOM.updateAll();
-                return;
-            }
-            
-            let lastTime = initMatchEvent.timeInSeconds;
-            let lastLocalSubTime = 0;
-            
-            // Procesar cada evento en orden cronológico
-            for (const event of validEvents) {
-                // Saltar eventos de control e init_match después del primero
-                // PERO contar el tiempo jugado ANTES de ellos
-                if (event.type === 'control' || (event.type === 'init_match' && event !== initMatchEvent)) {
-                    // Contar el tiempo jugado hasta este evento de control
-                    const timeDelta = event.timeInSeconds - lastTime;
-                    if (timeDelta > 0) {
-                        this.adjustPlayerMinutes(timeDelta);
-                    }
-                    lastTime = event.timeInSeconds;
-                    continue;
-                }
-                
-                // Si el evento ocurre antes del último tiempo procesado, saltarlo
-                if (event.timeInSeconds < lastTime) {
-                    continue;
-                }
-                
-                // Calcular el delta de tiempo desde el último evento procesado
-                const timeDelta = event.timeInSeconds - lastTime;
-                
-                // CRÍTICO: Sumar minutos jugados ANTES de procesar el evento
-                // Esto asegura que los jugadores que están en el campo cuenten su tiempo correctamente
-                if (timeDelta > 0) {
-                    this.adjustPlayerMinutes(timeDelta);
-                }
-
-                const teamPStats = state.playerStats[event.team];
-                const playerStats = teamPStats?.[event.player];
-                const matchTeamStats = state.matchStats[event.team];
-                
-                // Procesar el evento según su tipo
-                switch (event.type) {
-                    case 'substitution':
-                        if (event.team === 'local' && (event.timeInSeconds - lastLocalSubTime) > AppConfig.SUBSTITUTION_WINDOW_SECONDS) {
-                            lastLocalSubTime = event.timeInSeconds;
-                        }
-                        const statsOut = teamPStats?.[event.playerOut];
-                        const statsIn = teamPStats?.[event.playerIn];
-                        
-                        // Preservar la posición: si el jugador que entra ya tiene una posición guardada, mantenerla
-                        // Si no, usar la del jugador que sale
-                        let position = null;
-                        if (statsIn?.position) {
-                            position = { ...statsIn.position };
-                        } else if (statsOut?.position) {
-                            position = { ...statsOut.position };
-                        }
-                        
-                        // El jugador que sale ya no está en el campo
-                        this.setPlayerOnBench(event.playerOut, event.team);
-                        // El jugador que entra ahora está en el campo
-                        this.setPlayerOnPitch(event.playerIn, event.team, position);
-                        break;
-                    case 'red-card':
-                        if (playerStats) {
-                            playerStats.rojas++;
-                            playerStats.expulsado = true;
-                            this.setPlayerOnBench(event.player, event.team);
-                        }
-                        break;
-                    case 'yellow-card':
-                        if (playerStats) {
-                            playerStats.amarillas++;
-                            if (playerStats.amarillas >= 2) {
-                                playerStats.expulsado = true;
-                                this.setPlayerOnBench(event.player, event.team);
-                            }
-                        }
-                        break;
-                    case 'goal':
-                        const goleadorStats = teamPStats?.[event.goleador];
-                        if (goleadorStats) {
-                            goleadorStats.goles++;
-                            goleadorStats.disparos++;
-                        }
-                        if (event.asistente && teamPStats?.[event.asistente]) {
-                            teamPStats[event.asistente].asistencias++;
-                        }
-                        break;
-                    case 'own-goal':
-                        // Gol en propia: el gol se suma al equipo contrario
-                        // Si un jugador local se lo mete, se guarda en local.ownGoals y cuenta para el rival
-                        // Si un jugador rival se lo mete, se guarda en rival.ownGoals y cuenta para el local
-                        const opposingTeam = event.team === 'local' ? 'rival' : 'local';
-                        if (!state.matchStats[event.team]) {
-                            state.matchStats[event.team] = { corners: 0, offsides: 0, ownGoals: 0 };
-                        }
-                        if (!state.matchStats[event.team].ownGoals) {
-                            state.matchStats[event.team].ownGoals = 0;
-                        }
-                        state.matchStats[event.team].ownGoals++;
-                        // El jugador que se lo metió no suma gol, pero sí disparo
-                        if (playerStats) {
-                            playerStats.disparos++;
-                        }
-                        break;
-                    case 'shot':
-                    case 'foul':
-                        if (playerStats) {
-                            if (event.type === 'shot') playerStats.disparos++;
-                            else playerStats.faltas++;
-                        }
-                        break;
-                    case 'corner':
-                    case 'offside':
-                        if (matchTeamStats) {
-                            if (event.type === 'corner') matchTeamStats.corners++;
-                            else matchTeamStats.offsides++;
-                        }
-                        break;
-                    case 'init_match':
-                        // Ya procesado al inicio
-                        break;
-                }
-                
-                // Actualizar el tiempo del último evento procesado
-                lastTime = event.timeInSeconds;
-            }
-
-            // CRÍTICO: Sumar el tiempo restante desde el último evento hasta el tiempo actual
-            // Esto incluye cualquier tiempo de descuento o tiempo adicional
-            const finalTimeDelta = state.matchTimer - lastTime;
-            if (finalTimeDelta > 0) {
-                this.adjustPlayerMinutes(finalTimeDelta);
-            }
-            
-            // Actualizar el último minuto verificado
-            state.lastMinuteCheck = Math.floor(state.matchTimer / 60);
-
-            // Actualizar la interfaz
             DOM.updateAll();
         },
         setPlayerOnPitch(name, team, pos) {
@@ -2844,6 +2887,7 @@
             AppState.init();
             if (MatchLogic.initializeNewMatch()) {
                 DOM.showMatchUI();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
                 DOM.setupBenchesAndPitch();
                 DOM.updateAll();
                 DOM.startFormationSelection('local');
@@ -3462,13 +3506,27 @@
                         top: `${100 * (clientY - rect.top) / rect.height}%`
                     };
                     MatchLogic.setPlayerOnPitch(dragged.dataset.name, dragged.dataset.team, pos);
-                    // Actualizar el estado inicial para preservar esta posición
+                    // CRÍTICO: Actualizar el estado inicial para preservar esta posición
+                    // Esto garantiza que la posición se mantenga después de recargar o recalcular
                     if (state.initialPlayerState) {
                         const initialStats = state.initialPlayerState[dragged.dataset.team]?.[dragged.dataset.name];
                         if (initialStats) {
                             initialStats.position = { ...pos };
+                            initialStats.onPitch = true;
+                        } else {
+                            // Si no existe en initialPlayerState, crearlo
+                            if (!state.initialPlayerState[dragged.dataset.team]) {
+                                state.initialPlayerState[dragged.dataset.team] = {};
+                            }
+                            state.initialPlayerState[dragged.dataset.team][dragged.dataset.name] = {
+                                ...stats,
+                                position: { ...pos },
+                                onPitch: true
+                            };
                         }
                     }
+                    // Guardar el estado inmediatamente para preservar la posición
+                    AppState.save();
                 }
             } else if (targetZone?.classList.contains('bench')) {
                 if (state.matchEvents.some(e => e.type === 'init_match')) {
@@ -3505,7 +3563,8 @@
                 const onPitchStats = statsIn.onPitch ? statsIn : statsOut;
                 const onBenchStats = statsIn.onPitch ? statsOut : statsIn;
                 
-                // Guardar la posición del jugador que está en el campo
+                // CRÍTICO: Guardar la posición del jugador que está en el campo
+                // Esta posición será transferida al jugador que entra
                 const pitchPosition = onPitchStats.position ? {...onPitchStats.position} : null;
                 
                 // El jugador del banquillo toma la posición del del campo
@@ -3519,24 +3578,41 @@
                 onPitchStats.onPitch = false;
                 onBenchStats.onPitch = true;
                 
-                // Actualizar initialPlayerState SOLO para preservar las nuevas posiciones
+                // CRÍTICO: Actualizar initialPlayerState para preservar las nuevas posiciones
+                // Esto garantiza que las posiciones se mantengan después de recargar o recalcular
                 // NO actualizar onPitch aquí porque será manejado por el evento de sustitución
                 // al recalcular el estado. Esto evita que se intercambien los minutos incorrectamente.
                 if (state.initialPlayerState) {
-                    const initialStatsIn = state.initialPlayerState[team]?.[playerInName];
-                    const initialStatsOut = state.initialPlayerState[team]?.[playerOutName];
-                    if (initialStatsIn) {
-                        initialStatsIn.position = statsIn.position ? {...statsIn.position} : null;
-                        // NO actualizar onPitch aquí - será manejado por el evento de sustitución
+                    // Asegurar que existan las entradas en initialPlayerState
+                    if (!state.initialPlayerState[team]) {
+                        state.initialPlayerState[team] = {};
                     }
-                    if (initialStatsOut) {
-                        initialStatsOut.position = statsOut.position ? {...statsOut.position} : null;
-                        // NO actualizar onPitch aquí - será manejado por el evento de sustitución
+                    if (!state.initialPlayerState[team][playerInName]) {
+                        state.initialPlayerState[team][playerInName] = {};
                     }
+                    if (!state.initialPlayerState[team][playerOutName]) {
+                        state.initialPlayerState[team][playerOutName] = {};
+                    }
+                    
+                    const initialStatsIn = state.initialPlayerState[team][playerInName];
+                    const initialStatsOut = state.initialPlayerState[team][playerOutName];
+                    
+                    // Actualizar posiciones: el que entra toma la posición del que sale
+                    if (pitchPosition) {
+                        initialStatsIn.position = {...pitchPosition};
+                    } else {
+                        initialStatsIn.position = null;
+                    }
+                    initialStatsOut.position = null;
+                    
+                    // NO actualizar onPitch aquí - será manejado por el evento de sustitución
                 }
                 
                 // Verificar y contar ventanas para el equipo local
-                if (team === 'local') {
+                // CRÍTICO: Nunca contar ventanas durante el descanso
+                const isInDescanso = state.matchEvents.some(e => e.type === 'control' && e.text && e.text.includes('Descanso')) && !state.isMatchRunning;
+                
+                if (team === 'local' && !isInDescanso) {
                     const localSubs = state.matchEvents.filter(e => e.type === 'substitution' && e.team === 'local');
                     const lastLocalSub = localSubs[localSubs.length - 1];
                     const isNewWindow = !lastLocalSub || (state.matchTimer - lastLocalSub.timeInSeconds) > AppConfig.SUBSTITUTION_WINDOW_SECONDS;
@@ -3582,14 +3658,28 @@
                     statsOut.position = posIn;
                 }
                 
-                // Actualizar el estado inicial para conservar los cambios de posición
+                // CRÍTICO: Actualizar el estado inicial para conservar los cambios de posición
+                // Esto garantiza que las posiciones intercambiadas se mantengan después de recargar
                 if (state.initialPlayerState) {
-                    const initialStatsIn = state.initialPlayerState[team]?.[playerInName];
-                    const initialStatsOut = state.initialPlayerState[team]?.[playerOutName];
-                    if (initialStatsIn && statsIn.position) {
+                    // Asegurar que existan las entradas en initialPlayerState
+                    if (!state.initialPlayerState[team]) {
+                        state.initialPlayerState[team] = {};
+                    }
+                    if (!state.initialPlayerState[team][playerInName]) {
+                        state.initialPlayerState[team][playerInName] = {};
+                    }
+                    if (!state.initialPlayerState[team][playerOutName]) {
+                        state.initialPlayerState[team][playerOutName] = {};
+                    }
+                    
+                    const initialStatsIn = state.initialPlayerState[team][playerInName];
+                    const initialStatsOut = state.initialPlayerState[team][playerOutName];
+                    
+                    // Actualizar posiciones intercambiadas
+                    if (statsIn.position) {
                         initialStatsIn.position = {...statsIn.position};
                     }
-                    if (initialStatsOut && statsOut.position) {
+                    if (statsOut.position) {
                         initialStatsOut.position = {...statsOut.position};
                     }
                 }
