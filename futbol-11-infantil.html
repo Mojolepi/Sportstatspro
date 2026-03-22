@@ -62,8 +62,8 @@
             position: sticky;
             top: 0;
             z-index: 2000;
-            padding: 8px 0;
-            margin-bottom: 10px;
+            padding: 4px 0;
+            margin-bottom: 5px;
             background: rgba(26, 26, 26, 0.88);
             backdrop-filter: blur(8px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -80,7 +80,7 @@
             margin: 0;
             gap: 10px;
             padding-left: 0;
-            padding-top: 2px;
+            padding-top: 0;
             position: relative;
         }
 
@@ -103,16 +103,15 @@
         }
         
         #minuto-actual {
-            font-size: 0.9em;
+            font-size: 0.85em;
             font-weight: bold;
             background: #111;
             border: 1px solid #555;
-            padding: 6px 10px;
+            padding: 4px 8px;
             border-radius: 6px;
-            width: 70px;
+            width: 60px;
             text-align: center;
             margin: 0;
-            margin-top: 3px;
         }
         
         #minuto-actual.editable:hover {
@@ -128,14 +127,14 @@
         }
         
         .match-score-display {
-            font-size: 0.9em;
+            font-size: 0.85em;
             font-weight: bold;
             color: white;
             display: flex;
             align-items: center;
             gap: 5px;
             margin: 0;
-            padding: 6px 10px;
+            padding: 4px 8px;
             border-radius: 999px;
             background: rgba(0, 0, 0, 0.55);
             border: 1px solid rgba(255, 255, 255, 0.16);
@@ -154,13 +153,13 @@
         }
         
         .btn-zoom-header {
-            width: 35px;
-            height: 35px;
+            width: 30px;
+            height: 30px;
             border-radius: 50%;
             background: rgba(0, 0, 0, 0.7);
             color: white;
             border: 2px solid white;
-            font-size: 20px;
+            font-size: 16px;
             font-weight: bold;
             cursor: pointer;
             display: flex;
@@ -202,9 +201,9 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2em;
-            min-width: 45px;
-            min-height: 45px;
+            font-size: 1.5em;
+            min-width: 35px;
+            min-height: 35px;
             color: white !important;
         }
         
@@ -506,15 +505,15 @@
             user-select: none;
             position: relative;
             touch-action: none;
-            width: 55px;
+            width: 45px;
             /* Asegurar que los elementos absolutos dentro se posicionen relativos al chip */
             contain: layout style;
         }
         
         .chip-circle {
-            width: 38px;
-            height: 38px;
-            font-size: 15px;
+            width: 32px;
+            height: 32px;
+            font-size: 13px;
             border-radius: 50%;
             color: white;
             display: flex;
@@ -548,7 +547,7 @@
         }
         
         .chip-label {
-            font-size: 10px;
+            font-size: 9px;
             margin-top: 4px;
             font-weight: bold;
             text-shadow: 1px 1px 2px black;
@@ -592,7 +591,7 @@
             position: fixed !important;
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6) !important;
             transition: none !important;
-            transform: none !important;
+            transform: scale(var(--drag-zoom, 1)) !important;
         }
         
         /* Tarjeta amarilla eliminada de aquí - ahora solo se muestra en .chip-cards (derecha) */
@@ -1001,22 +1000,22 @@
             }
             
             .chip-circle {
-                width: 34px;
-                height: 34px;
-                font-size: 13px;
+                width: 26px;
+                height: 26px;
+                font-size: 11px;
             }
             
             .player-chip {
-                width: 48px;
+                width: 38px;
             }
             
             .chip-label {
-                font-size: 9px;
+                font-size: 8px;
             }
             
             #app-header {
-                padding: 5px 0;
-                margin-bottom: 3px;
+                padding: 4px 0;
+                margin-bottom: 5px;
             }
             
             #tiempo {
@@ -1044,21 +1043,21 @@
                 width: auto;
                 height: auto;
                 font-size: 1.5em;
-                min-width: 40px;
-                min-height: 40px;
+                min-width: 35px;
+                min-height: 35px;
                 position: relative;
                 left: auto;
             }
             
             #minuto-actual {
-                font-size: 0.8em;
+                font-size: 0.85em;
                 width: 60px;
-                padding: 5px 8px;
+                padding: 4px 8px;
                 margin: 0;
             }
             
             .match-score-display {
-                font-size: 0.8em;
+                font-size: 0.85em;
                 gap: 4px;
             }
             
@@ -1069,7 +1068,7 @@
             .btn-zoom-header {
                 width: 30px;
                 height: 30px;
-                font-size: 18px;
+                font-size: 16px;
             }
             
             #pitch-section {
@@ -1151,6 +1150,7 @@
                     </span>
                 </div>
                 <div id="zoom-controls-header" class="zoom-controls-header">
+                    <button id="btn-undo-sub" class="btn-zoom-header" title="Deshacer último cambio">↩️</button>
                     <button id="btn-zoom-out-header" class="btn-zoom-header" title="Alejar">−</button>
                     <button id="btn-zoom-in-header" class="btn-zoom-header" title="Acercar">+</button>
                 </div>
@@ -1161,7 +1161,6 @@
             <div id="event-flow-message" class="hidden"></div>
             <div id="pitch-and-benches-container">
                 <div id="futsal-pitch">
-                    <!-- Botones de eventos detrás de portería izquierda -->
                     <div id="event-buttons-left" class="event-buttons-container">
                         <button id="btn-view-local" class="btn-team-toggle local active">L</button>
                         <button class="btn-event" data-event="goal" data-label="GOL">⚽</button>
@@ -1169,7 +1168,6 @@
                         <button class="btn-event" data-event="foul" data-label="FALTA">✋</button>
                         <button class="btn-event" data-event="yellow-card" data-label="AMARILLA">🟨</button>
                     </div>
-                    <!-- Botones de eventos detrás de portería derecha -->
                     <div id="event-buttons-right" class="event-buttons-container">
                         <button id="btn-view-rival" class="btn-team-toggle rival">V</button>
                         <button class="btn-event btn-own-goal" data-event="own-goal" data-label="GOL EN PROPIA">
@@ -1197,8 +1195,7 @@
                     <span style="margin-left: 5px;">2ªP:</span>
                 </div>
             </div>
-             <!-- Botones de eventos movidos detrás de las porterías en el campo -->
-            <div class="control-group">
+             <div class="control-group">
                 <button id="btn-half-time" class="btn-secondary" disabled>Descanso</button><button id="btn-start-second" class="btn-secondary" disabled>Inicio 2ª</button>
                 <button id="btn-finish-game" class="btn-danger" disabled>Finalizar</button>
             </div>
@@ -1309,6 +1306,7 @@
         LONG_PRESS_DELAY_MS: 1200,
         TIMELINE_PRESS_DELAY_MS: 500,
         DRAG_THRESHOLD_PX: 5,
+        currentZoom: 1,
         FORMATIONS: {
             '1-4-4-2':     [{x:8,y:50},{x:30,y:15},{x:30,y:37},{x:30,y:63},{x:30,y:85},{x:60,y:15},{x:60,y:37},{x:60,y:63},{x:60,y:85},{x:85,y:40},{x:85,y:60}],
             '1-4-3-3':     [{x:8,y:50},{x:30,y:15},{x:30,y:37},{x:30,y:63},{x:30,y:85},{x:60,y:25},{x:60,y:50},{x:60,y:75},{x:85,y:15},{x:88,y:50},{x:85,y:85}],
@@ -1422,7 +1420,7 @@
                 'save-edit-btn', 'cancel-edit-btn',
                 'timeline-context-menu', 'context-edit-btn', 'context-delete-btn',
                 'substitution-modal', 'substitution-modal-title', 'substitution-players-list', 'cancel-substitution-btn',
-                'btn-zoom-in-header', 'btn-zoom-out-header', 'zoom-controls-header'
+                'btn-zoom-in-header', 'btn-zoom-out-header', 'btn-undo-sub', 'zoom-controls-header'
             ];
             ids.forEach(id => this.elements[id] = document.getElementById(id));
             this.elements.eventButtons = document.querySelectorAll('.btn-event');
@@ -2499,9 +2497,10 @@
             DOM.updateButtonStates();
             AppState.save();
         },
-        adjustPlayerMinutes(seconds) {
+        adjustPlayerMinutes(seconds, isSimulated = false) {
             if (seconds <= 0) return;
             const state = AppState.get();
+            if (!state.isMatchRunning && !isSimulated) return;
             // Sumar segundos jugados solo a los jugadores que están actualmente en el campo
             Object.values(state.playerStats).forEach(team => {
                 Object.values(team).forEach(player => {
@@ -2601,19 +2600,31 @@
                 
                 if (initMatchEvent) {
                     let lastTime = initMatchEvent.timeInSeconds;
+                    let isSimRunning = true;
                     
                     for (const event of validEvents) {
-                        if (event.type === 'control' || (event.type === 'init_match' && event !== initMatchEvent)) {
-                            const timeDelta = event.timeInSeconds - lastTime;
-                            if (timeDelta > 0) this.adjustPlayerMinutes(timeDelta);
-                            lastTime = event.timeInSeconds;
+                        if (event.type === 'control') {
+                            if (event.text.includes('Descanso') || event.text.includes('Final')) {
+                                const timeDelta = event.timeInSeconds - lastTime;
+                                if (timeDelta > 0 && isSimRunning) this.adjustPlayerMinutes(timeDelta, true);
+                                isSimRunning = false;
+                                lastTime = event.timeInSeconds;
+                                continue;
+                            }
+                            if (event.text.includes('Inicio')) {
+                                isSimRunning = true;
+                                lastTime = event.timeInSeconds;
+                                continue;
+                            }
+                        }
+                        if (event.type === 'init_match' && event !== initMatchEvent) {
                             continue;
                         }
                         
                         if (event.timeInSeconds < lastTime) continue;
                         
                         const timeDelta = event.timeInSeconds - lastTime;
-                        if (timeDelta > 0) this.adjustPlayerMinutes(timeDelta);
+                        if (timeDelta > 0 && isSimRunning) this.adjustPlayerMinutes(timeDelta, true);
 
                         const teamPStats = state.playerStats[event.team];
                         const playerStats = teamPStats?.[event.player];
@@ -2676,8 +2687,8 @@
                     }
 
                     const finalTimeDelta = state.matchTimer - lastTime;
-                    if (finalTimeDelta > 0) {
-                        this.adjustPlayerMinutes(finalTimeDelta);
+                    if (finalTimeDelta > 0 && isSimRunning && state.isMatchRunning) {
+                        this.adjustPlayerMinutes(finalTimeDelta, true);
                     }
                 }
             }
@@ -2754,9 +2765,12 @@
             DOM.elements['btn-view-rival'].addEventListener('click', () => this.handleViewToggle('rival'));
             DOM.elements['minuto-actual'].addEventListener('click', () => this.handleTimeClick());
             
-            // Controles de zoom
+            // Controles de zoom y undo
+            if (DOM.elements['btn-undo-sub']) {
+                DOM.elements['btn-undo-sub'].addEventListener('click', () => this.handleUndoLastSubstitution());
+            }
+
             if (DOM.elements['btn-zoom-in-header'] && DOM.elements['btn-zoom-out-header']) {
-                let currentZoom = 1;
                 const minZoom = 0.5;
                 const maxZoom = 2;
                 const zoomStep = 0.1;
@@ -2765,17 +2779,17 @@
                 
                 const updateZoom = () => {
                     if (pitchAndBenchesContainer) {
-                        pitchAndBenchesContainer.style.transform = `scale(${currentZoom})`;
+                        pitchAndBenchesContainer.style.transform = `scale(${AppConfig.currentZoom})`;
                     }
                 };
                 
                 DOM.elements['btn-zoom-in-header'].addEventListener('click', () => {
-                    currentZoom = Math.min(currentZoom + zoomStep, maxZoom);
+                    AppConfig.currentZoom = Math.min(AppConfig.currentZoom + zoomStep, maxZoom);
                     updateZoom();
                 });
                 
                 DOM.elements['btn-zoom-out-header'].addEventListener('click', () => {
-                    currentZoom = Math.max(currentZoom - zoomStep, minZoom);
+                    AppConfig.currentZoom = Math.max(AppConfig.currentZoom - zoomStep, minZoom);
                     updateZoom();
                 });
                 
@@ -2787,34 +2801,6 @@
             DOM.elements['cancel-edit-btn'].addEventListener('click', () => DOM.elements['edit-event-modal'].classList.remove('visible'));
             DOM.elements['cancel-substitution-btn'].addEventListener('click', () => DOM.elements['substitution-modal'].classList.remove('visible'));
             
-            // Controles de zoom
-            if (DOM.elements['btn-zoom-in-header'] && DOM.elements['btn-zoom-out-header']) {
-                let currentZoom = 1;
-                const minZoom = 0.5;
-                const maxZoom = 2;
-                const zoomStep = 0.1;
-                
-                const pitchAndBenchesContainer = document.getElementById('pitch-and-benches-container');
-                
-                const updateZoom = () => {
-                    if (pitchAndBenchesContainer) {
-                        pitchAndBenchesContainer.style.transform = `scale(${currentZoom})`;
-                    }
-                };
-                
-                DOM.elements['btn-zoom-in-header'].addEventListener('click', () => {
-                    currentZoom = Math.min(currentZoom + zoomStep, maxZoom);
-                    updateZoom();
-                });
-                
-                DOM.elements['btn-zoom-out-header'].addEventListener('click', () => {
-                    currentZoom = Math.max(currentZoom - zoomStep, minZoom);
-                    updateZoom();
-                });
-                
-                // Inicializar zoom
-                updateZoom();
-            }
             document.addEventListener('visibilitychange', () => this.handleVisibilityChange());
             
             document.addEventListener('click', (e) => {
@@ -3143,30 +3129,61 @@
             AppState.get().eventFlow = { active: false };
             if (!cancelled) MatchLogic.rebuildAndRecalculateAllState();
         },
+        handleUndoLastSubstitution() {
+            const state = AppState.get();
+            const subs = state.matchEvents.filter(e => e.type === 'substitution');
+            if (subs.length === 0) {
+                alert("No hay cambios registrados para deshacer.");
+                return;
+            }
+            const lastSub = subs[subs.length - 1];
+            if (confirm(`¿Deshacer el último cambio (${lastSub.playerIn} por ${lastSub.playerOut})?`)) {
+                this.executeDeleteEvent(lastSub.id);
+            }
+        },
         handleDeleteEvent(eventId) {
             if (confirm("¿Estás seguro de que quieres eliminar este evento?")) {
-                const state = AppState.get();
-                const eventToDelete = state.matchEvents.find(e => e.id == eventId);
-
-                if (!eventToDelete) return;
-
-                const shouldPreserveWindows = eventToDelete.type === 'substitution';
-                let preservedWindows = null;
-                if (shouldPreserveWindows) {
-                    preservedWindows = { ...state.substitutionWindows };
-                }
-
-                state.matchEvents = state.matchEvents.filter(e => e.id != eventId);
-                
-                MatchLogic.rebuildAndRecalculateAllState();
-
-                if (shouldPreserveWindows && preservedWindows) {
-                    state.substitutionWindows = preservedWindows;
-                    DOM.updateSubstitutionWindowsUI();
-                }
-
-                AppState.save();
+                this.executeDeleteEvent(eventId);
             }
+        },
+        executeDeleteEvent(eventId) {
+            const state = AppState.get();
+            const eventToDelete = state.matchEvents.find(e => e.id == eventId);
+
+            if (!eventToDelete) return;
+
+            if (eventToDelete.type === 'substitution') {
+                const { team, playerIn, playerOut } = eventToDelete;
+                const statsIn = state.playerStats[team][playerIn];
+                const statsOut = state.playerStats[team][playerOut];
+                if (statsIn && statsOut) {
+                    // Hacer Rollback visual e intercambio de posiciones previo a recalcular
+                    const tempPos = statsIn.position ? {...statsIn.position} : null;
+                    statsIn.position = statsOut.position ? {...statsOut.position} : null;
+                    statsOut.position = tempPos;
+                    
+                    const tempOnPitch = statsIn.onPitch;
+                    statsIn.onPitch = statsOut.onPitch;
+                    statsOut.onPitch = tempOnPitch;
+                }
+            }
+
+            const shouldPreserveWindows = eventToDelete.type === 'substitution';
+            let preservedWindows = null;
+            if (shouldPreserveWindows) {
+                preservedWindows = { ...state.substitutionWindows };
+            }
+
+            state.matchEvents = state.matchEvents.filter(e => e.id != eventId);
+            
+            MatchLogic.rebuildAndRecalculateAllState();
+
+            if (shouldPreserveWindows && preservedWindows) {
+                state.substitutionWindows = preservedWindows;
+                DOM.updateSubstitutionWindowsUI();
+            }
+
+            AppState.save();
         },
         handleEditEvent(eventId) {
             const state = AppState.get();
@@ -3464,6 +3481,7 @@
             if (!this.isDragging && dragDistance > AppConfig.DRAG_THRESHOLD_PX) {
                 this.isDragging = true;
                 this.draggedElement.classList.add('dragging');
+                this.draggedElement.style.setProperty('--drag-zoom', AppConfig.currentZoom);
                 document.body.appendChild(this.draggedElement);
             }
             if (this.isDragging) {
