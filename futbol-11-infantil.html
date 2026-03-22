@@ -62,7 +62,7 @@
             position: sticky;
             top: 0;
             z-index: 2000;
-            padding: 4px 0;
+            padding: 4px 10px;
             margin-bottom: 5px;
             background: rgba(26, 26, 26, 0.88);
             backdrop-filter: blur(8px);
@@ -77,24 +77,32 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            width: 100%;
             margin: 0;
-            gap: 10px;
-            padding-left: 0;
-            padding-top: 0;
             position: relative;
         }
 
         .header-left {
+            flex: 1;
             display: flex;
             align-items: center;
+            justify-content: flex-start;
             gap: 10px;
         }
 
         .header-center {
-            flex: 1;
+            flex: 0 1 auto;
             display: flex;
             justify-content: center;
-            min-width: 0;
+            align-items: center;
+        }
+        
+        .zoom-controls-header {
+            flex: 1;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 8px;
         }
         
         #btn-toggle-timer {
@@ -127,14 +135,14 @@
         }
         
         .match-score-display {
-            font-size: 0.85em;
+            font-size: 0.9em;
             font-weight: bold;
             color: white;
             display: flex;
             align-items: center;
             gap: 5px;
             margin: 0;
-            padding: 4px 8px;
+            padding: 4px 10px;
             border-radius: 999px;
             background: rgba(0, 0, 0, 0.55);
             border: 1px solid rgba(255, 255, 255, 0.16);
@@ -145,21 +153,14 @@
             white-space: nowrap;
         }
         
-        .zoom-controls-header {
-            position: static;
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-        
         .btn-zoom-header {
-            width: 30px;
-            height: 30px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             background: rgba(0, 0, 0, 0.7);
             color: white;
             border: 2px solid white;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: bold;
             cursor: pointer;
             display: flex;
@@ -1014,73 +1015,70 @@
             }
             
             #app-header {
-                padding: 4px 0;
+                padding: 4px 6px;
                 margin-bottom: 5px;
             }
             
             #tiempo {
-                flex-wrap: wrap;
-                gap: 10px;
-                padding-left: 0;
+                flex-wrap: nowrap;
+                gap: 5px;
             }
 
-            .header-left {
-                order: 1;
-            }
-
-            .zoom-controls-header {
-                order: 2;
+            .header-left, .zoom-controls-header {
+                flex: 1;
             }
 
             .header-center {
-                order: 3;
-                width: 100%;
-                justify-content: center;
-                margin-top: 6px;
+                flex: 0 1 auto;
+                width: auto;
+                margin-top: 0;
             }
             
             #btn-toggle-timer {
                 width: auto;
                 height: auto;
-                font-size: 1.5em;
-                min-width: 35px;
-                min-height: 35px;
-                position: relative;
-                left: auto;
+                font-size: 1.2em;
+                min-width: 25px;
+                min-height: 25px;
             }
             
             #minuto-actual {
-                font-size: 0.85em;
-                width: 60px;
-                padding: 4px 8px;
+                font-size: 0.75em;
+                width: 45px;
+                padding: 2px 4px;
                 margin: 0;
             }
             
             .match-score-display {
-                font-size: 0.85em;
+                font-size: 0.75em;
                 gap: 4px;
+                padding: 3px 6px;
+            }
+            
+            .match-score-display span {
+                max-width: 60px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
             }
             
             .zoom-controls-header {
-                gap: 6px;
+                gap: 5px;
             }
             
             .btn-zoom-header {
-                width: 30px;
-                height: 30px;
-                font-size: 16px;
+                width: 24px;
+                height: 24px;
+                font-size: 12px;
             }
             
             #pitch-section {
                 padding-top: 3px;
+                padding: 15px;
             }
             
             .event-group {
                 grid-template-columns: 1fr 1fr;
-            }
-            
-            #pitch-section {
-                padding: 15px;
             }
             
             #event-buttons-left {
@@ -1123,9 +1121,9 @@
                 </button>
             </div>
             <label for="local-name-input">Nombre Equipo Local:</label>
-            <input type="text" id="local-name-input" value="LOCAL">
+            <input type="text" id="local-name-input" value="L">
             <label for="rival-name">Nombre Rival:</label>
-            <input type="text" id="rival-name" value="VISITANTE">
+            <input type="text" id="rival-name" value="V">
             <label for="local-players">Jugadores Locales (Nombres o dorsales separados por coma):</label>
             <textarea id="local-players" rows="3">ERIK, FRAN, DANY, RGUEZ, GAEL, CESAR, RUBIA, NICO, JOEL, JAVIER, RUIZ, ILLAN, VICTOR, MARTIN, UNAI, HUGO</textarea>
             <label for="rival-dorsals">Dorsales Rivales (separados por coma):</label>
@@ -1336,7 +1334,7 @@
         _state: {},
         getInitial() {
             return {
-                localTeamName: 'LOCAL', rivalTeamName: 'VISITANTE', localPlayers: [], rivalDorsals: [],
+                localTeamName: 'L', rivalTeamName: 'V', localPlayers: [], rivalDorsals: [],
                 playerStats: { local: {}, rival: {} }, initialPlayerState: null,
                 matchStats: { local: { corners: 0, offsides: 0, ownGoals: 0 }, rival: { corners: 0, offsides: 0, ownGoals: 0 } },
                 matchTimer: 0, timerStartTime: 0, timerBaseTime: 0, isMatchRunning: false,
@@ -1601,6 +1599,7 @@
                             document.removeEventListener('touchend', DragAndDrop.end);
                             DragAndDrop.draggedElement = null;
                             DragAndDrop.isDragging = false;
+                            DragAndDrop.ticking = false;
                             chip.classList.remove('dragging');
                             chip.style.cssText = '';
                         }
@@ -1778,6 +1777,7 @@
                 document.removeEventListener('pointerup', DragAndDrop.end);
                 DragAndDrop.draggedElement = null;
                 DragAndDrop.isDragging = false;
+                DragAndDrop.ticking = false;
                 chip.classList.remove('dragging');
                 chip.style.cssText = '';
             }
@@ -1801,6 +1801,7 @@
                 // Limpiar el estado de arrastre completamente
                 DragAndDrop.draggedElement = null;
                 DragAndDrop.isDragging = false;
+                DragAndDrop.ticking = false;
             }
             
             // Remover la clase dragging si existe y resetear estilos
@@ -2379,8 +2380,8 @@
         },
         initializeNewMatch() {
             const state = AppState.get();
-            state.localTeamName = DOM.elements['local-name-input'].value.trim() || 'LOCAL';
-            state.rivalTeamName = DOM.elements['rival-name'].value.trim() || 'VISITANTE';
+            state.localTeamName = DOM.elements['local-name-input'].value.trim() || 'L';
+            state.rivalTeamName = DOM.elements['rival-name'].value.trim() || 'V';
             
             if (!state.eliminatedPlayers) {
                 state.eliminatedPlayers = { local: [], rival: [] };
@@ -2687,7 +2688,9 @@
                     }
 
                     const finalTimeDelta = state.matchTimer - lastTime;
-                    if (finalTimeDelta > 0 && isSimRunning && state.isMatchRunning) {
+                    // FIX: Si el simulador está en una fase activa (entre inicio y descanso o después de la segunda parte),
+                    // suma todos los minutos correspondientes desde el último evento registrado, no importa si isMatchRunning es false.
+                    if (finalTimeDelta > 0 && isSimRunning) {
                         this.adjustPlayerMinutes(finalTimeDelta, true);
                     }
                 }
@@ -3456,6 +3459,9 @@
         isDragging: false,
         offsetX: 0,
         offsetY: 0,
+        latestX: 0,
+        latestY: 0,
+        ticking: false,
         start(e) {
             const el = e.currentTarget;
             const stats = AppState.get().playerStats[el.dataset.team]?.[el.dataset.name];
@@ -3465,6 +3471,7 @@
             e.preventDefault();
             this.draggedElement = el;
             this.isDragging = false;
+            this.ticking = false;
             const rect = el.getBoundingClientRect();
             this.offsetX = e.clientX - rect.left;
             this.offsetY = e.clientY - rect.top;
@@ -3474,24 +3481,38 @@
         move(e) {
             if (!this.draggedElement) return;
             e.preventDefault();
-            const dragDistance = Math.sqrt(
-                (e.clientX - (this.draggedElement.getBoundingClientRect().left + this.offsetX)) ** 2 +
-                (e.clientY - (this.draggedElement.getBoundingClientRect().top + this.offsetY)) ** 2
-            );
-            if (!this.isDragging && dragDistance > AppConfig.DRAG_THRESHOLD_PX) {
-                this.isDragging = true;
-                this.draggedElement.classList.add('dragging');
-                this.draggedElement.style.setProperty('--drag-zoom', AppConfig.currentZoom);
-                document.body.appendChild(this.draggedElement);
-            }
-            if (this.isDragging) {
-                this.draggedElement.style.left = `${e.clientX - this.offsetX}px`;
-                this.draggedElement.style.top = `${e.clientY - this.offsetY}px`;
+            this.latestX = e.clientX;
+            this.latestY = e.clientY;
+            
+            if (!this.ticking) {
+                requestAnimationFrame(() => {
+                    if (!this.draggedElement) {
+                        this.ticking = false;
+                        return;
+                    }
+                    const dragDistance = Math.sqrt(
+                        (this.latestX - (this.draggedElement.getBoundingClientRect().left + this.offsetX)) ** 2 +
+                        (this.latestY - (this.draggedElement.getBoundingClientRect().top + this.offsetY)) ** 2
+                    );
+                    if (!this.isDragging && dragDistance > AppConfig.DRAG_THRESHOLD_PX) {
+                        this.isDragging = true;
+                        this.draggedElement.classList.add('dragging');
+                        this.draggedElement.style.setProperty('--drag-zoom', AppConfig.currentZoom);
+                        document.body.appendChild(this.draggedElement);
+                    }
+                    if (this.isDragging) {
+                        this.draggedElement.style.left = `${this.latestX - this.offsetX}px`;
+                        this.draggedElement.style.top = `${this.latestY - this.offsetY}px`;
+                    }
+                    this.ticking = false;
+                });
+                this.ticking = true;
             }
         },
         end(e) {
             document.removeEventListener('pointermove', this.move);
             document.removeEventListener('pointerup', this.end);
+            this.ticking = false;
             if (!this.draggedElement) return;
             if (this.isDragging) {
                 this.draggedElement.style.display = 'none';
