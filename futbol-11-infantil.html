@@ -534,12 +534,12 @@
             left: 50%;
             transform: translate(-50%, -50%);
             color: rgba(255, 255, 255, 1);
-            font-size: 11px;
+            font-size: 10px; /* Reducido para mejor lectura de la circunferencia */
             font-weight: 700;
             z-index: 3;
             text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9), 0 0 2px rgba(0, 0, 0, 1);
             background: rgba(0, 0, 0, 0.4);
-            padding: 2px 4px;
+            padding: 1px 3px;
             border-radius: 4px;
             border: none;
             display: none;
@@ -612,8 +612,6 @@
         .expulsado .chip-circle .chip-minutes {
             filter: none !important;
         }
-        
-        /* Tarjeta roja eliminada de aquí - ahora solo se muestra en .chip-cards (derecha) */
         
         /* Tarjetas en vértice izquierdo superior (pegadas a la ficha) */
         .chip-cards {
@@ -1012,6 +1010,12 @@
             
             .chip-label {
                 font-size: 8px;
+            }
+            
+            /* Tweak de fuente para móviles */
+            .chip-circle .chip-minutes {
+                font-size: 8.5px;
+                padding: 1px 2px;
             }
             
             #app-header {
@@ -2552,23 +2556,20 @@
             const state = AppState.get();
             if (!state.initialPlayerState) return;
 
-            // 1. GUARDAR LAS POSICIONES Y ESTADOS ACTUALES REALES DE LA PIZARRA
+            // 1. GUARDAR LAS POSICIONES ACTUALES REALES DE LA PIZARRA
             const currentPositions = {};
-            const currentOnPitch = {};
             
             Object.keys(state.playerStats).forEach(team => {
                 currentPositions[team] = {};
-                currentOnPitch[team] = {};
                 Object.keys(state.playerStats[team]).forEach(playerName => {
                     const player = state.playerStats[team][playerName];
                     if (player.position) {
                         currentPositions[team][playerName] = { ...player.position };
                     }
-                    currentOnPitch[team][playerName] = player.onPitch;
                 });
             });
 
-            // 2. RESTAURAR AL ESTADO INICIAL PARA REPRODUCIR EVENTOS
+            // 2. RESTAURAR AL ESTADO INICIAL PARA REPRODUCIR EVENTOS (SIN MUTAR onPitch)
             state.playerStats = JSON.parse(JSON.stringify(state.initialPlayerState));
             
             if (state.eliminatedPlayers) {
@@ -2698,7 +2699,7 @@
             
             state.lastMinuteCheck = Math.floor(state.matchTimer / 60);
 
-            // 4. CRÍTICO: RESTAURAR LAS POSICIONES AL FINAL DEL TODO
+            // 4. CRÍTICO: RESTAURAR LAS POSICIONES (SOLO LAS COORDENADAS)
             Object.keys(currentPositions).forEach(team => {
                 Object.keys(currentPositions[team]).forEach(playerName => {
                     if (state.playerStats[team] && state.playerStats[team][playerName]) {
@@ -2707,10 +2708,8 @@
                         } else {
                             state.playerStats[team][playerName].position = null;
                         }
-                        
-                        if (currentOnPitch[team][playerName] !== undefined) {
-                            state.playerStats[team][playerName].onPitch = currentOnPitch[team][playerName];
-                        }
+                        // NOTA CRÍTICA: NO restauramos onPitch aquí. onPitch es calculado de forma estricta 
+                        // por la simulación de eventos, garantizando una contabilidad perfecta del tiempo.
                     }
                 });
             });
@@ -2721,7 +2720,6 @@
                     Object.keys(currentPositions[team]).forEach(playerName => {
                         if (state.initialPlayerState[team] && state.initialPlayerState[team][playerName]) {
                             state.initialPlayerState[team][playerName].position = currentPositions[team][playerName] ? { ...currentPositions[team][playerName] } : null;
-                            state.initialPlayerState[team][playerName].onPitch = currentOnPitch[team][playerName];
                         }
                     });
                 });
