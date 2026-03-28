@@ -1238,7 +1238,7 @@
                 <button id="btn-reset-match" class="btn-secondary">Reiniciar</button>
                 <button id="btn-new-match" class="btn-secondary">Nuevo Partido</button>
             </div>
-            <button id="btn-export-excel" class="btn-primary hidden" style="margin-top: 20px; width: 100%;">Exportar a Excel</button>
+            <button id="btn-export-excel" class="btn-primary" style="margin-top: 20px; width: 100%;">Exportar a Excel</button>
         </section>
         
         <div id="formation-modal" class="modal">
@@ -2240,8 +2240,8 @@
         updateDocumentTitle() {
             const state = AppState.get();
             const time = MatchLogic.formatTime(state.matchTimer);
-            const localScoreText = this.elements['local-score'] ? this.elements['local-score'].textContent : '0';
-            const rivalScoreText = this.elements['rival-score'] ? this.elements['rival-score'].textContent : '0';
+            const localScoreText = this.elements['local-score-display'] ? this.elements['local-score-display'].textContent : '0';
+            const rivalScoreText = this.elements['rival-score-display'] ? this.elements['rival-score-display'].textContent : '0';
             const score = `${state.localTeamName} ${localScoreText}-${rivalScoreText} ${state.rivalTeamName}`;
             
             let prefix = 'Preparación';
@@ -2563,7 +2563,7 @@
         },
         updateMatchEvent(eventId, updatedData) {
             const state = AppState.get();
-            const eventIndex = state.matchEvents.findIndex(e => e.id == eventId);
+            const eventIndex = state.matchEvents.findIndex(e => e.id === parseInt(eventId));
             if (eventIndex !== -1) {
                 let newEventData = { ...state.matchEvents[eventIndex], ...updatedData };
                 newEventData.minute = Math.floor(newEventData.timeInSeconds / 60);
@@ -3047,7 +3047,6 @@
             // El timerBaseTime debe ser el tiempo real jugado (puede incluir descuento)
             state.timerBaseTime = state.matchTimer;
             MatchLogic.addMatchEvent({ type: 'control', text: 'Final del partido.' });
-            DOM.elements['btn-export-excel'].classList.remove('hidden');
             // CRÍTICO: Recalcular todos los minutos jugados hasta el final
             // Esto asegura que todos los jugadores tengan el tiempo correcto, incluyendo descuentos
             MatchLogic.rebuildAndRecalculateAllState();
@@ -3243,7 +3242,7 @@
         },
         executeDeleteEvent(eventId) {
             const state = AppState.get();
-            const eventToDelete = state.matchEvents.find(e => e.id == eventId);
+            const eventToDelete = state.matchEvents.find(e => e.id === parseInt(eventId));
 
             if (!eventToDelete) return;
 
@@ -3269,7 +3268,7 @@
                 preservedWindows = { ...state.substitutionWindows };
             }
 
-            state.matchEvents = state.matchEvents.filter(e => e.id != eventId);
+            state.matchEvents = state.matchEvents.filter(e => e.id !== parseInt(eventId));
             
             MatchLogic.rebuildAndRecalculateAllState();
 
@@ -3282,7 +3281,7 @@
         },
         handleEditEvent(eventId) {
             const state = AppState.get();
-            const eventToEdit = state.matchEvents.find(e => e.id == eventId);
+            const eventToEdit = state.matchEvents.find(e => e.id === parseInt(eventId));
             if (!eventToEdit) return;
 
             const modal = DOM.elements['edit-event-modal'];
@@ -3492,11 +3491,18 @@
                 
                 // Asegurar que los minutos están calculados correctamente antes de exportar
                 MatchLogic.rebuildAndRecalculateAllState();
+
+                // Helper robusto para escapar valores en el CSV
+                const escapeCSV = (val) => {
+                    if (val === null || val === undefined) return '""';
+                    const str = String(val);
+                    return `"${str.replace(/"/g, '""')}"`;
+                };
                 
                 const formatPlayerRow = (player, stats) => {
                     const statsObj = stats || {};
                     return [
-                        player || '',
+                        escapeCSV(player),
                         statsObj.goles || 0,
                         statsObj.asistencias || 0,
                         statsObj.disparos || 0,
@@ -3506,20 +3512,27 @@
                         MatchLogic.formatMinutesRoundedUp(statsObj.minutosJugados || 0)
                     ].join(",");
                 };
+
+                const localScore = document.getElementById('local-score-display') ? document.getElementById('local-score-display').textContent : '0';
+                const rivalScore = document.getElementById('rival-score-display') ? document.getElementById('rival-score-display').textContent : '0';
+                const currentScore = `${state.localTeamName} ${localScore} - ${rivalScore} ${state.rivalTeamName}`;
+                const currentTime = MatchLogic.formatTime(state.matchTimer);
                 
                 const lines = [
-                    `${state.localTeamName || 'Local'}`,
-                    'Jugador,G,A,D,F,Y,R,MIN',
+                    `"Resumen del Partido",${escapeCSV(currentScore)},"Minuto: ${currentTime}"`,
+                    '',
+                    escapeCSV(state.localTeamName || 'Local'),
+                    '"Jugador","G","A","D","F","Y","R","MIN"',
                     ...(state.localPlayers || []).map(p => formatPlayerRow(p, state.playerStats?.local?.[p])),
                     '',
-                    `${state.rivalTeamName || 'Rival'}`,
-                    'Dorsal,G,A,D,F,Y,R,MIN',
+                    escapeCSV(state.rivalTeamName || 'Rival'),
+                    '"Dorsal/Jugador","G","A","D","F","Y","R","MIN"',
                     ...(state.rivalDorsals || []).map(d => formatPlayerRow(d, state.playerStats?.rival?.[d])),
                     '',
-                    'Cronología del Partido',
-                    'Minuto,Evento',
+                    '"Cronología del Partido"',
+                    '"Minuto","Evento"',
                     ...(state.matchEvents || []).map(e => 
-                        `${e.minute || 0},"${(e.text || '').replace(/<[^>]*>?/gm, '').replace(/"/g, '""')}"`
+                        `${e.minute || 0},${escapeCSV((e.text || '').replace(/<[^>]*>?/gm, ''))}`
                     )
                 ];
                 
@@ -3528,7 +3541,7 @@
                 const a = document.createElement("a");
                 const url = URL.createObjectURL(blob);
                 a.href = url;
-                a.download = `estadisticas_${(state.localTeamName || 'Local').replace(/[^a-zA-Z0-9]/g, '_')}_vs_${(state.rivalTeamName || 'Rival').replace(/[^a-zA-Z0-9]/g, '_')}.csv`;
+                a.download = `estadisticas_${(state.localTeamName || 'Local').replace(/[^a-zA-Z0-9]/g, '_')}_vs_${(state.rivalTeamName || 'Rival').replace(/[^a-zA-Z0-9]/g, '_')}_min_${Math.floor(state.matchTimer/60)}.csv`;
                 
                 // Agregar el elemento al DOM temporalmente para asegurar compatibilidad
                 document.body.appendChild(a);
@@ -3543,7 +3556,7 @@
                 console.error('Error al exportar a CSV:', error);
                 alert('Error al exportar el archivo. Por favor, inténtalo de nuevo.');
             }
-        },
+        }
     };
 
     const DragAndDrop = {
