@@ -472,7 +472,7 @@
             display: block;
             margin-top: 15px;
             gap: 15px;
-            margin-bottom: 20px;
+            margin-bottom: 5px;
         }
         
         /* Asegurar que game-controls siempre quede debajo del banquillo */
@@ -1182,7 +1182,15 @@
                     </div>
                     <div class="soccer-pitch-lines"><svg viewBox="0 0 105 68" preserveAspectRatio="xMidYMid meet"><rect x="0" y="0" width="105" height="68" stroke="var(--color-pitch-lines)" stroke-width="0.3" fill="none"/><line x1="52.5" y1="0" x2="52.5" y2="68" stroke="var(--color-pitch-lines)" stroke-width="0.3"/><circle cx="52.5" cy="34" r="9.15" stroke="var(--color-pitch-lines)" stroke-width="0.3" fill="none"/><circle cx="52.5" cy="34" r="0.4" fill="var(--color-pitch-lines)"/><rect x="0" y="13.84" width="16.5" height="40.32" stroke="var(--color-pitch-lines)" stroke-width="0.3" fill="none"/><rect x="0" y="24.84" width="5.5" height="18.32" stroke="var(--color-pitch-lines)" stroke-width="0.3" fill="none"/><circle cx="11" cy="34" r="0.4" fill="var(--color-pitch-lines)"/><path d="M 16.5 26.69 A 9.15 9.15 0 0 1 16.5 41.31" stroke="var(--color-pitch-lines)" stroke-width="0.3" fill="none"/><rect x="88.5" y="13.84" width="16.5" height="40.32" stroke="var(--color-pitch-lines)" stroke-width="0.3" fill="none"/><rect x="99.5" y="24.84" width="5.5" height="18.32" stroke="var(--color-pitch-lines)" stroke-width="0.3" fill="none"/><circle cx="94" cy="34" r="0.4" fill="var(--color-pitch-lines)"/><path d="M 88.5 26.69 A 9.15 9.15 0 0 0 88.5 41.31" stroke="var(--color-pitch-lines)" stroke-width="0.3" fill="none"/><path d="M 0 1 A 1 1 0 0 1 1 0" stroke="var(--color-pitch-lines)" stroke-width="0.3" fill="none"/><path d="M 104 0 A 1 1 0 0 1 105 1" stroke="var(--color-pitch-lines)" stroke-width="0.3" fill="none"/><path d="M 0 67 A 1 1 0 0 0 1 68" stroke="var(--color-pitch-lines)" stroke-width="0.3" fill="none"/><path d="M 104 68 A 1 1 0 0 0 105 67" stroke="var(--color-pitch-lines)" stroke-width="0.3" fill="none"/></svg></div>
                 </div>
-                <div id="bench-container"><div id="local-bench" class="bench"></div><div id="rival-bench" class="bench"></div></div>
+                <div id="bench-container">
+                    <div id="local-bench" class="bench"></div>
+                    <div id="rival-bench" class="bench"></div>
+                </div>
+                <div style="text-align: center; margin-top: 15px; margin-bottom: 10px;">
+                    <button id="btn-change-formation" class="btn-secondary" style="font-size: 0.9em; padding: 8px 15px; display: inline-flex; align-items: center; gap: 5px;">
+                        <span>🔄</span> Cambiar Formación
+                    </button>
+                </div>
             </div>
         </section>
 
@@ -1422,7 +1430,8 @@
                 'save-edit-btn', 'cancel-edit-btn',
                 'timeline-context-menu', 'context-edit-btn', 'context-delete-btn',
                 'substitution-modal', 'substitution-modal-title', 'substitution-players-list', 'cancel-substitution-btn',
-                'btn-zoom-in-header', 'btn-zoom-out-header', 'btn-undo-sub', 'zoom-controls-header'
+                'btn-zoom-in-header', 'btn-zoom-out-header', 'btn-undo-sub', 'zoom-controls-header',
+                'btn-change-formation'
             ];
             ids.forEach(id => this.elements[id] = document.getElementById(id));
             this.elements.eventButtons = document.querySelectorAll('.btn-event');
@@ -2253,6 +2262,8 @@
         },
         startFormationSelection(team) {
             const state = AppState.get();
+            const isMidGame = state.initialPlayerState !== null;
+            
             this.elements['formation-modal-title'].innerHTML = `Selecciona formación para <strong>${team === 'local' ? state.localTeamName : state.rivalTeamName}</strong>`;
             this.elements['formation-buttons'].innerHTML = '';
             Object.keys(AppConfig.FORMATIONS).forEach(name => {
@@ -2262,7 +2273,17 @@
                 btn.onclick = () => EventHandler.handleFormationSelect(name, team);
                 this.elements['formation-buttons'].appendChild(btn);
             });
-            this.elements['skip-formation'].onclick = () => EventHandler.proceedToNextStep(team);
+            
+            if (isMidGame) {
+                this.elements['skip-formation'].onclick = () => {
+                    this.elements['formation-modal'].classList.remove('visible');
+                };
+                this.elements['skip-formation'].textContent = "Cancelar";
+            } else {
+                this.elements['skip-formation'].onclick = () => EventHandler.proceedToNextStep(team);
+                this.elements['skip-formation'].textContent = "Colocar Manualmente";
+            }
+            
             this.elements['skip-formation'].classList.remove('hidden');
             this.elements['formation-modal'].classList.add('visible');
         },
@@ -2766,6 +2787,14 @@
             DOM.elements['btn-view-rival'].addEventListener('click', () => this.handleViewToggle('rival'));
             DOM.elements['minuto-actual'].addEventListener('click', () => this.handleTimeClick());
             
+            // Boton de cambiar formación mid-game
+            if (DOM.elements['btn-change-formation']) {
+                DOM.elements['btn-change-formation'].addEventListener('click', () => {
+                    const activeTeam = AppState.get().activeView;
+                    DOM.startFormationSelection(activeTeam);
+                });
+            }
+            
             // Controles de zoom y undo
             if (DOM.elements['btn-undo-sub']) {
                 DOM.elements['btn-undo-sub'].addEventListener('click', () => this.handleUndoLastSubstitution());
@@ -2882,19 +2911,84 @@
         },
         handleFormationSelect(formationName, team) {
             const state = AppState.get();
-            Object.values(state.playerStats[team]).forEach(p => p.onPitch = false);
-            const players = team === 'local' ? state.localPlayers : state.rivalDorsals;
-            players.slice(0, AppConfig.MAX_PLAYERS_ON_PITCH).forEach((playerName, i) => {
-                let pos = {...AppConfig.FORMATIONS[formationName][i]};
-                if (team === 'rival') {
-                    pos.x = 100 - pos.x;
-                }
-                MatchLogic.setPlayerOnPitch(playerName, team, {
-                    left: `${pos.x}%`,
-                    top: `${pos.y}%`
+            const isMidGame = state.initialPlayerState !== null;
+            const playersOnPitch = Object.keys(state.playerStats[team]).filter(p => state.playerStats[team][p].onPitch && !state.playerStats[team][p].expulsado);
+
+            if (playersOnPitch.length === 0 && !isMidGame) {
+                // INITIAL SETUP: Repartir los primeros 11 (o el maximo) de la lista
+                const players = team === 'local' ? state.localPlayers : state.rivalDorsals;
+                players.slice(0, AppConfig.MAX_PLAYERS_ON_PITCH).forEach((playerName, i) => {
+                    let pos = {...AppConfig.FORMATIONS[formationName][i]};
+                    if (team === 'rival') {
+                        pos.x = 100 - pos.x;
+                    }
+                    MatchLogic.setPlayerOnPitch(playerName, team, {
+                        left: `${pos.x}%`,
+                        top: `${pos.y}%`
+                    });
                 });
-            });
-            this.proceedToNextStep(team);
+            } else {
+                // REUBICACIÓN INTELIGENTE (Mid-game o cuando ya hay jugadores en el campo)
+                let targetPositions = AppConfig.FORMATIONS[formationName].map(pos => ({
+                    x: team === 'rival' ? 100 - pos.x : pos.x,
+                    y: pos.y
+                }));
+
+                // Extraer coordenadas X e Y reales de los jugadores en el campo
+                const playerCurrentPos = playersOnPitch.map(p => {
+                    const stats = state.playerStats[team][p];
+                    let x = 50, y = 50;
+                    if (stats.position) {
+                        x = parseFloat(stats.position.left) || 50;
+                        y = parseFloat(stats.position.top) || 50;
+                    }
+                    return { name: p, x, y };
+                });
+
+                // Algoritmo Greedy: calcular todas las distancias entre jugador y posiciones de la formación
+                const pairs = [];
+                for (let i = 0; i < playerCurrentPos.length; i++) {
+                    for (let j = 0; j < targetPositions.length; j++) {
+                        const dx = playerCurrentPos[i].x - targetPositions[j].x;
+                        const dy = playerCurrentPos[i].y - targetPositions[j].y;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        pairs.push({ pIdx: i, tIdx: j, dist });
+                    }
+                }
+
+                // Ordenar por la distancia más corta
+                pairs.sort((a, b) => a.dist - b.dist);
+
+                const assignedPlayers = new Set();
+                const assignedTargets = new Set();
+
+                // Asignar iterativamente la posición más cercana disponible
+                for (const pair of pairs) {
+                    if (!assignedPlayers.has(pair.pIdx) && !assignedTargets.has(pair.tIdx)) {
+                        assignedPlayers.add(pair.pIdx);
+                        assignedTargets.add(pair.tIdx);
+
+                        const playerName = playerCurrentPos[pair.pIdx].name;
+                        const targetPos = targetPositions[pair.tIdx];
+
+                        const posStr = { left: `${targetPos.x}%`, top: `${targetPos.y}%` };
+                        MatchLogic.setPlayerOnPitch(playerName, team, posStr);
+                        
+                        // Guardar directamente en el initialPlayerState para asegurar persistencia al recalcular tiempos
+                        if (state.initialPlayerState && state.initialPlayerState[team] && state.initialPlayerState[team][playerName]) {
+                            state.initialPlayerState[team][playerName].position = { ...posStr };
+                        }
+                    }
+                }
+                AppState.save();
+            }
+
+            if (!isMidGame) {
+                this.proceedToNextStep(team);
+            } else {
+                DOM.elements['formation-modal'].classList.remove('visible');
+                DOM.updatePlayerChips();
+            }
         },
         proceedToNextStep(currentTeam) {
             DOM.updatePlayerChips();
