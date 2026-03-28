@@ -507,6 +507,7 @@
             position: relative;
             touch-action: none;
             width: 45px;
+            background: transparent;
             /* Asegurar que los elementos absolutos dentro se posicionen relativos al chip */
             contain: layout style;
         }
@@ -523,7 +524,7 @@
             font-weight: bold;
             border: 2px solid white;
             box-shadow: 0 3px 6px rgba(0, 0, 0, 0.5);
-            transition: box-shadow 0.2s;
+            transition: box-shadow 0.2s, transform 0.2s ease;
             position: relative;
         }
         
@@ -585,14 +586,21 @@
             position: absolute;
         }
         
+        /* Clase para el estado de arrastre */
         .dragging {
             cursor: grabbing !important;
-            opacity: 0.8;
+            opacity: 0.9; /* Elevada opacidad para mayor nitidez */
             z-index: 1000 !important;
             position: fixed !important;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6) !important;
             transition: none !important;
             transform: scale(var(--drag-zoom, 1)) !important;
+            /* Eliminado box-shadow aquí para no dibujar caja rectangular */
+        }
+
+        /* Aplicamos el efecto de elevación (sombra) exclusivamente al círculo de la ficha */
+        .dragging .chip-circle {
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8) !important;
+            transform: scale(1.1); /* Efecto pop-up visual sutil */
         }
         
         /* Tarjeta amarilla eliminada de aquí - ahora solo se muestra en .chip-cards (derecha) */
